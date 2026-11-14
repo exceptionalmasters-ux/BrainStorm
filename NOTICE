@@ -1,0 +1,10 @@
+BrainStorm
+Copyright 2026 exceptionalmasters-ux
+
+Ten projekt jest pochodną projektu next-ai-draw-io
+(https://github.com/DayuanJiang/next-ai-draw-io), udostępnionego na licencji
+Apache License, Version 2.0. Kod bazowy pochodzi z commita
+9534a668e3bd53f9c08aa5b8d2d77f409ccd09d4 (wersja 0.5.1).
+
+Zmiany względem oryginału są opisane w docs/project/04-dziennik-zmian.md.
+Zachowano oryginalny plik LICENSE.
