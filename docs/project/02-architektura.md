@@ -21,6 +21,10 @@
 
 Ponieważ draw.io działa z tej samej domeny co aplikacja, strona może sterować edytorem bezpośrednio (podświetlanie zmian AI, odczyt zaznaczenia, cofanie, własny pasek narzędzi).
 
+## Narzędzia AI w draw.io
+
+Model dostaje zestaw narzędzi (`lib/chat-tools.ts`): `display_diagram` (nowy diagram z XML), `edit_diagram` (operacje po ID komórek), `append_diagram` (dokończenie ucięcia), `get_shape_library` (nazwy kształtów i składnia stylów bibliotek, m.in. `electrical`, `pid`, `fluidpower`, `cabinets`) oraz `get_diagram_guide` (wskazówki rysowania dla wybranych typów diagramów). Dokumentacja bibliotek leży w `docs/shape-libraries`. Model musi obsługiwać wywoływanie narzędzi. Modele generujące obrazy się do tego nie nadają (patrz D-006).
+
 ## Konfiguracja
 
 Zmienne środowiskowe opisuje `env.example`. Minimalnie dla OpenAI: `AI_PROVIDER=openai`, `AI_MODEL`, `OPENAI_API_KEY`. Lokalnie w `.env.local`, na produkcji w ustawieniach Cloudflare. Nigdy w repozytorium.

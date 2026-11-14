@@ -2,6 +2,12 @@
 
 Najnowsze na górze.
 
+## 2026-11-14 (model AI i narzędzia draw.io)
+
+- `env.example` ustawiony pod OpenAI: `AI_PROVIDER=openai`, `AI_MODEL=gpt-5.4,gpt-5.4-mini` (pierwszy to domyślny, drugi trafia do wyboru modelu), pusty `OPENAI_API_KEY`. Dodano uwagi: klucz tylko po stronie serwera, `ACCESS_CODE_LIST` do ustawienia przed udostępnieniem aplikacji w internecie.
+- Sprawdzono, że kod bazowy już daje modelowi narzędzia draw.io (`lib/chat-tools.ts`): `display_diagram`, `edit_diagram`, `append_diagram`, `get_shape_library` (w tym biblioteki elektryczne, P&ID, hydrauliczne) oraz `get_diagram_guide`. Nie wymagało zmian w kodzie.
+- ID modeli pochodzą z katalogu kodu bazowego (`lib/model-catalog.json`) i nie były sprawdzane na koncie OpenAI. Nie uruchamiano aplikacji.
+
 ## 2026-11-14 (motyw i branding)
 
 - Nowa paleta ciemnego motywu w `app/globals.css`: czarne tło, złoty kolor akcji głównych (`--primary`), zielone akcenty w stylu Matrix (obramowania, podświetlenie zmian AI, sukces). Płótno rysunku pozostaje białe. Motyw jasny bez zmian.

@@ -2,7 +2,7 @@
 
 ## W toku
 
-- Konfiguracja bazy: uruchomienie z OpenAI i potwierdzenie generowania diagramów (do zrobienia po stronie właściciela: klucz API i pierwszy build).
+- Pierwsze uruchomienie z OpenAI i potwierdzenie generowania diagramów (po stronie właściciela: klucz `OPENAI_API_KEY` w Cloudflare lub `.env.local`, pierwszy build, ustawienie `ACCESS_CODE_LIST`). Konfiguracja w `env.example` jest gotowa.
 
 ## Do zrobienia
 
@@ -20,3 +20,4 @@
 
 - 2026-11-14: kod bazowy wgrany do gałęzi `dev`, dokumentacja założona, workflowy oryginału usunięte.
 - 2026-11-14: motyw czarny, złoty, zielony, domyślnie ciemny; nazwa BrainStorm w powłoce; okrojona paleta kształtów (do weryfikacji).
+- 2026-11-14: konfiguracja modelu OpenAI z narzędziami draw.io w `env.example`, decyzja D-006.

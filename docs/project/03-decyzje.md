@@ -2,6 +2,12 @@
 
 Najnowsze na górze. Każda decyzja: data, kontekst, wybór, konsekwencje.
 
+## D-006 (2026-11-14): rysuje model czatu z narzędziami, nie model obrazów
+
+- Kontekst: chcemy, aby AI tworzyło edytowalne rysunki w draw.io. Modele generujące obrazy (np. gpt-image-*) zwracają rastry i nie obsługują wywoływania narzędzi, więc wynik byłby nieedytowalny.
+- Decyzja: rysunek tworzy model czatu z obsługą narzędzi (domyślnie gpt-5.4, tańszy gpt-5.4-mini), który wywołuje narzędzia draw.io i zwraca XML. Model obrazów może w przyszłości służyć tylko do osobnych zadań (np. odczyt szkicu lub zdjęcia), nie do rysowania schematu.
+- Konsekwencje: wynik zawsze jest edytowalnym diagramem draw.io. Koszt zależy od wybranego modelu (ceny w katalogu modeli, do sprawdzenia u dostawcy). Klucz API tylko po stronie serwera, a przed publikacją trzeba ustawić `ACCESS_CODE_LIST`.
+
 ## D-005 (2026-11-14): ciemny motyw domyślny, białe płótno
 
 - Kontekst: wymagany styl: czarne tło, białe i złote przyciski, zielone akcenty. Rysunek ma wyglądać jak w draw.io, na białym tle.
