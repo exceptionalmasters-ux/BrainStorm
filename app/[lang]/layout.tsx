@@ -67,10 +67,10 @@ export async function generateMetadata({
     const lang: Locale = hasLocale(rawLang) ? rawLang : i18n.defaultLocale
 
     const titles: Record<Locale, string> = {
-        en: "Next AI Draw.io - AI-Powered Diagram Generator",
-        zh: "Next AI Draw.io - AI 驱动的图表生成器",
-        ja: "Next AI Draw.io - AI 搭載ダイアグラム生成ツール",
-        "zh-Hant": "Next AI Draw.io - AI 驅動的圖表產生器",
+        en: "BrainStorm - AI-Powered Diagram Generator",
+        zh: "BrainStorm - AI 驱动的图表生成器",
+        ja: "BrainStorm - AI 搭載ダイアグラム生成ツール",
+        "zh-Hant": "BrainStorm - AI 驅動的圖表產生器",
     }
 
     const descriptions: Record<Locale, string> = {
@@ -85,16 +85,16 @@ export async function generateMetadata({
         title: titles[lang],
         description: descriptions[lang],
         keywords: KEYWORDS[lang],
-        authors: [{ name: "Next AI Draw.io" }],
-        creator: "Next AI Draw.io",
-        publisher: "Next AI Draw.io",
+        authors: [{ name: "BrainStorm" }],
+        creator: "BrainStorm",
+        publisher: "BrainStorm",
         metadataBase: new URL(SITE_URL),
         openGraph: {
             title: titles[lang],
             description: descriptions[lang],
             type: "website",
             url: `/${lang}`,
-            siteName: "Next AI Draw.io",
+            siteName: "BrainStorm",
             locale: OG_LOCALE[lang],
             images: [
                 {
@@ -143,7 +143,7 @@ export default async function RootLayout({
     const jsonLd = {
         "@context": "https://schema.org",
         "@type": "SoftwareApplication",
-        name: "Next AI Draw.io",
+        name: "BrainStorm",
         applicationCategory: "DesignApplication",
         operatingSystem: "Web, Windows, macOS, Linux",
         description: APP_DESCRIPTION[validLang],

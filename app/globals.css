@@ -124,54 +124,53 @@
 }
 
 /*
- * Dark: a blueprint-blue table. Surfaces get lighter the higher they float.
+ * Dark (default): black table, gold primary actions, green "matrix" accents.
  * The diagram stays on a white sheet so it looks the way it will export;
- * primary actions are paper-white, and amber only marks AI changes.
+ * green marks what the AI just changed and the borders.
  */
 .dark {
-    /* Neutral greys: the canvas matches draw.io's own dark workspace */
-    --canvas: #1b1d1e;
-    --background: #1b1d1e;
+    --canvas: #000000;
+    --background: #000000;
     --foreground: #ececec;
 
-    --card: #242627;
+    --card: #0b0d0b;
     --card-foreground: #ececec;
-    --popover: #2a2c2d;
+    --popover: #101310;
     --popover-foreground: #ececec;
 
-    --primary: #ececec;
-    --primary-foreground: #1b1d1e;
-    --secondary: #2d2f30;
+    --primary: #d4af37;
+    --primary-foreground: #0a0a0a;
+    --secondary: #131613;
     --secondary-foreground: #ececec;
-    --muted: #2d2f30;
-    --muted-foreground: #a7a9aa;
-    --faint: #8a8c8d;
-    --accent: #353738;
+    --muted: #131613;
+    --muted-foreground: #9fa89f;
+    --faint: #7f887f;
+    --accent: #1a1f1a;
     --accent-foreground: #ececec;
-    --destructive: #f07167;
+    --destructive: #ff6b5e;
 
-    --border: rgb(255 255 255 / 0.1);
-    --input: rgb(255 255 255 / 0.16);
-    --ring: #ececec;
+    --border: rgb(0 255 102 / 0.16);
+    --input: rgb(0 255 102 / 0.24);
+    --ring: #d4af37;
 
-    --marker: #f5b13d;
-    --marker-soft: rgb(245 177 61 / 0.16);
-    --marker-ink: #f7c46b;
+    --marker: #00ff66;
+    --marker-soft: rgb(0 255 102 / 0.14);
+    --marker-ink: #7dffb0;
 
-    --surface-0: #242627;
-    --surface-1: #202223;
-    --surface-2: #2d2f30;
-    --border-subtle: rgb(255 255 255 / 0.08);
-    --border-default: rgb(255 255 255 / 0.13);
-    --interactive-hover: #353738;
-    --interactive-active: #3c3e3f;
-    --success: #4fd18b;
-    --success-muted: rgb(79 209 139 / 0.14);
+    --surface-0: #0b0d0b;
+    --surface-1: #070907;
+    --surface-2: #131613;
+    --border-subtle: rgb(0 255 102 / 0.1);
+    --border-default: rgb(0 255 102 / 0.2);
+    --interactive-hover: #1a1f1a;
+    --interactive-active: #222822;
+    --success: #00ff66;
+    --success-muted: rgb(0 255 102 / 0.14);
 
     --shadow-float:
-        0 0 0 1px rgb(255 255 255 / 0.07), 0 14px 34px -12px rgb(0 0 0 / 0.6);
+        0 0 0 1px rgb(0 255 102 / 0.12), 0 14px 34px -12px rgb(0 0 0 / 0.8);
     --shadow-pop:
-        0 0 0 1px rgb(255 255 255 / 0.1), 0 22px 56px -14px rgb(0 0 0 / 0.7);
+        0 0 0 1px rgb(0 255 102 / 0.16), 0 22px 56px -14px rgb(0 0 0 / 0.9);
 }
 
 @layer base {

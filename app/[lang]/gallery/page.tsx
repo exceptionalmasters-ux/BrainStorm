@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const locale = localeOf((await params).lang)
     const t = TEXTS[locale]
     return {
-        title: `${t.title} | Next AI Draw.io`,
+        title: `${t.title} | BrainStorm`,
         description: t.description,
         keywords: t.keywords,
         alternates: localeAlternates(locale, "/gallery"),
@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             description: t.description,
             type: "website",
             url: `/${locale}/gallery`,
-            siteName: "Next AI Draw.io",
+            siteName: "BrainStorm",
             locale: OG_LOCALE[locale],
             images: [{ ...OG_IMAGE, alt: t.title }],
         },

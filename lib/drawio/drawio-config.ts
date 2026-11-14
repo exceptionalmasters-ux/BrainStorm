@@ -101,6 +101,11 @@ export const EMPTY_DRAWIO_DOCUMENT = withPageDefaults(BLANK_MXFILE)
 export const DRAWIO_CONFIG = {
     defaultPageVisible: true,
     defaultGridEnabled: true,
+    // A trimmed shape palette on the left: the basics, arrows, flowchart and
+    // electrical symbols. Other libraries stay reachable through draw.io's
+    // "More shapes" where the editor offers it. Library ids still to be
+    // checked against the bundled draw.io (see docs/project/05-plan.md)
+    defaultLibraries: "general;basic;arrows2;flowchart;electrical",
     // A loaded diagram leaves the focus where it is (draw.io focuses its
     // window otherwise, and keys typed for the chat would go to the canvas)
     noAutoFocus: true,
@@ -108,7 +113,7 @@ export const DRAWIO_CONFIG = {
 
 /**
  * CSS injected into draw.io: the table around the sheet and its toolbar in
- * light mode. Dark mode keeps draw.io's own colors: the rules only match
+ * light mode. Dark mode keeps draw.io's own colors, except a black table around the sheet: the light rules only match
  * while draw.io is light (it puts geDarkMode on the body), so they need no
  * change when the theme switches. draw.io's link to its GitHub page (by
  * the page tabs) is hidden: on a phone it sits right above the tab bar.
@@ -130,5 +135,7 @@ body:not(.geDarkMode) .geDiagramContainer { background-color: #f4f5f7; }
 body:not(.geDarkMode) .geBackgroundPage { box-shadow: 0 1px 2px rgba(20,24,29,.08), 0 12px 32px -12px rgba(20,24,29,.18) !important; }
 body:not(.geDarkMode) .geSimpleMainMenu { border-bottom: 1px solid #e4e7eb !important; box-shadow: none !important; }
 .geSidebarContainer[style*="width: 0px"] { border: none !important; }
+body.geDarkMode { --workspace-color: #050505; }
+body.geDarkMode .geDiagramContainer { background-color: #050505; }
 a[href*="github.com/jgraph/drawio"] { display: none !important; }
 `

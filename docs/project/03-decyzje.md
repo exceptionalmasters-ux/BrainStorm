@@ -2,6 +2,18 @@
 
 Najnowsze na górze. Każda decyzja: data, kontekst, wybór, konsekwencje.
 
+## D-005 (2026-11-14): ciemny motyw domyślny, białe płótno
+
+- Kontekst: wymagany styl: czarne tło, białe i złote przyciski, zielone akcenty. Rysunek ma wyglądać jak w draw.io, na białym tle.
+- Decyzja: ciemny motyw jest domyślny, główne akcje są złote, zielień oznacza obramowania, sukces i zmiany wprowadzone przez AI. Arkusz rysunku pozostaje biały. Motyw jasny zostaje dostępny w ustawieniach.
+- Konsekwencje: kolory definiujemy wyłącznie przez zmienne CSS w `app/globals.css`, więc korekty palety są jednoplikowe.
+
+## D-004 (2026-11-14): nazwa aplikacji BrainStorm w powłoce, strony oryginału później
+
+- Kontekst: kod bazowy zawiera nazwę i teksty autora oryginału.
+- Decyzja: zmieniamy nazwę tylko w powłoce aplikacji (manifest, tytuły, pasek startowy). Strony marketingowe i dokumentacja oryginału wymagają osobnej decyzji (usunąć lub przepisać).
+- Konsekwencje: do czasu porządków część tekstów nadal wspomina oryginalny projekt.
+
 ## D-003 (2026-11-14): wyszukiwanie w sieci jako opcja włączana przełącznikiem
 
 - Kontekst: asystent ma szukać urządzeń i dokumentacji, ale użytkownik chce mieć możliwość pracy samym modelem.

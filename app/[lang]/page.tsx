@@ -31,7 +31,7 @@ export default async function Home({
                 HTML is otherwise empty for crawlers that do not run
                 JavaScript. Visually hidden; it repeats the start screen. */}
             <div className="sr-only">
-                <h1>Next AI Draw.io</h1>
+                <h1>BrainStorm</h1>
                 <p>{dict.lobby.lede}</p>
                 {/* For crawlers; Tab skips a link nobody can see */}
                 <Link href={`/${lang}/about`} tabIndex={-1}>

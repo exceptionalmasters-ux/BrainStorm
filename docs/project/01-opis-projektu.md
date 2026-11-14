@@ -8,7 +8,7 @@ Narzędzie w formie panelu webowego, w którym użytkownik opisuje problem techn
 
 - Biała płaszczyzna rysunku jak w draw.io.
 - Po lewej pionowy pasek podstawowych narzędzi rysowania (okrojony zestaw względem pełnego draw.io).
-- Po prawej rozwijany panel asystenta AI.
+- Po prawej rozwijany panel asystenta AI (w kodzie bazowym pływający, zwijany panel czatu).
 - Styl aplikacji: ciemny motyw, czarne tło, białe i złote przyciski, zielone akcenty w stylu Matrix.
 
 ## Funkcje docelowe

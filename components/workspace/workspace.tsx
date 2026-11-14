@@ -106,7 +106,7 @@ function StartBar({
                     nameClassName,
                 )}
             >
-                Next AI Draw.io
+                BrainStorm
             </span>
             <DocsButton />
             <IconButton

@@ -6,7 +6,7 @@ import { NotFoundPage } from "@/components/site/not-found-page"
 // "noindex" to it: the layout's "index, follow" and the home page's
 // canonical address are not this page's
 export const metadata: Metadata = {
-    title: "Page not found | Next AI Draw.io",
+    title: "Page not found | BrainStorm",
     robots: null,
     alternates: null,
 }

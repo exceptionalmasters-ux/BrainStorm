@@ -74,8 +74,8 @@ export function isSendKey(
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
     hydrated: false,
-    theme: "system",
-    isDark: false,
+    theme: "dark",
+    isDark: true,
     sendShortcut: "enter",
     minimalStyle: false,
     vlmValidationEnabled: false,
@@ -90,14 +90,14 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
             applyDarkClass(get().isDark)
             return
         }
-        // Stored as "true"/"false"; missing means follow the system
+        // Stored as "true"/"false"; missing means dark (the default)
         const storedDark = read(STORAGE_KEYS.darkMode)
         const theme: ThemePreference =
             storedDark === "true"
                 ? "dark"
                 : storedDark === "false"
                   ? "light"
-                  : "system"
+                  : "dark"
         const isDark =
             theme === "system" ? systemPrefersDark() : theme === "dark"
         const width = Number(read(STORAGE_KEYS.panelWidth))
@@ -174,4 +174,4 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
  */
 export const THEME_INIT_SCRIPT = `(function(){try{var v=localStorage.getItem(${JSON.stringify(
     STORAGE_KEYS.darkMode,
-)});var d=v==="true"||(v===null&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.classList.add("dark")}catch(e){}})()`
+)});var d=v!=="false";if(d)document.documentElement.classList.add("dark")}catch(e){}})()`
