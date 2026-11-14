@@ -1,6 +1,13 @@
 "use client"
 
-import { FileUp, MessageSquare, PanelRightOpen, Save, Settings, Shapes } from "lucide-react"
+import {
+    FileUp,
+    MessageSquare,
+    PanelRightOpen,
+    Save,
+    Settings,
+    Shapes,
+} from "lucide-react"
 import { usePathname, useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 import { CanvasStage } from "@/components/canvas/canvas-stage"
@@ -321,40 +328,60 @@ function WorkspaceLayout() {
                             waitForSavedLocale
                         />
                     </div>
-                            {/* Below draw.io's toolbar (50 px), whose
+                    {/* Below draw.io's toolbar (50 px), whose
                                 right-hand buttons it would cover */}
-                            {!showHero && ((!isMobile && !panelOpen) || (isMobile && mobileView === "canvas")) && (
-                                <div className="absolute top-[60px] right-3 left-3 md:left-auto z-20 flex items-center gap-1 rounded-xl bg-card p-1 shadow-float animate-fade-in">
-                                    <BrandMark className="mx-0.5 size-6" />
-                                    <SessionMenu align="end" onOpenFile={openFile}>
-                                        <button type="button" className="max-w-24 sm:max-w-32 truncate px-2 text-sm" data-testid="manual-session-title">
-                                            {sessionTitle}
-                                        </button>
-                                    </SessionMenu>
-                                    <IconButton label={dict.workspace.openFile} onClick={openFile} data-testid="manual-open-file">
-                                        <FileUp />
-                                    </IconButton>
-                                    <IconButton label={dict.save.title} onClick={() => setSaveDialogOpen(true)} data-testid="manual-export-button">
-                                        <Save />
-                                    </IconButton>
-                                    <IconButton label={dict.nav.settings} onClick={() => useUiStore.getState().openSettings()} data-testid="manual-settings-button">
-                                        <Settings />
-                                    </IconButton>
-                                    <IconButton
-                                        label={dict.nav.showPanel}
-                                        shortcut={`${modKey}B`}
-                                        // The button goes away: the focus
-                                        // moves on to the panel's input
-                                        onClick={() => {
-                                            noteAction("show chat panel")
-                                            focusComposer()
-                                        }}
-                                        data-testid="show-panel"
+                    {!showHero &&
+                        ((!isMobile && !panelOpen) ||
+                            (isMobile && mobileView === "canvas")) && (
+                            <div className="absolute top-[60px] right-3 left-3 md:left-auto z-20 flex items-center gap-1 rounded-xl bg-card p-1 shadow-float animate-fade-in">
+                                <BrandMark className="mx-0.5 size-6" />
+                                <SessionMenu align="end" onOpenFile={openFile}>
+                                    <button
+                                        type="button"
+                                        className="max-w-24 sm:max-w-32 truncate px-2 text-sm"
+                                        data-testid="manual-session-title"
                                     >
-                                        <PanelRightOpen />
-                                    </IconButton>
-                                </div>
-                            )}
+                                        {sessionTitle}
+                                    </button>
+                                </SessionMenu>
+                                <IconButton
+                                    label={dict.workspace.openFile}
+                                    onClick={openFile}
+                                    data-testid="manual-open-file"
+                                >
+                                    <FileUp />
+                                </IconButton>
+                                <IconButton
+                                    label={dict.save.title}
+                                    onClick={() => setSaveDialogOpen(true)}
+                                    data-testid="manual-export-button"
+                                >
+                                    <Save />
+                                </IconButton>
+                                <IconButton
+                                    label={dict.nav.settings}
+                                    onClick={() =>
+                                        useUiStore.getState().openSettings()
+                                    }
+                                    data-testid="manual-settings-button"
+                                >
+                                    <Settings />
+                                </IconButton>
+                                <IconButton
+                                    label={dict.nav.showPanel}
+                                    shortcut={`${modKey}B`}
+                                    // The button goes away: the focus
+                                    // moves on to the panel's input
+                                    onClick={() => {
+                                        noteAction("show chat panel")
+                                        focusComposer()
+                                    }}
+                                    data-testid="show-panel"
+                                >
+                                    <PanelRightOpen />
+                                </IconButton>
+                            </div>
+                        )}
 
                     {isMobile ? (
                         mobileView === "chat" &&
@@ -382,7 +409,6 @@ function WorkspaceLayout() {
                             {panelVisible && (
                                 <ChatPanel onOpenFile={openFile} />
                             )}
-
 
                             {showHero && (
                                 <>
@@ -478,4 +504,3 @@ function WorkspaceLayout() {
         </div>
     )
 }
-

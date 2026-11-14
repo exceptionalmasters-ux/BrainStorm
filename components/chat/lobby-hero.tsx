@@ -231,7 +231,9 @@ export function LobbyHero({
                     <Pencil className="size-4" />
                     {t.drawManually}
                 </button>
-                <p className="mt-2 text-xs text-muted-foreground">{t.manualDescription}</p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                    {t.manualDescription}
+                </p>
             </div>
 
             {/* MCP server notice, hidden on self-hosted deployments. The lede's
@@ -365,4 +367,3 @@ export function LobbyHero({
         </div>
     )
 }
-
