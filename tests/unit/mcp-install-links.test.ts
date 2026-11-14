@@ -23,7 +23,7 @@ describe("one-click MCP install links", () => {
 
     it("are the same in the READMEs as on the MCP page", () => {
         for (const path of [
-            "README.md",
+            "docs/upstream/README.md",
             "docs/cn/README_CN.md",
             "docs/ja/README_JA.md",
             "packages/mcp-server/README.md",

@@ -15,8 +15,10 @@ import { useDictionary } from "@/hooks/use-dictionary"
 import { getAssetUrl } from "@/lib/base-path"
 import { noteAction } from "@/lib/user-actions"
 import { cn } from "@/lib/utils"
+import { useUiStore } from "@/stores/ui-store"
 import { useChatEngine } from "./chat-engine"
 import { Composer } from "./composer"
+import { DrawingStarters } from "./drawing-starters"
 import { McpNotice } from "./mcp-notice"
 import { SessionMenu } from "./session-menu"
 
@@ -221,20 +223,18 @@ export function LobbyHero({
                 {t.lede}
             </p>
 
-            <div className="mb-6 rounded-xl border border-primary/40 bg-card p-5 text-center">
-                <button
-                    type="button"
-                    onClick={onDrawManually}
-                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-6 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
-                    data-testid="draw-manually"
-                >
-                    <Pencil className="size-4" />
-                    {t.drawManually}
-                </button>
-                <p className="mt-2 text-xs text-muted-foreground">
-                    {t.manualDescription}
-                </p>
-            </div>
+            <DrawingStarters
+                onManual={onDrawManually}
+                onAssistant={() => {
+                    onDrawYourself()
+                    useUiStore.getState().focusComposer()
+                }}
+                onBrief={(text) => {
+                    engine.setInput(`${t.briefPrompt}\n\n${text}`)
+                    onDrawYourself()
+                    useUiStore.getState().focusComposer()
+                }}
+            />
 
             {/* MCP server notice, hidden on self-hosted deployments. The lede's
                 margin already spans 24 px (20 px compact); pull the card up so

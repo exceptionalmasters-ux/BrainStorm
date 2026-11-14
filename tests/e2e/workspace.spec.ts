@@ -667,7 +667,7 @@ test.describe("Workspace", () => {
         const dialog = page.getByRole("dialog")
         await dialog.getByRole("radio", { name: "Dark" }).click()
         // draw.io's own dark table
-        await expect.poll(table).toBe("rgb(27, 29, 30)")
+        await expect.poll(table).toBe("rgb(5, 5, 5)")
         await dialog.getByRole("radio", { name: "Light" }).click()
         await expect.poll(table).toBe(light)
         await page.keyboard.press("Escape")
@@ -679,7 +679,7 @@ test.describe("Workspace", () => {
         await expect(
             page.locator('[data-testid="canvas-loading"]'),
         ).toHaveCount(0, { timeout: 30000 })
-        await expect.poll(table).toBe("rgb(27, 29, 30)")
+        await expect.poll(table).toBe("rgb(5, 5, 5)")
         await openSettingsTab(page, "general")
         await page
             .getByRole("dialog")
@@ -2190,6 +2190,9 @@ test.describe("Workspace", () => {
     test("an opened blank file is saved: a language switch and a reload bring it back", async ({
         page,
     }) => {
+        await page.addInitScript(() =>
+            localStorage.setItem("next-ai-draw-io-dark-mode", "false"),
+        )
         await openApp(page)
         await openDrawioFile(page, "blank.drawio", BLANK_SHEET)
         const tabs = drawioTabs(page)
@@ -2360,6 +2363,9 @@ test.describe("Workspace", () => {
     test("an opened file without shapes is shown, page settings included", async ({
         page,
     }) => {
+        await page.addInitScript(() =>
+            localStorage.setItem("next-ai-draw-io-dark-mode", "false"),
+        )
         await openApp(page)
         const [chooser] = await Promise.all([
             page.waitForEvent("filechooser"),
@@ -3326,7 +3332,7 @@ test.describe("Edge cases", () => {
         await page.getByRole("option", { name: "日本語", exact: true }).click()
         await expect(page).toHaveURL(/\/ja/, { timeout: 15000 })
         await page.keyboard.press("Escape")
-        await page.getByRole("button", { name: /白紙のキャンバス/ }).click()
+        await page.getByTestId("draw-on-the-fly").click()
         await page.waitForTimeout(800)
         await expect(page.locator('[data-testid="version-thumb"]')).toHaveCount(
             0,

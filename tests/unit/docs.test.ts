@@ -139,15 +139,15 @@ describe("the AI providers page", () => {
         readFileSync(`docs/${folder}/ai-providers.md`, "utf8"),
     )
 
-    // env.example ships with AI_PROVIDER=bedrock, which wins over the key the
+    // env.example ships with AI_PROVIDER=openai, which wins over the key the
     // reader sets for another provider
     it("tells the reader of the first steps about the template's AI_PROVIDER line", () => {
         expect(readFileSync("env.example", "utf8")).toMatch(
-            /^AI_PROVIDER=bedrock$/m,
+            /^AI_PROVIDER=openai$/m,
         )
         for (const page of pages) {
             const steps = page.split(/^## /m)[1]
-            expect(steps).toContain("AI_PROVIDER=bedrock")
+            expect(steps).toContain("AI_PROVIDER=openai")
         }
     })
 
@@ -171,7 +171,7 @@ describe("the READMEs", () => {
     // updated; each gives it three times
     it("give the number of providers the app has, wherever they give one", () => {
         const counts = [
-            "README.md",
+            "docs/upstream/README.md",
             "docs/cn/README_CN.md",
             "docs/ja/README_JA.md",
         ].flatMap((file) =>

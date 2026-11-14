@@ -678,7 +678,16 @@
         "changedNamesMore": "Changed or added: {names} and {n} more"
     },
     "lobby": {
-        "drawManually": "Draw manually",
+        "briefDrawing": "Drawing from brief with AI",
+        "briefDrawingDescription": "Use a Technical Brief as the starting point for an editable concept.",
+        "drawOnTheFly": "Draw on the fly",
+        "drawOnTheFlyDescription": "Describe your idea and develop the drawing with the AI assistant.",
+        "briefImportDescription": "Paste the parts of your Technical Brief you want to use. This prepares a prompt for review, replacing the current prompt; nothing is sent until you press Send. Import from EMC projects will be added next.",
+        "briefText": "Technical Brief",
+        "briefCancel": "Cancel",
+        "prepareBriefDrawing": "Prepare drawing",
+        "briefPrompt": "Develop an editable concept diagram from the Technical Brief below. Distinguish supplied facts from proposed design choices and assumptions. Ask about essential missing information rather than inventing requirements.",
+        "drawManually": "Blank drawing",
         "manualDescription": "Start with a blank canvas. No AI model or API key needed.",
         "canvasWithAssistant": "Open canvas with assistant",
         "title": "What would you like to draw?",

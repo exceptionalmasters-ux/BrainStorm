@@ -678,7 +678,16 @@
         "changedNamesMore": "改动或新增：{names}，另有 {n} 个"
     },
     "lobby": {
-        "drawManually": "手动绘图",
+        "briefDrawing": "根据简报使用 AI 绘图",
+        "briefDrawingDescription": "以技术简报为基础创建可编辑的概念图。",
+        "drawOnTheFly": "边聊边画",
+        "drawOnTheFlyDescription": "描述想法，与 AI 助手一起完善图纸。",
+        "briefImportDescription": "粘贴要使用的技术简报内容。这会替换当前提示词，供你检查；只有点击发送后才会提交。稍后将加入 EMC 项目导入。",
+        "briefText": "技术简报",
+        "briefCancel": "取消",
+        "prepareBriefDrawing": "准备绘图",
+        "briefPrompt": "根据以下技术简报制作可编辑的概念图。区分已提供的事实、建议的设计选择和假设。对关键缺失信息提出问题，不要编造需求。",
+        "drawManually": "空白绘图",
         "manualDescription": "从空白画布开始，无需 AI 模型或 API 密钥。",
         "canvasWithAssistant": "打开画布和助手",
         "title": "说说你要画什么",
