@@ -98,8 +98,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
                 : storedDark === "false"
                   ? "light"
                   : "dark"
-        const isDark =
-            theme === "system" ? systemPrefersDark() : theme === "dark"
+        const isDark = theme === "dark"
         const width = Number(read(STORAGE_KEYS.panelWidth))
         set({
             hydrated: true,
