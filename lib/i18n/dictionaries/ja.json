@@ -678,6 +678,18 @@
         "changedNamesMore": "変更・追加：{names} ほか {n} 件"
     },
     "lobby": {
+        "briefDrawing": "技術概要からAIで作図",
+        "briefDrawingDescription": "技術概要を基に編集可能な構想図を作成します。",
+        "drawOnTheFly": "対話しながら作図",
+        "drawOnTheFlyDescription": "アイデアを説明し、AIアシスタントと図面を仕上げます。",
+        "briefImportDescription": "使用する技術概要を貼り付けてください。現在のプロンプトを置き換えて確認用に準備します。送信を押すまで送られません。EMCプロジェクトからの取り込みは後日追加します。",
+        "briefText": "技術概要",
+        "briefCancel": "キャンセル",
+        "prepareBriefDrawing": "図面を準備",
+        "briefPrompt": "以下の技術概要から編集可能な構想図を作成してください。提示された事実と提案する設計上の選択・仮定を区別してください。重要な情報が不足している場合は要件を作り上げず質問してください。",
+        "drawManually": "空白の図面",
+        "manualDescription": "空白のキャンバスから開始。AIモデルやAPIキーは不要です。",
+        "canvasWithAssistant": "アシスタント付きで開く",
         "title": "どんな図を描きますか？",
         "lede": "図を説明するか、スクリーンショットや PDF をアップロードしてください。できあがるのは編集もエクスポートもできる draw.io の図です。",
         "placeholder": "例：SMS 認証とリトライを含むログインのシーケンス図",

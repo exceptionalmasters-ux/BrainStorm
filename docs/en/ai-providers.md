@@ -5,7 +5,7 @@ When you host Next AI Draw.io yourself, environment variables choose the AI prov
 ## Get started
 
 1. Copy `env.example` to `.env.local`.
-2. Set the API key of the provider you chose. The template has the line `AI_PROVIDER=bedrock`: change it to the name of your provider, or delete the line so that the server detects the provider from your key.
+2. Set the API key of the provider you chose. The template has the line `AI_PROVIDER=openai`: change it to the name of your provider, or delete the line so that the server detects the provider from your key.
 3. Set `AI_MODEL` to the model you want.
 4. Run `npm run dev`.
 

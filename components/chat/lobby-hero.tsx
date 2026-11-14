@@ -15,8 +15,10 @@ import { useDictionary } from "@/hooks/use-dictionary"
 import { getAssetUrl } from "@/lib/base-path"
 import { noteAction } from "@/lib/user-actions"
 import { cn } from "@/lib/utils"
+import { useUiStore } from "@/stores/ui-store"
 import { useChatEngine } from "./chat-engine"
 import { Composer } from "./composer"
+import { DrawingStarters } from "./drawing-starters"
 import { McpNotice } from "./mcp-notice"
 import { SessionMenu } from "./session-menu"
 
@@ -80,10 +82,12 @@ function ExampleTile({
  */
 export function LobbyHero({
     onDrawYourself,
+    onDrawManually,
     onOpenFile,
     compact = false,
 }: {
     onDrawYourself: () => void
+    onDrawManually: () => void
     onOpenFile: () => void
     /** Phone layout: no example pictures, tighter spacing */
     compact?: boolean
@@ -219,6 +223,19 @@ export function LobbyHero({
                 {t.lede}
             </p>
 
+            <DrawingStarters
+                onManual={onDrawManually}
+                onAssistant={() => {
+                    onDrawYourself()
+                    useUiStore.getState().focusComposer()
+                }}
+                onBrief={(text) => {
+                    engine.setInput(`${t.briefPrompt}\n\n${text}`)
+                    onDrawYourself()
+                    useUiStore.getState().focusComposer()
+                }}
+            />
+
             {/* MCP server notice, hidden on self-hosted deployments. The lede's
                 margin already spans 24 px (20 px compact); pull the card up so
                 16 px remain above it */}
@@ -315,7 +332,7 @@ export function LobbyHero({
                     data-testid="draw-yourself"
                 >
                     <Pencil className="size-4" />
-                    {t.drawYourself}
+                    {t.canvasWithAssistant}
                 </button>
             </div>
 

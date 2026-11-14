@@ -5,7 +5,7 @@
 ## 快速開始
 
 1. 將 `env.example` 複製為 `.env.local`。
-2. 設定所選服務商的 API Key。範本裡有一行 `AI_PROVIDER=bedrock`：使用其他服務商時，把它改成該服務商的名稱，或者刪掉這一行，讓伺服器依 Key 自動偵測。
+2. 設定所選服務商的 API Key。範本裡有一行 `AI_PROVIDER=openai`：使用其他服務商時，把它改成該服務商的名稱，或者刪掉這一行，讓伺服器依 Key 自動偵測。
 3. 把 `AI_MODEL` 設為您想用的模型。
 4. 執行 `npm run dev`。
 

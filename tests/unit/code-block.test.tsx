@@ -16,6 +16,7 @@ const DARK_GREY = "rgb(57, 58, 52)"
 describe("CodeBlock", () => {
     it("leaves the light theme's dark colors out in dark mode", () => {
         const xml = '<mxCell id="2" value="Start"/>'
+        useSettingsStore.setState({ isDark: false })
         const light = render(<CodeBlock code={xml} />)
         expect(light.container.innerHTML).toContain(DARK_BLUE)
         expect(light.container.innerHTML).toContain(DARK_GREY)

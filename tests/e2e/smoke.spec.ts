@@ -6,7 +6,7 @@ test.describe("Smoke Tests", () => {
         page.on("pageerror", (err) => errors.push(err.message))
 
         await page.goto("/", { waitUntil: "networkidle" })
-        await expect(page).toHaveTitle(/Draw\.io/i, { timeout: 10000 })
+        await expect(page).toHaveTitle(/BrainStorm/i, { timeout: 10000 })
 
         const iframe = getIframe(page)
         await expect(iframe).toBeVisible({ timeout: 30000 })
@@ -19,7 +19,7 @@ test.describe("Smoke Tests", () => {
         page.on("pageerror", (err) => errors.push(err.message))
 
         await page.goto("/ja", { waitUntil: "networkidle" })
-        await expect(page).toHaveTitle(/Draw\.io/i, { timeout: 10000 })
+        await expect(page).toHaveTitle(/BrainStorm/i, { timeout: 10000 })
 
         const iframe = getIframe(page)
         await expect(iframe).toBeVisible({ timeout: 30000 })
