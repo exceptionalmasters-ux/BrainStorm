@@ -1,6 +1,6 @@
 "use client"
 
-import { MessageSquare, PanelRightOpen, Settings, Shapes } from "lucide-react"
+import { FileUp, MessageSquare, PanelRightOpen, Save, Settings, Shapes } from "lucide-react"
 import { usePathname, useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 import { CanvasStage } from "@/components/canvas/canvas-stage"
@@ -13,6 +13,7 @@ import {
 import { ChatPanel } from "@/components/chat/chat-panel"
 import { ChatVersionsProvider } from "@/components/chat/chat-versions"
 import { LobbyHero } from "@/components/chat/lobby-hero"
+import { SessionMenu, useSessionTitle } from "@/components/chat/session-menu"
 import { SaveDialog } from "@/components/save-dialog"
 import { SettingsDialog } from "@/components/settings-dialog"
 import { BrandMark } from "@/components/workspace/brand-mark"
@@ -141,6 +142,7 @@ export function Workspace() {
 function WorkspaceLayout() {
     const dict = useDictionary()
     const engine = useChatEngine()
+    const sessionTitle = useSessionTitle()
     const { chartXML, saveDiagramToFile } = useDiagram()
     const isMobile = useIsMobile()
     const panelWidth = usePanelWidth()
@@ -249,6 +251,12 @@ function WorkspaceLayout() {
         setHeroDismissed(true)
         setPanelOpen(true)
     }
+    const drawManually = () => {
+        noteAction("start manual drawing")
+        setHeroDismissed(true)
+        setPanelOpen(false)
+        setMobileView("canvas")
+    }
 
     const panelVisible = !isMobile && !showHero && panelOpen
     // The canvas edge slides with the panel as it opens or closes; a window
@@ -313,37 +321,25 @@ function WorkspaceLayout() {
                             waitForSavedLocale
                         />
                     </div>
-                    {isMobile ? (
-                        mobileView === "chat" &&
-                        (showHero ? (
-                            <div className="absolute inset-0 overflow-y-auto bg-canvas">
-                                <StartBar
-                                    className="flex items-center gap-2 px-4 pt-3"
-                                    nameClassName="mr-auto"
-                                />
-                                <LobbyHero
-                                    compact
-                                    onOpenFile={openFile}
-                                    onDrawYourself={() => {
-                                        setHeroDismissed(true)
-                                        setMobileView("canvas")
-                                    }}
-                                />
-                            </div>
-                        ) : (
-                            <ChatPanel mobile onOpenFile={openFile} />
-                        ))
-                    ) : (
-                        <>
-                            {panelVisible && (
-                                <ChatPanel onOpenFile={openFile} />
-                            )}
-
                             {/* Below draw.io's toolbar (50 px), whose
                                 right-hand buttons it would cover */}
-                            {!showHero && !panelOpen && (
-                                <div className="absolute top-[60px] right-3 z-20 flex items-center gap-1 rounded-xl bg-card p-1 shadow-float animate-fade-in">
+                            {!showHero && ((!isMobile && !panelOpen) || (isMobile && mobileView === "canvas")) && (
+                                <div className="absolute top-[60px] right-3 left-3 md:left-auto z-20 flex items-center gap-1 rounded-xl bg-card p-1 shadow-float animate-fade-in">
                                     <BrandMark className="mx-0.5 size-6" />
+                                    <SessionMenu align="end" onOpenFile={openFile}>
+                                        <button type="button" className="max-w-24 sm:max-w-32 truncate px-2 text-sm" data-testid="manual-session-title">
+                                            {sessionTitle}
+                                        </button>
+                                    </SessionMenu>
+                                    <IconButton label={dict.workspace.openFile} onClick={openFile} data-testid="manual-open-file">
+                                        <FileUp />
+                                    </IconButton>
+                                    <IconButton label={dict.save.title} onClick={() => setSaveDialogOpen(true)} data-testid="manual-export-button">
+                                        <Save />
+                                    </IconButton>
+                                    <IconButton label={dict.nav.settings} onClick={() => useUiStore.getState().openSettings()} data-testid="manual-settings-button">
+                                        <Settings />
+                                    </IconButton>
                                     <IconButton
                                         label={dict.nav.showPanel}
                                         shortcut={`${modKey}B`}
@@ -360,12 +356,41 @@ function WorkspaceLayout() {
                                 </div>
                             )}
 
+                    {isMobile ? (
+                        mobileView === "chat" &&
+                        (showHero ? (
+                            <div className="absolute inset-0 overflow-y-auto bg-canvas">
+                                <StartBar
+                                    className="flex items-center gap-2 px-4 pt-3"
+                                    nameClassName="mr-auto"
+                                />
+                                <LobbyHero
+                                    compact
+                                    onOpenFile={openFile}
+                                    onDrawManually={drawManually}
+                                    onDrawYourself={() => {
+                                        setHeroDismissed(true)
+                                        setMobileView("canvas")
+                                    }}
+                                />
+                            </div>
+                        ) : (
+                            <ChatPanel mobile onOpenFile={openFile} />
+                        ))
+                    ) : (
+                        <>
+                            {panelVisible && (
+                                <ChatPanel onOpenFile={openFile} />
+                            )}
+
+
                             {showHero && (
                                 <>
                                     <div className="absolute inset-0 z-10 overflow-y-auto bg-canvas">
                                         <div className="flex min-h-full items-center">
                                             <LobbyHero
                                                 onOpenFile={openFile}
+                                                onDrawManually={drawManually}
                                                 onDrawYourself={dismissHero}
                                             />
                                         </div>
@@ -453,3 +478,4 @@ function WorkspaceLayout() {
         </div>
     )
 }
+

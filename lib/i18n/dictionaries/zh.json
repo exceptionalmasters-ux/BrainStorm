@@ -678,6 +678,9 @@
         "changedNamesMore": "改动或新增：{names}，另有 {n} 个"
     },
     "lobby": {
+        "drawManually": "手动绘图",
+        "manualDescription": "从空白画布开始，无需 AI 模型或 API 密钥。",
+        "canvasWithAssistant": "打开画布和助手",
         "title": "说说你要画什么",
         "lede": "描述一张图，或上传截图、PDF。得到的是可以继续编辑和导出的 draw.io 图。",
         "placeholder": "比如：用户登录的时序图，包含短信验证码和失败重试",
@@ -734,3 +737,4 @@
         "thanks": "谢谢您的反馈"
     }
 }
+

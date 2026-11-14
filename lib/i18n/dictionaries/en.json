@@ -678,6 +678,9 @@
         "changedNamesMore": "Changed or added: {names} and {n} more"
     },
     "lobby": {
+        "drawManually": "Draw manually",
+        "manualDescription": "Start with a blank canvas. No AI model or API key needed.",
+        "canvasWithAssistant": "Open canvas with assistant",
         "title": "What would you like to draw?",
         "lede": "Describe a diagram or upload a screenshot or PDF. You get a draw.io diagram you can keep editing and export.",
         "placeholder": "For example: a login sequence diagram with SMS codes and retries",
@@ -734,3 +737,4 @@
         "thanks": "Thanks for the feedback"
     }
 }
+

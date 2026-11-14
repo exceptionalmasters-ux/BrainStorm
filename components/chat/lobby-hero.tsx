@@ -80,10 +80,12 @@ function ExampleTile({
  */
 export function LobbyHero({
     onDrawYourself,
+    onDrawManually,
     onOpenFile,
     compact = false,
 }: {
     onDrawYourself: () => void
+    onDrawManually: () => void
     onOpenFile: () => void
     /** Phone layout: no example pictures, tighter spacing */
     compact?: boolean
@@ -219,6 +221,19 @@ export function LobbyHero({
                 {t.lede}
             </p>
 
+            <div className="mb-6 rounded-xl border border-primary/40 bg-card p-5 text-center">
+                <button
+                    type="button"
+                    onClick={onDrawManually}
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-6 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
+                    data-testid="draw-manually"
+                >
+                    <Pencil className="size-4" />
+                    {t.drawManually}
+                </button>
+                <p className="mt-2 text-xs text-muted-foreground">{t.manualDescription}</p>
+            </div>
+
             {/* MCP server notice, hidden on self-hosted deployments. The lede's
                 margin already spans 24 px (20 px compact); pull the card up so
                 16 px remain above it */}
@@ -315,7 +330,7 @@ export function LobbyHero({
                     data-testid="draw-yourself"
                 >
                     <Pencil className="size-4" />
-                    {t.drawYourself}
+                    {t.canvasWithAssistant}
                 </button>
             </div>
 
@@ -350,3 +365,4 @@ export function LobbyHero({
         </div>
     )
 }
+

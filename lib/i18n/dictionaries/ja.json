@@ -678,6 +678,9 @@
         "changedNamesMore": "変更・追加：{names} ほか {n} 件"
     },
     "lobby": {
+        "drawManually": "手動で描く",
+        "manualDescription": "空白のキャンバスから開始。AIモデルやAPIキーは不要です。",
+        "canvasWithAssistant": "アシスタント付きで開く",
         "title": "どんな図を描きますか？",
         "lede": "図を説明するか、スクリーンショットや PDF をアップロードしてください。できあがるのは編集もエクスポートもできる draw.io の図です。",
         "placeholder": "例：SMS 認証とリトライを含むログインのシーケンス図",
@@ -734,3 +737,4 @@
         "thanks": "フィードバックありがとうございます"
     }
 }
+

@@ -678,6 +678,9 @@
         "changedNamesMore": "改動或新增：{names}，另有 {n} 個"
     },
     "lobby": {
+        "drawManually": "手動繪圖",
+        "manualDescription": "從空白畫布開始，無需 AI 模型或 API 金鑰。",
+        "canvasWithAssistant": "開啟畫布和助手",
         "title": "說說你要畫什麼",
         "lede": "描述一張圖，或上傳截圖、PDF。得到的是可以繼續編輯和匯出的 draw.io 圖。",
         "placeholder": "例如：使用者登入的時序圖，包含簡訊驗證碼和失敗重試",
@@ -734,3 +737,4 @@
         "thanks": "謝謝您的回饋"
     }
 }
+
