@@ -138,7 +138,7 @@ body:not(.geDarkMode) .geSimpleMainMenu { border-bottom: 1px solid #e4e7eb !impo
 body.geDarkMode { --workspace-color: #050505; }
 body.geDarkMode .geDiagramContainer { background-color: #050505; }
 /* Native palettes float above the page: opening a tool must not resize the graph. */
-body.emc-shape-tools .emc-shape-overlay { position: absolute !important; left: 0 !important; bottom: 0 !important; width: 0 !important; z-index: 20; }
+body.emc-shape-tools .emc-shape-overlay { position: absolute !important; left: 0 !important; top: var(--emc-tools-top, 48px) !important; bottom: 0 !important; width: 0 !important; z-index: 20; background: #101310; }
 body.emc-shape-flyout .emc-shape-overlay { width: 232px !important; max-width: calc(100% - 32px); }
 body.emc-shape-tools .geDiagramContainer { left: 0 !important; }
 body.emc-shape-tools .geHsplit { display: none !important; }

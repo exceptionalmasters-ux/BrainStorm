@@ -160,11 +160,24 @@ export function createShapeToolbox(
         sidebar.showPalette?.("search", true)
         if (group === "recent") showRecent()
         withStableViewport(ui, () => {
+            const panel = ui.sidebarContainer
+            if (
+                panel?.offsetParent &&
+                ui.diagramContainer?.getBoundingClientRect
+            ) {
+                const parent = panel.offsetParent
+                const top =
+                    ui.diagramContainer.getBoundingClientRect().top -
+                    parent.getBoundingClientRect().top +
+                    parent.scrollTop
+                panel.style.setProperty("--emc-tools-top", `${top}px`)
+            }
             doc.body.classList.add("emc-shape-flyout")
             ui.showSidebar()
         })
         buildHeader(title)
         sidebar.container.scrollTop = 0
+        if (ui.sidebarContainer) ui.sidebarContainer.scrollTop = 0
         changed()
         if (group === "search") doc.getElementById("geOmniSearch")?.focus()
         return true
