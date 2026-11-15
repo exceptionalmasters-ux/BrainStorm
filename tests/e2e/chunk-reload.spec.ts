@@ -32,6 +32,7 @@ test("a script chunk that is gone after a new deployment reloads the page", asyn
     // Without the reload, "Failed to load chunk" showed the crash screen
     await expect.poll(() => pageLoads).toBe(2)
     await expect(getIframe(page)).toBeVisible({ timeout: 30000 })
+    await page.getByTestId("draw-on-the-fly").click()
     await expect(getChatInput(page)).toBeVisible()
     await expect(page.getByText("Something went wrong")).toHaveCount(0)
 })
