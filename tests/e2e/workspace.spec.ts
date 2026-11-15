@@ -1061,7 +1061,9 @@ test.describe("Workspace", () => {
                 diagramXml: boxFile("Box 20"),
             },
         )
-        await page.goto("/?session=many", { waitUntil: "networkidle" })
+        await page.goto("/?session=many&documentFrame=1", {
+            waitUntil: "networkidle",
+        })
         const canvas = getIframeContent(page)
         await expect(canvas.getByText("Box 20")).toBeVisible({ timeout: 30000 })
         const thumbs = page.locator('[data-testid="version-thumb"]')
@@ -2538,7 +2540,9 @@ test.describe("Workspace", () => {
                 },
             })),
         })
-        await page.goto("/?session=strip", { waitUntil: "networkidle" })
+        await page.goto("/?session=strip&documentFrame=1", {
+            waitUntil: "networkidle",
+        })
         const canvas = getIframeContent(page)
         await expect(canvas.getByText("Box 8")).toBeVisible({ timeout: 30000 })
         const thumbs = page.locator('[data-testid="version-thumb"]')
@@ -3217,7 +3221,9 @@ test.describe("Edge cases", () => {
             })
             db.close()
         })
-        await page.goto("/?session=lib", { waitUntil: "networkidle" })
+        await page.goto("/?session=lib&documentFrame=1", {
+            waitUntil: "networkidle",
+        })
         await expect(page.getByText("AWS please").first()).toBeVisible({
             timeout: 30000,
         })
@@ -3575,7 +3581,9 @@ test.describe("Edge cases", () => {
             },
             [legacy("A", "AlphaA"), legacy("B", "BetaB")],
         )
-        await page.goto("/?session=A", { waitUntil: "networkidle" })
+        await page.goto("/?session=A&documentFrame=1", {
+            waitUntil: "networkidle",
+        })
         await expect(getIframeContent(page).getByText("AlphaA")).toBeVisible({
             timeout: 30000,
         })
@@ -4058,7 +4066,9 @@ test.describe("Edge cases", () => {
             diagramXml: "",
             versions: [],
         })
-        await page.goto("/?session=old", { waitUntil: "networkidle" })
+        await page.goto("/?session=old&documentFrame=1", {
+            waitUntil: "networkidle",
+        })
         const row = page.locator('[data-testid="tool-row"]')
         await expect(row).toBeVisible({ timeout: 30000 })
         await row.getByRole("button").first().click()
@@ -4281,7 +4291,9 @@ test.describe("Edge cases", () => {
             diagramXml: "",
             versions: [],
         })
-        await page.goto("/?session=nosnap", { waitUntil: "networkidle" })
+        await page.goto("/?session=nosnap&documentFrame=1", {
+            waitUntil: "networkidle",
+        })
         await expect(page.getByText("Done.")).toBeVisible({ timeout: 30000 })
         await page.getByText("No snapshot", { exact: true }).last().hover()
         await page.getByRole("button", { name: "Edit message" }).click()
@@ -5148,7 +5160,9 @@ test.describe("Edge cases", () => {
             diagramXml: doc,
             versions: [],
         })
-        await page.goto("/?session=cut", { waitUntil: "networkidle" })
+        await page.goto("/?session=cut&documentFrame=1", {
+            waitUntil: "networkidle",
+        })
         await expect(
             getIframeContent(page).getByText("BeeOne", { exact: true }),
         ).toBeVisible({ timeout: 30000 })

@@ -114,7 +114,9 @@ async function hideTab(page: Page) {
 }
 
 async function openChat(page: Page, id: string, label: string) {
-    await page.goto(`/?session=${id}`, { waitUntil: "networkidle" })
+    await page.goto(`/?session=${id}&documentFrame=1`, {
+        waitUntil: "networkidle",
+    })
     await expect(
         getIframeContent(page).getByText(label, { exact: true }),
     ).toBeVisible({ timeout: 30000 })
@@ -860,7 +862,9 @@ test.describe("A chat left during an answer", () => {
             await held
             await route.continue()
         })
-        await page.goto("/?session=edited", { waitUntil: "domcontentloaded" })
+        await page.goto("/?session=edited&documentFrame=1", {
+            waitUntil: "domcontentloaded",
+        })
         await page
             .getByRole("button", { name: "Regenerate response" })
             .last()

@@ -2,7 +2,6 @@ import { SINGLE_BOX_DRAWIO_FILE } from "./fixtures/diagrams"
 import {
     expect,
     getChatInput,
-    getIframeContent,
     openApp,
     openDrawioFile,
     test,
@@ -19,7 +18,9 @@ for (const entry of ["file", "history", "assistant", "phone"] as const) {
         await openApp(page, { singleDocument: false })
         await openDrawioFile(page, "original.drawio", SINGLE_BOX_DRAWIO_FILE)
         if (entry === "phone") await page.getByTestId("hide-assistant").click()
-        const original = getIframeContent(page)
+        const original = page.frameLocator(
+            'iframe:not([data-testid="document-frame"])',
+        )
         await expect(
             original.getByText("Test Box", { exact: true }),
         ).toBeVisible()

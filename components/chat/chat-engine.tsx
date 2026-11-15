@@ -275,8 +275,12 @@ class FileReadError extends Error {}
  */
 function setUrlSession(id: string | null) {
     const url = new URL(window.location.href)
-    if (id) url.searchParams.set("session", id)
-    else url.searchParams.delete("session")
+    const params = new URLSearchParams()
+    if (id) params.set("session", id)
+    url.searchParams.forEach((value, key) => {
+        if (key !== "session") params.append(key, value)
+    })
+    url.search = params.toString()
     window.history.replaceState(
         null,
         "",
