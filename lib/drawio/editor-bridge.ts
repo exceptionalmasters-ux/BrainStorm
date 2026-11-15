@@ -17,6 +17,7 @@ import {
 } from "@/lib/drawio/editor-actions"
 import {
     type FormatTab,
+    selectObjects,
     showEditorMenu,
     showFormatTab,
 } from "@/lib/drawio/format-tools"
@@ -47,6 +48,12 @@ export function runEditorAction(name: string) {
 
 export function editorLabel(key: string, fallback: string) {
     return win?.mxResources?.get?.(key) || fallback
+}
+
+export function activateSelectionPointer() {
+    const result = selectObjects(ui)
+    syncAll()
+    return result
 }
 
 export function openEditorFormatTab(tab: FormatTab) {

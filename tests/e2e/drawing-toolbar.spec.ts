@@ -92,3 +92,46 @@ test("drawing tools stay reachable on a phone without stretching the workspace",
         await page.evaluate(() => document.documentElement.scrollWidth),
     ).toBeLessThanOrEqual(390)
 })
+
+test("selection pointer exits freehand and polygon points use the native editor", async ({
+    page,
+}) => {
+    await openApp(page)
+    await expect(page.getByTestId("drawing-tool-editPolygon")).toBeDisabled()
+    await openDrawioFile(page, "pointer.drawio", diagram)
+    const canvas = getIframeContent(page)
+    await canvas.getByText("Toolbar shape", { exact: true }).click()
+    await expect(page.getByTestId("drawing-tool-editPolygon")).toBeDisabled()
+    // X is the pinned editor's native freehand shortcut.
+    await page.keyboard.press("x")
+    await expect(page.getByTestId("drawing-tool-select")).toHaveAttribute(
+        "aria-pressed",
+        "false",
+    )
+    await page.getByTestId("drawing-tool-select").click()
+    await expect(page.getByTestId("drawing-tool-select")).toHaveAttribute(
+        "aria-pressed",
+        "true",
+    )
+    await expect(
+        canvas.getByText("Toolbar shape", { exact: true }),
+    ).toBeVisible()
+    const polygon = diagram
+        .replace('value="Toolbar shape"', 'value="Editable polygon"')
+        .replace(
+            "rounded=1;",
+            "shape=mxgraph.basic.polygon;polyCoords=[[0,0],[1,0],[0.5,1]];",
+        )
+    await openDrawioFile(page, "polygon.drawio", polygon)
+    await canvas.getByText("Editable polygon", { exact: true }).click()
+    await expect(page.getByTestId("drawing-tool-editPolygon")).toBeEnabled()
+    await page.getByTestId("drawing-tool-editPolygon").click()
+    const editor = canvas.locator(".geDialog")
+    await expect(editor).toBeVisible()
+    await expect(editor.locator("svg circle")).toHaveCount(3)
+    await editor.getByRole("button", { name: "Cancel", exact: true }).click()
+    await page.getByTestId("editor-menu-edit").click()
+    await page.getByTestId("editor-action-editConnectionPoints").click()
+    await expect(canvas.locator(".geDialog")).toBeVisible()
+    await canvas.getByRole("button", { name: "Cancel", exact: true }).click()
+})

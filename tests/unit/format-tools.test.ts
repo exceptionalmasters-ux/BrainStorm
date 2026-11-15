@@ -1,7 +1,33 @@
 import { describe, expect, it, vi } from "vitest"
-import { showEditorMenu, showFormatTab } from "@/lib/drawio/format-tools"
+import {
+    selectObjects,
+    showEditorMenu,
+    showFormatTab,
+} from "@/lib/drawio/format-tools"
 
 describe("native format tools", () => {
+    it("returns to object selection without clearing selected objects or broadcasting Escape", () => {
+        const graph = {
+            stopEditing: vi.fn(),
+            escape: vi.fn(),
+            clearSelection: vi.fn(),
+            freehand: { isDrawing: () => true, stopDrawing: vi.fn() },
+            container: { focus: vi.fn() },
+        }
+        const ui = {
+            editor: { graph },
+            hideCurrentMenu: vi.fn(),
+            freehandWindow: { window: { setVisible: vi.fn() } },
+        }
+        expect(selectObjects(ui)).toBe(true)
+        expect(graph.freehand.stopDrawing).toHaveBeenCalledOnce()
+        expect(graph.stopEditing).toHaveBeenCalledWith(false)
+        expect(graph.escape).toHaveBeenCalledOnce()
+        expect(graph.clearSelection).not.toHaveBeenCalled()
+        expect(graph.container.focus).toHaveBeenCalledOnce()
+        expect(ui.freehandWindow.window.setVisible).toHaveBeenCalledWith(false)
+        expect(selectObjects(null)).toBe(false)
+    })
     it("opens the panel and selects translated native tabs without changing the diagram", () => {
         const container = document.createElement("div")
         const clicked: string[] = []

@@ -127,6 +127,8 @@ export function EditorHeader({
                 native("duplicate", "Duplicate"),
                 native("delete", "Delete"),
                 native("selectAll", "Select all"),
+                native("editPolygon", "Edit polygon points…"),
+                native("editConnectionPoints", "Edit connection points…"),
                 native("findReplace", "Find and replace…"),
             ],
         },

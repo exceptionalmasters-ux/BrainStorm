@@ -53,3 +53,7 @@ The popup bridge validates the exact opener window and configured Operations ori
 The web workspace adds a horizontally scrollable toolbar below its menu: zoom, fit, native insertion and connector menus, fill/line colour, and direct Style/Text/Arrange shortcuts. Controls call the pinned draw.io actions and menus; the native model transactions own undo/redo and autosave. On small screens the tools scroll inside their row rather than widening the workspace. The MCP canvas shell is unchanged.
 
 The right-hand native panel is contextual: no selection shows Diagram/Style, selecting a shape or connector exposes Style/Text/Arrange, and in-place text editing shows Text. Text/Arrange shortcuts are disabled without a selection, with a visible selection hint. The adapter selects translated native tabs by their resource title rather than hard-coded tab indices. Operations read-only and busy states disable mutation tools.
+
+## Pointer tools
+
+The toolbar begins with Select and Edit Polygon. Select stops native freehand, hides its window, commits in-place text and calls the graph's native escape/reset without broadcasting the application Escape shortcut or clearing selected objects. Edit Polygon delegates to draw.io's native vertex editor and is enabled only for a supported `mxgraph.basic.polygon` selection. Draw.io does not expose a universal vertex-edit mode for all stencil shapes. Edit > Edit connection points is separate and edits attachment constraints rather than the polygon outline. These operations retain native undo/autosave and graph permission checks.

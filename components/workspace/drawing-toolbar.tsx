@@ -1,8 +1,10 @@
 import {
     GitBranch,
     LayoutPanelTop,
+    MousePointer2,
     PaintBucket,
     Pencil,
+    PenTool,
     Plus,
     Route,
     Scan,
@@ -12,6 +14,7 @@ import {
     ZoomOut,
 } from "lucide-react"
 import {
+    activateSelectionPointer,
     editorActionState,
     editorLabel,
     editorMenuAvailable,
@@ -27,6 +30,7 @@ export function DrawingToolbar() {
     const ready = useCanvasStore((s) => s.hasEditor)
     const busy = useCanvasStore((s) => s.isBusy)
     const selection = useCanvasStore((s) => s.selection)
+    const freehand = useCanvasStore((s) => s.isFreehand)
     useCanvasStore((s) => s.isFormatOpen)
     const readOnly = !!getOperationsContext()?.readOnly
     const base =
@@ -100,6 +104,42 @@ export function DrawingToolbar() {
                 aria-label="Drawing tools"
                 className="flex h-10 items-center gap-0.5 overflow-x-auto px-2 py-1"
             >
+                <button
+                    type="button"
+                    className={base}
+                    data-testid="drawing-tool-select"
+                    title={editorLabel("select", "Select objects")}
+                    aria-label={editorLabel("select", "Select objects")}
+                    aria-pressed={!freehand}
+                    disabled={!ready || busy}
+                    onClick={activateSelectionPointer}
+                >
+                    <MousePointer2 size={16} />
+                </button>
+                <button
+                    type="button"
+                    className={base}
+                    data-testid="drawing-tool-editPolygon"
+                    title={`${editorLabel("editPolygon", "Edit polygon points")} · Select a polygon shape`}
+                    aria-label={editorLabel(
+                        "editPolygon",
+                        "Edit polygon points",
+                    )}
+                    aria-haspopup="dialog"
+                    disabled={
+                        !ready ||
+                        busy ||
+                        readOnly ||
+                        !editorActionState("editPolygon").enabled
+                    }
+                    onClick={() => runEditorAction("editPolygon")}
+                >
+                    <PenTool size={16} />
+                </button>
+                <span
+                    aria-hidden
+                    className="mx-1 h-5 shrink-0 border-l border-border"
+                />
                 {action("zoomOut", "zoomOut", "Zoom out", ZoomOut)}
                 {action("zoomIn", "zoomIn", "Zoom in", ZoomIn)}
                 {action("fitWindow", "fitWindow", "Fit drawing", Scan)}

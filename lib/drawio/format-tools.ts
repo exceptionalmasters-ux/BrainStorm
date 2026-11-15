@@ -1,6 +1,19 @@
 /** The pinned draw.io owns its panels, actions, undo history and translated labels. */
 export type FormatTab = "style" | "text" | "arrange"
 
+/** Return to draw.io's ordinary object selection without sending the app's Escape shortcut. */
+export function selectObjects(ui: any) {
+    const graph = ui?.editor?.graph
+    if (!graph) return false
+    ui.hideCurrentMenu?.()
+    graph.stopEditing?.(false)
+    if (graph.freehand?.isDrawing?.()) graph.freehand.stopDrawing()
+    ui.freehandWindow?.window?.setVisible?.(false)
+    graph.escape?.()
+    graph.container?.focus?.()
+    return true
+}
+
 export function showFormatTab(ui: any, resources: any, tab: FormatTab) {
     const graph = ui?.editor?.graph
     if (!graph || (tab !== "style" && graph.isSelectionEmpty())) return false
