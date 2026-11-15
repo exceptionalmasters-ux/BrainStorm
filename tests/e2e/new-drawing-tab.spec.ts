@@ -35,7 +35,7 @@ for (const entry of ["file", "history", "assistant", "phone"] as const) {
         if (entry === "file") await page.getByTestId("editor-menu-file").click()
         if (entry === "history")
             await page.getByTestId("editor-file-title").click()
-        const popupPromise = page.waitForEvent("popup")
+        const popupPromise = page.context().waitForEvent("page")
         if (entry === "file")
             await page
                 .getByTestId("editor-menu-popup")
