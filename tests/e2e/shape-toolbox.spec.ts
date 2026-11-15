@@ -8,7 +8,7 @@ import {
 
 test("EMC groups keep native shape dragging, recent shapes, pinning and the full catalogue", async ({
     page,
-}) => {
+}, testInfo) => {
     await openApp(page)
     await page.getByTestId("draw-manually").click()
     const frame = getIframeContent(page)
@@ -27,8 +27,9 @@ test("EMC groups keep native shape dragging, recent shapes, pinning and the full
             return original.apply(this, args)
         }
     })
+    await frame.locator(".geSidebar .geItem:visible").first().hover()
     const shape = await frame
-        .locator(".geSidebar .geItem")
+        .locator(".geSidebar .geItem:visible")
         .first()
         .boundingBox()
     const canvas = await frame.locator(".geDiagramContainer").boundingBox()
@@ -53,7 +54,9 @@ test("EMC groups keep native shape dragging, recent shapes, pinning and the full
         .toBeGreaterThan(0)
     await expect(frame.getByTestId("shape-flyout-header")).toHaveCount(0)
     await page.getByTestId("toolbox-recent").click()
-    await expect(frame.locator(".geSidebar .geItem").first()).toBeVisible()
+    await expect(
+        frame.locator(".geSidebar .geItem:visible").first(),
+    ).toBeVisible()
     const pin = frame.getByTestId("pin-shape-flyout")
     await pin.click()
     await expect(pin).toHaveAttribute("aria-pressed", "true")
@@ -61,6 +64,10 @@ test("EMC groups keep native shape dragging, recent shapes, pinning and the full
         .locator(".geDiagramContainer")
         .click({ position: { x: 20, y: 20 } })
     await expect(pin).toBeVisible()
+    await testInfo.attach("emc-toolbox-desktop", {
+        body: await page.screenshot(),
+        contentType: "image/png",
+    })
     await page.getByTestId("toolbox-technical").click()
     await expect(frame.getByTestId("shape-flyout-header")).toContainText(
         "Technical libraries",
@@ -73,7 +80,7 @@ test("EMC groups keep native shape dragging, recent shapes, pinning and the full
 
 test("phone toolbox opens and closes an unpinned flyout without reloading draw.io", async ({
     page,
-}) => {
+}, testInfo) => {
     await page.setViewportSize({ width: 390, height: 844 })
     await page.goto("/en", { waitUntil: "networkidle" })
     await page.getByTestId("draw-manually").click()
@@ -86,6 +93,10 @@ test("phone toolbox opens and closes an unpinned flyout without reloading draw.i
     await expect(frame.getByTestId("shape-flyout-header")).toContainText(
         "Lines and arrows",
     )
+    await testInfo.attach("emc-toolbox-phone", {
+        body: await page.screenshot(),
+        contentType: "image/png",
+    })
     await frame.getByTestId("close-shape-flyout").click()
     await expect(frame.getByTestId("shape-flyout-header")).toHaveCount(0)
     await expect

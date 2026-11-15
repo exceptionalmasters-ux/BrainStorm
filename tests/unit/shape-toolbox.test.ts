@@ -56,6 +56,7 @@ function setup() {
         sidebarContainer: container,
         editor: { graph },
         hsplitPosition: 0,
+        diagramContainer: { scrollLeft: 300 },
         showSidebar: vi.fn(() => {
             ui.hsplitPosition = 220
         }),
@@ -94,6 +95,7 @@ describe("EMC shape toolbox", () => {
         controller.close()
         expect(sidebar.showEntries).toHaveBeenLastCalledWith()
         expect(ui.hsplitPosition).toBe(0)
+        expect(ui.diagramContainer.scrollLeft).toBe(80)
         expect(document.querySelector(".emc-shape-header")).toBeNull()
     })
     it("closes on canvas input unless pinned; Escape also closes a pinned panel", async () => {

@@ -311,3 +311,14 @@
         animation: none;
     }
 }
+
+/* Keep the phone flyout header accessible above draw.io; local file actions return when it closes. */
+@media (max-width: 767px) {
+    [data-testid="workspace"]:has(
+            [data-testid="shape-toolbox"] button[aria-expanded="true"]
+        )
+        .emc-canvas-actions {
+        visibility: hidden;
+        pointer-events: none;
+    }
+}

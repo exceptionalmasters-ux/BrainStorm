@@ -36,6 +36,7 @@ export function createShapeToolbox(
         pinned = false,
         disposed = false
     const recent: any[] = []
+    doc.body.classList.add("emc-shape-tools")
     let header: HTMLElement | null = null
     const changed = () => onChange(active, pinned)
     const close = () => {
@@ -47,8 +48,12 @@ export function createShapeToolbox(
         sidebar.showEntries()
         if (ui.sidebarWindow?.window) ui.sidebarWindow.window.setVisible(false)
         else {
+            const previousWidth = ui.hsplitPosition || 0
+            const scrollLeft = ui.diagramContainer?.scrollLeft
             ui.hsplitPosition = 0
             ui.refresh()
+            if (scrollLeft != null)
+                ui.diagramContainer.scrollLeft = scrollLeft - previousWidth
         }
         changed()
     }
@@ -175,7 +180,10 @@ export function createShapeToolbox(
                 doc.querySelectorAll<HTMLElement>(".geDialog,.mxPopupMenu"),
             ).some(
                 (element) =>
-                    element.offsetWidth > 0 && element.offsetHeight > 0,
+                    element.offsetWidth > 0 &&
+                    element.offsetHeight > 0 &&
+                    doc.defaultView?.getComputedStyle(element).visibility !==
+                        "hidden",
             )
         ) {
             close()
@@ -200,9 +208,13 @@ export function createShapeToolbox(
                 ...positioned.map((cell: any) => cell.geometry.x),
             ),
             minY = Math.min(...positioned.map((cell: any) => cell.geometry.y))
-        for (const cell of positioned) {
-            cell.geometry.x -= minX
-            cell.geometry.y -= minY
+        for (const cell of positioned.length ? copy : []) {
+            if (typeof cell.geometry?.translate === "function")
+                cell.geometry.translate(-minX, -minY)
+            else if (cell.geometry && !cell.geometry.relative) {
+                cell.geometry.x -= minX
+                cell.geometry.y -= minY
+            }
         }
         recent.unshift(copy)
         recent.splice(12)
@@ -226,6 +238,7 @@ export function createShapeToolbox(
             doc.removeEventListener("keydown", key)
             ui.editor?.graph?.removeListener?.(inserted)
             sidebar.removePalette?.("emcRecent")
+            doc.body.classList.remove("emc-shape-tools")
         },
     }
 }

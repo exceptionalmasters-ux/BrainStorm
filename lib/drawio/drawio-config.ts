@@ -137,6 +137,7 @@ body:not(.geDarkMode) .geSimpleMainMenu { border-bottom: 1px solid #e4e7eb !impo
 .geSidebarContainer[style*="width: 0px"] { border: none !important; }
 body.geDarkMode { --workspace-color: #050505; }
 body.geDarkMode .geDiagramContainer { background-color: #050505; }
+body.emc-shape-tools .geDiagramContainer, body.emc-shape-tools .geBackgroundPage { color-scheme: light; }
 a[href*="github.com/jgraph/drawio"] { display: none !important; }
 body.emc-shape-flyout .geSidebarContainer:not(.geFormatContainer) { border-right: 1px solid #a48532 !important; }
 .emc-shape-header { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 3px; min-height: 40px; padding: 0 6px; box-sizing: border-box; background: #101310; color: #edcb6d; border-bottom: 1px solid #3d472c; font: 12px Arial, sans-serif; }

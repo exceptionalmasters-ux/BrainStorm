@@ -762,7 +762,8 @@ test.describe("Workspace", () => {
             getIframeContent(page).getByText("Process", { exact: true }),
         ).toBeVisible()
         await page.waitForTimeout(1000)
-        const stage = await boxOf(page.locator('[data-testid="canvas-stage"]'))
+        // The icon rail is outside draw.io; center the paper in the usable iframe.
+        const stage = await boxOf(getIframe(page))
         const paper = await boxOf(
             getIframeContent(page).locator(".geBackgroundPage").first(),
         )

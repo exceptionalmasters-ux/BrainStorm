@@ -102,7 +102,10 @@ export function ShapeToolboxRail() {
                 aria-label={t.allLibraries}
                 disabled={!available}
                 data-testid="toolbox-all-libraries"
-                onClick={() => controller.current?.catalog()}
+                onClick={() => {
+                    if (!active) controller.current?.open("search", t.search)
+                    controller.current?.catalog()
+                }}
                 className="flex size-10 shrink-0 items-center justify-center rounded-lg hover:bg-primary/10 hover:text-primary disabled:opacity-40"
             >
                 <LibraryBig aria-hidden="true" className="size-5" />
