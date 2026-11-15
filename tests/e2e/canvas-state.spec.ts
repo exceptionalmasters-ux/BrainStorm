@@ -93,6 +93,9 @@ test("a message sent while draw.io is still loading goes out at once, and its dr
     })
     const sent = await mockChat(page, [drawing(BOX)])
     await page.goto("/", { waitUntil: "domcontentloaded" })
+    // Wait for session restoration, not draw.io: the restored empty session
+    // replaces the initial loading shell with the drawing starters.
+    await expect(page.getByTestId("draw-on-the-fly")).toBeVisible()
 
     await sendMessage(page, "Draw a service")
     await expect.poll(() => sent.length, { timeout: 4000 }).toBe(1)

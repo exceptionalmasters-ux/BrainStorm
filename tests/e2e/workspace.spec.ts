@@ -403,7 +403,8 @@ test.describe("Workspace", () => {
             buffer: Buffer.from("hello"),
         })
         await expect(page.getByText("notes.txt")).toBeVisible()
-        await expect(page.locator('[data-testid="lobby-hero"]')).toBeVisible()
+        await expect(page.getByTestId("chat-panel")).toBeVisible()
+        await expect(page.getByTestId("lobby-hero")).toHaveCount(0)
     })
 
     test("an error shows its text and can be retried", async ({ page }) => {
@@ -1520,6 +1521,7 @@ test.describe("Workspace", () => {
         await expect(page).toHaveURL(/session=/)
         await page.waitForTimeout(1500)
         await page.locator('[data-testid="new-chat-button"]').click()
+        await expect(page.getByTestId("lobby-hero")).toBeVisible()
         await sendMessage(page, "Second chat")
         await waitForComplete(page)
         await page.waitForTimeout(2500)
@@ -1636,6 +1638,7 @@ test.describe("Workspace", () => {
             .getByRole("dialog")
             .getByRole("button", { name: "New diagram" })
             .click()
+        await expect(page.getByTestId("lobby-hero")).toBeVisible()
         await sendMessage(page, "Chat A")
         await expect(page.locator('[data-testid="retry-button"]')).toBeVisible({
             timeout: 10000,
@@ -1798,8 +1801,8 @@ test.describe("Workspace", () => {
         )
         // The message's Undo puts it back
         await page
-            .getByTestId("chat-panel")
             .getByRole("button", { name: "Undo", exact: true })
+            .and(page.locator('button:not([data-testid="editor-undo"])'))
             .click()
         await expect(canvas.getByText("Start", { exact: true })).toHaveCount(2)
         await expect(canvas.getByText("Review Step")).toBeVisible()
@@ -5799,6 +5802,7 @@ test.describe("Edge cases", () => {
             diagramXml: doc,
             versions: [],
         })
+        await expect(page.getByTestId("lobby-hero")).toBeVisible()
         await sendMessage(page, "Chat A")
         await expect(page.getByText(/w10 /)).toBeVisible({ timeout: 15000 })
         await page.evaluate(() => {
@@ -5973,6 +5977,7 @@ test.describe("Edge cases", () => {
             diagramXml: doc,
             versions: [],
         })
+        await expect(page.getByTestId("lobby-hero")).toBeVisible()
         await sendMessage(page, "Chat A")
         await waitForComplete(page)
         await page.waitForTimeout(1500)

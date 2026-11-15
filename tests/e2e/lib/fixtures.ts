@@ -137,10 +137,14 @@ export async function openAssistant(page: Page) {
 
 /** Send a message in the chat input */
 export async function sendMessage(page: Page, message: string) {
-    await openAssistant(page)
     const chatInput = getChatInput(page)
-    await expect(chatInput).toBeVisible({ timeout: 10000 })
-    await chatInput.fill(message)
+    // New-session restoration can replace the previous composer with the
+    // starter screen after the click that requested it has already returned.
+    await expect(async () => {
+        await openAssistant(page)
+        await expect(chatInput).toBeVisible({ timeout: 500 })
+        await chatInput.fill(message, { timeout: 700 })
+    }).toPass({ timeout: 10000 })
     await chatInput.press("ControlOrMeta+Enter")
 }
 

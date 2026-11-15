@@ -97,6 +97,7 @@ test.describe("History and Session Restore", () => {
         await waitForText(page, "Answer 1.")
         await page.waitForTimeout(1500)
         await page.locator('[data-testid="new-chat-button"]').click()
+        await expect(page.getByTestId("lobby-hero")).toBeVisible()
         await sendMessage(page, "Second chat")
         await waitForText(page, "Answer 2.")
         // Storage is full: leaving the second chat offers to go on unsaved

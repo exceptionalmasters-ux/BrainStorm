@@ -39,6 +39,7 @@ export function createShapeToolbox(
         disposed = false
     const recent: any[] = []
     doc.body.classList.add("emc-shape-tools")
+    ui.sidebarContainer?.classList.add("emc-shape-overlay")
     let header: HTMLElement | null = null
     const changed = () => onChange(active, pinned)
     const close = () => {
@@ -46,9 +47,9 @@ export function createShapeToolbox(
         active = null
         header?.remove()
         header = null
-        doc.body.classList.remove("emc-shape-flyout")
-        sidebar.showEntries()
         withStableViewport(ui, () => {
+            doc.body.classList.remove("emc-shape-flyout")
+            sidebar.showEntries()
             if (ui.sidebarWindow?.window)
                 ui.sidebarWindow.window.setVisible(false)
             else {
@@ -158,8 +159,10 @@ export function createShapeToolbox(
         sidebar.showPalette?.("emcRecent", false)
         sidebar.showPalette?.("search", true)
         if (group === "recent") showRecent()
-        withStableViewport(ui, () => ui.showSidebar())
-        doc.body.classList.add("emc-shape-flyout")
+        withStableViewport(ui, () => {
+            doc.body.classList.add("emc-shape-flyout")
+            ui.showSidebar()
+        })
         buildHeader(title)
         sidebar.container.scrollTop = 0
         changed()
@@ -239,6 +242,7 @@ export function createShapeToolbox(
             doc.removeEventListener("keydown", key)
             ui.editor?.graph?.removeListener?.(inserted)
             sidebar.removePalette?.("emcRecent")
+            ui.sidebarContainer?.classList.remove("emc-shape-overlay")
             doc.body.classList.remove("emc-shape-tools")
         },
     }

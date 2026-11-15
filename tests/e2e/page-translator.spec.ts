@@ -72,6 +72,7 @@ test("the editor stays up when the browser translates the page", async ({
 
     // And the chat still works
     await page.getByTestId("new-chat-button").click()
+    await expect(page.getByTestId("lobby-hero")).toBeVisible()
     await sendMessage(page, "Draw a third box")
     await waitForCompleteCount(page, 1)
     await expect(page.getByText("Something went wrong")).toHaveCount(0)
