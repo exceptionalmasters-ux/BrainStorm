@@ -18,6 +18,10 @@ for (const entry of ["file", "history", "assistant", "phone"] as const) {
         page.on("pageerror", (error) => errors.push(error.message))
         await openApp(page)
         await openDrawioFile(page, "original.drawio", SINGLE_BOX_XML)
+        if (entry === "phone")
+            await page
+                .getByRole("button", { name: "Canvas", exact: true })
+                .click()
         await expect(
             getIframeContent(page).getByText("Test Box", { exact: true }),
         ).toBeVisible()
