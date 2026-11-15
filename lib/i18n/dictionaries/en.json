@@ -1,4 +1,24 @@
 {
+    "editor": {
+        "fullscreen": "Full screen",
+        "hideAssistant": "Hide AI assistant",
+        "workspaceSettings": "Workspace settings",
+        "file": "File",
+        "edit": "Edit",
+        "view": "View",
+        "insert": "Insert",
+        "arrange": "Arrange",
+        "tools": "Tools",
+        "window": "Window",
+        "help": "Help",
+        "menuBar": "Editor menu",
+        "saveFile": "Save file",
+        "saveAs": "Save as…",
+        "localWorkspace": "Local workspace · Browser autosave",
+        "resetLayout": "Reset layout",
+        "commandUnavailable": "This command is not available for the current selection.",
+        "startDescription": "Choose how to start your drawing, or open an existing file."
+    },
     "toolbox": {
         "title": "Drawing toolbox",
         "basic": "Basic shapes",

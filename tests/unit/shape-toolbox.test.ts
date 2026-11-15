@@ -95,7 +95,8 @@ describe("EMC shape toolbox", () => {
         controller.close()
         expect(sidebar.showEntries).toHaveBeenLastCalledWith()
         expect(ui.hsplitPosition).toBe(0)
-        expect(ui.diagramContainer.scrollLeft).toBe(80)
+        // This fallback fixture has no graph view API; do not apply a one-sided scroll correction.
+        expect(ui.diagramContainer.scrollLeft).toBe(300)
         expect(document.querySelector(".emc-shape-header")).toBeNull()
     })
     it("closes on canvas input unless pinned; Escape also closes a pinned panel", async () => {

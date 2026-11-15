@@ -128,7 +128,7 @@ test.describe("Message box", () => {
     }) => {
         // A saved answer shows at once: the box is never disabled
         await openApp(page)
-        await page.getByTestId("example-cat").click()
+        await getChatInput(page).fill("Draw a cat for me")
         await getChatInput(page).press("ControlOrMeta+Enter")
         await expect(page.getByTestId("version-card")).toBeVisible()
         await expect(getChatInput(page)).toBeFocused()
@@ -147,9 +147,7 @@ test.describe("Message box", () => {
             return dt
         })
         // The start screen's heading, above the box
-        const heading = page.getByRole("heading", {
-            name: "What would you like to draw?",
-        })
+        const heading = page.getByTestId("chat-panel")
         await heading.dispatchEvent("dragover", { dataTransfer })
         await heading.dispatchEvent("drop", { dataTransfer })
         await expect(page.getByAltText("dropped.gif")).toBeVisible()
@@ -249,9 +247,9 @@ test.describe("Message box", () => {
     test("an attached picture opens full size over the whole window, and Esc closes it", async ({
         page,
     }) => {
-        await openApp(page)
+        await openApp(page, { startScreen: true })
         // In the chat panel, which is much narrower than the window
-        await page.getByTestId("draw-yourself").click()
+        await page.getByTestId("draw-on-the-fly").click()
         await getAttachmentInput(page).setInputFiles({
             name: "photo.png",
             mimeType: "image/png",
@@ -331,118 +329,11 @@ test.describe("Message box", () => {
     })
 })
 
-test.describe("Start screen examples", () => {
-    test("a file that loads late is not attached to the next example", async ({
-        page,
-    }) => {
-        // The AWS example's picture arrives after the cat example is picked
-        let release!: () => void
-        const held = new Promise<void>((resolve) => {
-            release = resolve
-        })
-        await page.route("**/architecture.png", async (route) => {
-            await held
-            await route.continue()
-        })
-        await openApp(page)
-        await page.getByTestId("example-aws").click()
-        await page.getByTestId("example-cat").click()
-        await expect(getChatInput(page)).toHaveValue("Draw a cat for me")
-        const arrived = page.waitForResponse("**/architecture.png")
-        release()
-        await arrived
-        await page.waitForTimeout(1000)
-        await expect(page.getByAltText("architecture.png")).toHaveCount(0)
-
-        // Picked alone, the example gets its picture
-        await page.getByTestId("example-aws").click()
-        await expect(page.getByAltText("architecture.png")).toBeVisible()
-    })
-
-    test("a file that loads after the start screen was left is not attached on the next one", async ({
-        page,
-    }) => {
-        let release!: () => void
-        const held = new Promise<void>((resolve) => {
-            release = resolve
-        })
-        await page.route("**/architecture.png", async (route) => {
-            await held
-            await route.continue()
-        })
-        await openApp(page)
-        await page.getByTestId("example-aws").click()
-        // To the canvas and back: a new start screen
-        await page.getByTestId("draw-yourself").click()
-        await page.getByTestId("new-chat-button").click()
-        await page.getByTestId("example-cat").click()
-        await expect(getChatInput(page)).toHaveValue("Draw a cat for me")
-        const arrived = page.waitForResponse("**/architecture.png")
-        release()
-        await arrived
-        await page.waitForTimeout(1000)
-        await expect(page.getByAltText("architecture.png")).toHaveCount(0)
-    })
-
-    test("an example replaces typed text only on confirm", async ({ page }) => {
-        await openApp(page)
-        const input = getChatInput(page)
-        await input.fill("A long request I typed myself")
-        await page.getByTestId("example-cat").click()
-        const dialog = page.getByRole("alertdialog")
-        await expect(dialog).toContainText("Replace current input?")
-        await dialog.getByRole("button", { name: "Cancel" }).click()
-        await expect(input).toHaveValue("A long request I typed myself")
-        // The confirmation gives the focus back to the example
-        await expect(page.getByTestId("example-cat")).toBeFocused()
-
-        await page.getByTestId("example-cat").click()
-        await dialog.getByRole("button", { name: "Replace" }).click()
-        await expect(input).toHaveValue("Draw a cat for me")
-        // From one example to another there is nothing to ask
-        await page.getByTestId("example-animated").click()
-        await expect(input).toHaveValue(/animated connector/)
-        await expect(dialog).toHaveCount(0)
-    })
-
-    test("in another language the note says the saved answers are in English", async ({
-        page,
-    }) => {
-        await openApp(page, { path: "/zh" })
-        await expect(page.getByTestId("lobby-hero")).toContainText(
-            "保存好的答案（英文）会立即显示",
-        )
-    })
-
-    test("the MCP video loads once draw.io has loaded", async ({ page }) => {
-        const requested: string[] = []
-        page.on("request", (request) => requested.push(request.url()))
-        const videoRequested = () =>
-            requested.some((url) => url.endsWith("/mcp-promo.mp4"))
-        // draw.io's page is held back, as on a slow connection
-        let release!: () => void
-        const held = new Promise<void>((resolve) => {
-            release = resolve
-        })
-        await page.route("**/drawio/index.html*", async (route) => {
-            await held
-            await route.continue()
-        })
-        await page.goto("/", { waitUntil: "domcontentloaded" })
-        await expect(page.getByTestId("mcp-video")).toBeVisible()
-        await page.waitForTimeout(1500)
-        expect(videoRequested()).toBe(false)
-
-        release()
-        await expect.poll(videoRequested, { timeout: 30000 }).toBe(true)
-    })
-})
-
 test.describe("Line breaks in Chinese and Japanese", () => {
     test("the start screen's lede does not end with a line of one character", async ({
         page,
     }) => {
-        await openApp(page, { path: "/zh" })
+        await openApp(page, { path: "/zh", startScreen: true })
         // The width of each line of the lede
         const lines = await page
             .getByTestId("lobby-hero")

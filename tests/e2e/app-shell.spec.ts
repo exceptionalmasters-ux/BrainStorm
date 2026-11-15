@@ -147,7 +147,7 @@ test.describe("Keyboard focus in the editor", () => {
     test("Tab from the start screen stays out of the canvas under it", async ({
         page,
     }) => {
-        await openApp(page)
+        await openApp(page, { startScreen: true })
         await getChatInput(page).focus()
         const stops: (string | null)[] = []
         for (let i = 0; i < 20; i++) {
@@ -159,7 +159,7 @@ test.describe("Keyboard focus in the editor", () => {
         expect(stops).not.toContain("IFRAME")
         expect(stops).not.toContain("About")
         // Put away, the start screen gives the canvas back to the keyboard
-        await page.getByTestId("draw-yourself").click()
+        await page.getByTestId("draw-on-the-fly").click()
         await expect(page.getByTestId("chat-panel")).toBeVisible()
         await expect(page.locator("[inert]")).toHaveCount(0)
     })
@@ -167,8 +167,8 @@ test.describe("Keyboard focus in the editor", () => {
     test("a closed dialog gives the focus back to the button that opened it", async ({
         page,
     }) => {
-        await openApp(page)
-        await page.getByTestId("draw-yourself").click()
+        await openApp(page, { startScreen: true })
+        await page.getByTestId("draw-on-the-fly").click()
         const dialog = page.getByRole("dialog")
         // The export dialog's name field takes the focus as it opens
         for (const button of ["settings-button", "export-button"]) {
@@ -237,8 +237,8 @@ test.describe("Keyboard focus in the editor", () => {
     test("the panel's input takes the focus when the panel is shown again", async ({
         page,
     }) => {
-        await openApp(page)
-        await page.getByTestId("draw-yourself").click()
+        await openApp(page, { startScreen: true })
+        await page.getByTestId("draw-on-the-fly").click()
         const panel = page.getByTestId("chat-panel")
         await getChatInput(page).focus()
         await page.keyboard.press("ControlOrMeta+b")
@@ -256,8 +256,8 @@ test.describe("Tooltips and motion", () => {
     test("a tooltip closes when the pointer moves from its button on to the canvas", async ({
         page,
     }) => {
-        await openApp(page)
-        await page.getByTestId("draw-yourself").click()
+        await openApp(page, { startScreen: true })
+        await page.getByTestId("draw-on-the-fly").click()
         await page.getByRole("button", { name: "Hide chat panel" }).click()
         const button = page.getByTestId("show-panel")
         const box = await button.boundingBox()
@@ -278,8 +278,8 @@ test.describe("Tooltips and motion", () => {
         page,
     }) => {
         await page.emulateMedia({ reducedMotion: "reduce" })
-        await openApp(page)
-        await page.getByTestId("draw-yourself").click()
+        await openApp(page, { startScreen: true })
+        await page.getByTestId("draw-on-the-fly").click()
         // The animations running on the element as it appears
         const animations = (slot: string) =>
             page

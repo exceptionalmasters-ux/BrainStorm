@@ -7,7 +7,7 @@ import {
     test,
 } from "./lib/fixtures"
 
-test("start cards keep examples and prepare a brief without sending it", async ({
+test("start cards prepare a brief without a home chat or sending it", async ({
     page,
 }) => {
     const requests: string[] = []
@@ -15,10 +15,11 @@ test("start cards keep examples and prepare a brief without sending it", async (
         requests.push(route.request().url())
         return route.abort()
     })
-    await openApp(page)
+    await openApp(page, { startScreen: true })
     await expect(page.getByTestId("draw-manually")).toBeVisible()
     await expect(page.getByTestId("draw-on-the-fly")).toBeVisible()
-    await expect(page.getByTestId("example-flowchart")).toBeVisible()
+    await expect(page.getByTestId("example-flowchart")).toHaveCount(0)
+    await expect(page.getByTestId("chat-input")).toHaveCount(0)
     await page.getByTestId("draw-from-brief").click()
     await page
         .getByLabel("Technical Brief", { exact: true })
@@ -50,7 +51,7 @@ for (const mobile of [false, true]) {
             await page.goto("/en", { waitUntil: "networkidle" })
             await page.locator("iframe").waitFor({ state: "attached" })
         } else {
-            await openApp(page)
+            await openApp(page, { startScreen: true })
         }
         await page.getByTestId("draw-manually").click()
         await expect(page.getByTestId("lobby-hero")).toHaveCount(0)

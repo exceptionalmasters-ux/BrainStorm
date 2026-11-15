@@ -65,7 +65,11 @@ export const MODEL_CONFIGS_KEY = "next-ai-draw-io-model-configs"
  */
 export async function openApp(
     page: Page,
-    { path = "/", config }: { path?: string; config?: object } = {},
+    {
+        path = "/",
+        config,
+        startScreen = false,
+    }: { path?: string; config?: object; startScreen?: boolean } = {},
 ) {
     if (config) {
         await page.addInitScript(
@@ -89,7 +93,12 @@ export async function openApp(
         }),
     )
     await page.goto(path, { waitUntil: "networkidle" })
-    await getIframe(page).waitFor({ state: "visible", timeout: 30000 })
+    await getIframe(page).waitFor({ state: "attached", timeout: 30000 })
+    await expect(page.getByTestId("canvas-loading")).toHaveCount(0, {
+        timeout: 30000,
+    })
+    if (!startScreen && (await page.getByTestId("draw-on-the-fly").isVisible()))
+        await page.getByTestId("draw-on-the-fly").click()
 }
 
 /** The model configs as saved in the browser */
@@ -120,6 +129,8 @@ export async function changeInAnotherTab(
 
 /** Send a message in the chat input */
 export async function sendMessage(page: Page, message: string) {
+    if (await page.getByTestId("draw-on-the-fly").isVisible())
+        await page.getByTestId("draw-on-the-fly").click()
     const chatInput = getChatInput(page)
     await expect(chatInput).toBeVisible({ timeout: 10000 })
     await chatInput.fill(message)

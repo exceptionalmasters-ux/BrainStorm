@@ -63,8 +63,8 @@ function drawThenEdit(onRequest?: (body: any) => void) {
     }
 }
 
-async function openApp(page: Page) {
-    await openPage(page)
+async function openApp(page: Page, options: { startScreen?: boolean } = {}) {
+    await openPage(page, options)
     // The cover goes away once draw.io has loaded and been styled
     await expect(page.locator('[data-testid="canvas-loading"]')).toHaveCount(
         0,
@@ -172,62 +172,26 @@ async function drawAndEdit(page: Page) {
 }
 
 test.describe("Workspace", () => {
-    test("start screen shows on an empty canvas and examples fill the input", async ({
+    test("start screen offers three drawing choices without promotional content", async ({
         page,
     }) => {
-        await openApp(page)
+        await openApp(page, { startScreen: true })
         await expect(page.locator('[data-testid="lobby-hero"]')).toBeVisible()
-        await page.locator('[data-testid="example-cat"]').click()
-        await expect(getChatInput(page)).toHaveValue("Draw a cat for me")
-    })
-
-    test("the MCP card and its video stay away once closed", async ({
-        page,
-    }) => {
-        await openApp(page)
-        const card = page.locator('[data-testid="mcp-notice"]')
-        await expect(card.locator('[data-testid="mcp-video"]')).toBeVisible()
-        await page.locator('[data-testid="mcp-video-close"]').click()
-        await expect(card).toHaveCount(0)
-        await page.reload({ waitUntil: "networkidle" })
-        await expect(page.locator('[data-testid="lobby-hero"]')).toBeVisible()
-        await expect(card).toHaveCount(0)
-    })
-
-    test("the MCP video starts only once draw.io has loaded", async ({
-        page,
-    }) => {
-        // Hold draw.io back, as a slow connection does: a playing video
-        // downloads its 2 MB ahead of the canvas
-        let release = () => {}
-        const held = new Promise<void>((resolve) => {
-            release = resolve
-        })
-        await page.route("**/drawio/index.html*", async (route) => {
-            await held
-            await route.continue()
-        })
-        await page.goto("/")
-        const video = page.locator('[data-testid="mcp-video"]')
-        await expect(video).toBeVisible()
-        const paused = () => video.evaluate((v: HTMLVideoElement) => v.paused)
-        await page.waitForTimeout(1000)
-        expect(await paused()).toBe(true)
-        release()
-        await expect.poll(paused, { timeout: 30000 }).toBe(false)
+        await expect(page.getByTestId("draw-manually")).toBeVisible()
+        await expect(page.getByTestId("draw-from-brief")).toBeVisible()
+        await expect(page.getByTestId("draw-on-the-fly")).toBeVisible()
+        await expect(page.getByTestId("mcp-notice")).toHaveCount(0)
+        await expect(getChatInput(page)).toHaveCount(0)
     })
 
     test("the start screen links the docs in a new tab, the editor does not", async ({
         page,
     }) => {
-        await openApp(page)
+        await openApp(page, { startScreen: true })
         const docs = page.locator('[data-testid="docs-button"]')
         await expect(docs).toHaveAttribute("href", /\/en\/docs$/)
         await expect(docs).toHaveAttribute("target", "_blank")
-        await expect(
-            page.locator('[data-testid="mcp-notice"] a').first(),
-        ).toHaveAttribute("href", /\/en\/mcp$/)
-        await page.getByTestId("draw-yourself").click()
+        await page.getByTestId("draw-on-the-fly").click()
         await expect(page.locator('[data-testid="chat-panel"]')).toBeVisible()
         await expect(docs).toHaveCount(0)
     })
@@ -238,8 +202,8 @@ test.describe("Workspace", () => {
         await openPage(page, { path: "/en?prompt=Draw%20a%20mind%20map" })
         await expect(getChatInput(page)).toHaveValue("Draw a mind map")
         await expect(page).not.toHaveURL(/prompt=/)
-        // Nothing was sent: the start screen is still there
-        await expect(page.locator('[data-testid="lobby-hero"]')).toBeVisible()
+        // Nothing was sent; the assistant shows the prepared prompt.
+        await expect(page.locator('[data-testid="lobby-hero"]')).toHaveCount(0)
     })
 
     test("each AI change becomes a version card; the latest undoes and redoes it", async ({
@@ -431,7 +395,7 @@ test.describe("Workspace", () => {
     })
 
     test("attachments do not go through the file opener", async ({ page }) => {
-        await openApp(page)
+        await openApp(page, { startScreen: true })
         await getAttachmentInput(page).setInputFiles({
             name: "notes.txt",
             mimeType: "text/plain",
@@ -567,7 +531,7 @@ test.describe("Workspace", () => {
         page,
     }) => {
         await page.route("**/api/chat", drawThenEdit())
-        await openApp(page)
+        await openApp(page, { startScreen: true })
         await sendMessage(page, "Create a flowchart")
         await waitForComplete(page)
         await page.waitForTimeout(1500)
@@ -593,8 +557,8 @@ test.describe("Workspace", () => {
     })
 
     test("draw.io's shape library starts closed", async ({ page }) => {
-        await openApp(page)
-        await page.locator('[data-testid="draw-yourself"]').click()
+        await openApp(page, { startScreen: true })
+        await page.locator('[data-testid="draw-on-the-fly"]').click()
         await page.waitForTimeout(800)
         const library = getIframeContent(page).locator(
             ".geSidebarContainer:not(.geFormatContainer)",
@@ -607,8 +571,8 @@ test.describe("Workspace", () => {
     test("draw.io's Insert menu offers auto layout, Mermaid and CSV import", async ({
         page,
     }) => {
-        await openApp(page)
-        await page.locator('[data-testid="draw-yourself"]').click()
+        await openApp(page, { startScreen: true })
+        await page.locator('[data-testid="draw-on-the-fly"]').click()
         const canvas = getIframeContent(page)
         await canvas.locator('.geSimpleMainMenu a[title="Insert"]').click()
         const menus = canvas.locator(".mxPopupMenu")
@@ -656,8 +620,8 @@ test.describe("Workspace", () => {
             sessionStorage.setItem("nai-seeded", "1")
             localStorage.setItem("next-ai-draw-io-dark-mode", "false")
         })
-        await openApp(page)
-        await page.locator('[data-testid="draw-yourself"]').click()
+        await openApp(page, { startScreen: true })
+        await page.locator('[data-testid="draw-on-the-fly"]').click()
         const table = () =>
             getIframeContent(page)
                 .locator(".geDiagramContainer")
@@ -1199,8 +1163,8 @@ test.describe("Workspace", () => {
     })
 
     test("New chat brings the start screen back", async ({ page }) => {
-        await openApp(page)
-        await page.locator('[data-testid="draw-yourself"]').click()
+        await openApp(page, { startScreen: true })
+        await page.locator('[data-testid="draw-on-the-fly"]').click()
         await expect(page.locator('[data-testid="lobby-hero"]')).toHaveCount(0)
         await page.locator('[data-testid="new-chat-button"]').click()
         await expect(page.locator('[data-testid="lobby-hero"]')).toBeVisible()
@@ -1361,7 +1325,7 @@ test.describe("Workspace", () => {
     test("a file that is not a diagram leaves the start screen", async ({
         page,
     }) => {
-        await openApp(page)
+        await openApp(page, { startScreen: true })
         const [chooser] = await Promise.all([
             page.waitForEvent("filechooser"),
             page
@@ -1421,8 +1385,8 @@ test.describe("Workspace", () => {
             localStorage.setItem("next-ai-draw-io-panel-width", "560")
         })
         await page.setViewportSize({ width: 800, height: 800 })
-        await openApp(page)
-        await page.locator('[data-testid="draw-yourself"]').click()
+        await openApp(page, { startScreen: true })
+        await page.locator('[data-testid="draw-on-the-fly"]').click()
         const toolbar = getIframeContent(page).locator(".geSimpleMainMenu")
         await expect(toolbar).toBeVisible()
         await page.waitForTimeout(600)
@@ -1588,7 +1552,7 @@ test.describe("Workspace", () => {
                 body: createMockSSEResponse(FLOWCHART_XML, "Here it is."),
             })
         })
-        await openApp(page)
+        await openApp(page, { startScreen: true })
         await sendMessage(page, "Create a flowchart")
         await expect(page.getByText("Model is overloaded").first()).toBeVisible(
             {
@@ -2176,7 +2140,7 @@ test.describe("Workspace", () => {
         page,
     }) => {
         await page.route("**/api/chat", drawThenEdit())
-        await openApp(page)
+        await openApp(page, { startScreen: true })
         await sendMessage(page, "Create a flowchart")
         await waitForComplete(page)
         await openDrawioFile(page, "blank.drawio", BLANK_SHEET)
@@ -2194,7 +2158,7 @@ test.describe("Workspace", () => {
         await page.addInitScript(() =>
             localStorage.setItem("next-ai-draw-io-dark-mode", "false"),
         )
-        await openApp(page)
+        await openApp(page, { startScreen: true })
         await openDrawioFile(page, "blank.drawio", BLANK_SHEET)
         const tabs = drawioTabs(page)
         await expect(tabs).toContainText("Sheet")
@@ -2316,7 +2280,7 @@ test.describe("Workspace", () => {
         page,
     }) => {
         await page.route("**/api/chat", drawThenEdit())
-        await openApp(page)
+        await openApp(page, { startScreen: true })
         await sendMessage(page, "Create a flowchart")
         await waitForComplete(page)
         await expect(page).toHaveURL(/session=/)
@@ -2367,7 +2331,7 @@ test.describe("Workspace", () => {
         await page.addInitScript(() =>
             localStorage.setItem("next-ai-draw-io-dark-mode", "false"),
         )
-        await openApp(page)
+        await openApp(page, { startScreen: true })
         const [chooser] = await Promise.all([
             page.waitForEvent("filechooser"),
             page
@@ -2400,8 +2364,8 @@ test.describe("Workspace", () => {
             localStorage.setItem("next-ai-draw-io-panel-width", "560")
         })
         await page.setViewportSize({ width: 1280, height: 800 })
-        await openApp(page)
-        await page.locator('[data-testid="draw-yourself"]').click()
+        await openApp(page, { startScreen: true })
+        await page.locator('[data-testid="draw-on-the-fly"]').click()
         await page.waitForTimeout(800)
         // 900 px leaves the panel 500 px: the canvas edge moves with it
         await page.setViewportSize({ width: 900, height: 800 })
@@ -3024,7 +2988,7 @@ test.describe("Edge cases", () => {
         page,
     }) => {
         await page.route("**/api/chat", drawThenEdit())
-        await openApp(page)
+        await openApp(page, { startScreen: true })
         await sendMessage(page, "Create a flowchart")
         await waitForComplete(page)
         await page.waitForTimeout(1200)
@@ -3188,7 +3152,7 @@ test.describe("Edge cases", () => {
     test("a blank file with its own paper size reopens on its canvas", async ({
         page,
     }) => {
-        await openApp(page)
+        await openApp(page, { startScreen: true })
         await openDrawioFile(
             page,
             "a3.drawio",
@@ -3325,7 +3289,7 @@ test.describe("Edge cases", () => {
             })
         })
         await page.route("**/api/chat", drawThenEdit())
-        await openApp(page)
+        await openApp(page, { startScreen: true })
         await sendMessage(page, "Create a flowchart")
         await waitForComplete(page)
         await openSettingsTab(page, "general")

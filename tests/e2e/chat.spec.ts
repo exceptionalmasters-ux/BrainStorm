@@ -59,7 +59,7 @@ test.describe("Crossing the mobile breakpoint", () => {
 
     test("reaches a chat hidden on desktop", async ({ page }) => {
         // The start screen has no chat panel yet
-        await page.getByTestId("draw-yourself").click()
+        await page.getByTestId("draw-on-the-fly").click()
         await page.getByRole("button", { name: "Hide chat panel" }).click()
         await expect(getChatInput(page)).toBeHidden()
 

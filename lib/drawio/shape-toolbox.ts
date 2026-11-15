@@ -1,3 +1,5 @@
+import { withStableViewport } from "./stable-viewport"
+
 /** Adapter for the pinned draw.io editor. Shape DOM and drag handlers stay in its own document. */
 export const SHAPE_GROUPS = {
     basic: "general;basic",
@@ -46,15 +48,14 @@ export function createShapeToolbox(
         header = null
         doc.body.classList.remove("emc-shape-flyout")
         sidebar.showEntries()
-        if (ui.sidebarWindow?.window) ui.sidebarWindow.window.setVisible(false)
-        else {
-            const previousWidth = ui.hsplitPosition || 0
-            const scrollLeft = ui.diagramContainer?.scrollLeft
-            ui.hsplitPosition = 0
-            ui.refresh()
-            if (scrollLeft != null)
-                ui.diagramContainer.scrollLeft = scrollLeft - previousWidth
-        }
+        withStableViewport(ui, () => {
+            if (ui.sidebarWindow?.window)
+                ui.sidebarWindow.window.setVisible(false)
+            else {
+                ui.hsplitPosition = 0
+                ui.refresh()
+            }
+        })
         changed()
     }
     const catalog = () => {
@@ -157,7 +158,7 @@ export function createShapeToolbox(
         sidebar.showPalette?.("emcRecent", false)
         sidebar.showPalette?.("search", true)
         if (group === "recent") showRecent()
-        ui.showSidebar()
+        withStableViewport(ui, () => ui.showSidebar())
         doc.body.classList.add("emc-shape-flyout")
         buildHeader(title)
         sidebar.container.scrollTop = 0

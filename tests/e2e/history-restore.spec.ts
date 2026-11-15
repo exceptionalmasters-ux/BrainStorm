@@ -155,9 +155,9 @@ test.describe("History and Session Restore", () => {
     test("new chat keeps a diagram without messages that could not be saved", async ({
         page,
     }) => {
-        await openApp(page)
+        await openApp(page, { startScreen: true })
         // Leave the start screen to draw on the canvas
-        await page.getByTestId("draw-yourself").click()
+        await page.getByTestId("draw-on-the-fly").click()
         await drawByHand(page, "Hand drawn")
         await expect(
             getIframeContent(page).getByText("Hand drawn", { exact: true }),
@@ -185,7 +185,7 @@ test.describe("History and Session Restore", () => {
                 ),
             })
         })
-        await openApp(page)
+        await openApp(page, { startScreen: true })
         await sendMessage(page, "Create a test diagram")
         await waitForText(page, "Created your test diagram.")
         await page.waitForTimeout(1500)
@@ -194,7 +194,7 @@ test.describe("History and Session Restore", () => {
         await expect(page.getByTestId("lobby-hero")).toBeVisible({
             timeout: 10000,
         })
-        await page.getByTestId("draw-yourself").click()
+        await page.getByTestId("draw-on-the-fly").click()
         await drawByHand(page, "Hand drawn")
         await expect(
             getIframeContent(page).getByText("Hand drawn", { exact: true }),

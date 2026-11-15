@@ -9,7 +9,7 @@ import {
 test("EMC groups keep native shape dragging, recent shapes, pinning and the full catalogue", async ({
     page,
 }, testInfo) => {
-    await openApp(page)
+    await openApp(page, { startScreen: true })
     await page.getByTestId("draw-manually").click()
     const frame = getIframeContent(page)
     await page.getByTestId("toolbox-basic").click()
