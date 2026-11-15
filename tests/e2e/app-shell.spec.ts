@@ -148,7 +148,7 @@ test.describe("Keyboard focus in the editor", () => {
         page,
     }) => {
         await openApp(page, { startScreen: true })
-        await getChatInput(page).focus()
+        await page.getByTestId("draw-manually").focus()
         const stops: (string | null)[] = []
         for (let i = 0; i < 20; i++) {
             await page.keyboard.press("Tab")

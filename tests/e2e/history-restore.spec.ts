@@ -77,7 +77,7 @@ test.describe("History and Session Restore", () => {
         await expect(
             page.locator('text="Created your test diagram."'),
         ).toHaveCount(0, { timeout: 5000 })
-        await expect(page.getByText("Paper to diagram")).toBeVisible()
+        await expect(page.getByTestId("lobby-hero")).toBeVisible()
     })
 
     test("the offer to go on without saving goes away with its chat", async ({

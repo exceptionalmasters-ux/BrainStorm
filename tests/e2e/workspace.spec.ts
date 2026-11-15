@@ -8,6 +8,7 @@ import {
     getIframe,
     getIframeContent,
     getSendButton,
+    openAssistant,
     openDrawioFile,
     openApp as openPage,
     openSettingsTab,
@@ -395,7 +396,7 @@ test.describe("Workspace", () => {
     })
 
     test("attachments do not go through the file opener", async ({ page }) => {
-        await openApp(page, { startScreen: true })
+        await openApp(page)
         await getAttachmentInput(page).setInputFiles({
             name: "notes.txt",
             mimeType: "text/plain",
@@ -1796,7 +1797,10 @@ test.describe("Workspace", () => {
             2,
         )
         // The message's Undo puts it back
-        await page.getByRole("button", { name: "Undo", exact: true }).click()
+        await page
+            .getByTestId("chat-panel")
+            .getByRole("button", { name: "Undo", exact: true })
+            .click()
         await expect(canvas.getByText("Start", { exact: true })).toHaveCount(2)
         await expect(canvas.getByText("Review Step")).toBeVisible()
     })
@@ -2244,7 +2248,7 @@ test.describe("Workspace", () => {
             .getByRole("dialog")
             .getByRole("button", { name: "New diagram" })
             .click()
-        await expect(getChatInput(page)).toBeFocused()
+        await expect(page.getByTestId("draw-manually")).toBeFocused()
         // Another tab deletes the flowchart chat
         await page.evaluate(async () => {
             const db: IDBDatabase = await new Promise((resolve) => {
@@ -2292,8 +2296,8 @@ test.describe("Workspace", () => {
             .getByRole("button", { name: "New diagram" })
             .click()
         await expect(page.locator('[data-testid="lobby-hero"]')).toBeVisible()
-        // The new chat puts the focus in the composer
-        await expect(getChatInput(page)).toBeFocused()
+        // The new drawing puts focus on the primary starter
+        await expect(page.getByTestId("draw-manually")).toBeFocused()
         const recent = page.getByRole("button", { name: "Recent diagrams" })
         await recent.click()
         await page.locator('[data-testid="rename-session"]').click()
@@ -2997,7 +3001,7 @@ test.describe("Edge cases", () => {
             .getByRole("dialog")
             .getByRole("button", { name: "New diagram" })
             .click()
-        await expect(getChatInput(page)).toBeFocused()
+        await expect(page.getByTestId("draw-manually")).toBeFocused()
         await page.getByRole("button", { name: "Recent diagrams" }).click()
         await page.locator('[data-testid="rename-session"]').click()
         const input = page.getByRole("textbox", { name: "Rename" })
@@ -3297,7 +3301,7 @@ test.describe("Edge cases", () => {
         await page.getByRole("option", { name: "日本語", exact: true }).click()
         await expect(page).toHaveURL(/\/ja/, { timeout: 15000 })
         await page.keyboard.press("Escape")
-        await page.getByTestId("draw-on-the-fly").click()
+        await openAssistant(page)
         await page.waitForTimeout(800)
         await expect(page.locator('[data-testid="version-thumb"]')).toHaveCount(
             0,

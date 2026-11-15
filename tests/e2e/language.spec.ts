@@ -5,6 +5,7 @@ import {
     getChatInput,
     getSendButton,
     openApp,
+    openAssistant,
     openSettingsTab,
     sendMessage,
     sleep,
@@ -46,6 +47,7 @@ test.describe("Language Switching", () => {
         await test.step("open /en and verify Japanese persists", async () => {
             await page.goto("/en", { waitUntil: "networkidle" })
             await expect(page).toHaveURL(/\/ja(\?|$)/, { timeout: 10000 })
+            await openAssistant(page)
             await expect(getSendButton(page, "送信")).toBeVisible({
                 timeout: 10000,
             })

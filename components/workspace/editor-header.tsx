@@ -431,6 +431,7 @@ export function EditorHeader({
                         return (
                             <button
                                 key={`${item.action || item.label}-${index}`}
+                                aria-label={state?.label || item.label}
                                 type="button"
                                 {...(selected === undefined
                                     ? { role: "menuitem" as const }

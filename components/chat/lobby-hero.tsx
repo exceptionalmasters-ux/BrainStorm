@@ -1,4 +1,5 @@
 import { FileUp, History } from "lucide-react"
+import { useEffect } from "react"
 import { useDictionary } from "@/hooks/use-dictionary"
 import { useUiStore } from "@/stores/ui-store"
 import { useChatEngine } from "./chat-engine"
@@ -16,6 +17,11 @@ export function LobbyHero({
     onOpenFile: () => void
     compact?: boolean
 }) {
+    useEffect(() => {
+        document
+            .querySelector<HTMLButtonElement>('[data-testid="draw-manually"]')
+            ?.focus({ preventScroll: true })
+    }, [])
     const dict = useDictionary()
     const engine = useChatEngine()
     const assistant = () => {

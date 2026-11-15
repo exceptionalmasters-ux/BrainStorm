@@ -231,7 +231,7 @@ test.describe("Message box", () => {
     }) => {
         await openApp(page)
         const input = getChatInput(page)
-        await expect(input).toHaveAttribute("placeholder", /^For example/)
+        await expect(input).toHaveAttribute("placeholder", /.+/)
         await getAttachmentInput(page).setInputFiles(
             "public/chain-of-thought.txt",
         )

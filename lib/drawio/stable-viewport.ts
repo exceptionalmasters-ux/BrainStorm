@@ -25,12 +25,42 @@ export function withStableViewport(ui: any, change: () => void) {
         change()
     } finally {
         const after = container.getBoundingClientRect()
-        view.setScaleAndTranslate(
-            before.scale,
-            before.x + (before.left - after.left) / before.scale,
-            before.y + (before.top - after.top) / before.scale,
-        )
-        container.scrollLeft = before.scrollLeft
-        container.scrollTop = before.scrollTop
+        // Native page layout may renormalise translate when the viewport changes.
+        // Keep that translation and compensate with scroll, as draw.io's own
+        // restoreScrollState does, instead of forcing the previous page origin.
+        if (view.scale !== before.scale) {
+            view.setScaleAndTranslate(
+                before.scale,
+                view.translate.x,
+                view.translate.y,
+            )
+        }
+        const x =
+            before.scrollLeft +
+            after.left -
+            before.left +
+            (view.translate.x - before.x) * before.scale
+        const y =
+            before.scrollTop +
+            after.top -
+            before.top +
+            (view.translate.y - before.y) * before.scale
+        if (x < 0 || y < 0) {
+            view.setScaleAndTranslate(
+                before.scale,
+                view.translate.x - Math.min(0, x) / before.scale,
+                view.translate.y - Math.min(0, y) / before.scale,
+            )
+        }
+        container.scrollLeft =
+            before.scrollLeft +
+            after.left -
+            before.left +
+            (view.translate.x - before.x) * before.scale
+        container.scrollTop =
+            before.scrollTop +
+            after.top -
+            before.top +
+            (view.translate.y - before.y) * before.scale
     }
 }

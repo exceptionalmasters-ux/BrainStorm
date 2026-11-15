@@ -84,6 +84,7 @@ describe("stable drawing viewport", () => {
         }
         expect(() =>
             withStableViewport(ui, () => {
+                view.scale = 3
                 throw new Error("layout failed")
             }),
         ).toThrow("layout failed")

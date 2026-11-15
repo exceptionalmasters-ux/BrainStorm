@@ -127,10 +127,17 @@ export async function changeInAnotherTab(
     )
 }
 
-/** Send a message in the chat input */
-export async function sendMessage(page: Page, message: string) {
+/** Enter the assistant from either the start screen or the drawing workspace. */
+export async function openAssistant(page: Page) {
     if (await page.getByTestId("draw-on-the-fly").isVisible())
         await page.getByTestId("draw-on-the-fly").click()
+    else if (await page.getByTestId("show-panel").isVisible())
+        await page.getByTestId("show-panel").click()
+}
+
+/** Send a message in the chat input */
+export async function sendMessage(page: Page, message: string) {
+    await openAssistant(page)
     const chatInput = getChatInput(page)
     await expect(chatInput).toBeVisible({ timeout: 10000 })
     await chatInput.fill(message)
