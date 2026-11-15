@@ -138,7 +138,7 @@ test.describe("Saved chats", () => {
     test("leaving a chat that was only looked at keeps its stored copy and its time", async ({
         page,
     }) => {
-        await openApp(page)
+        await openApp(page, { startScreen: true })
         await storeChat(page, savedChat("one", 1000, ["Alpha"]))
         await storeChat(page, savedChat("two", 500, ["Gamma"]))
         await openChat(page, "one", "Alpha")
@@ -166,7 +166,7 @@ test.describe("Saved chats", () => {
         page,
     }) => {
         await page.route("**/api/chat", drawFlowchart)
-        await openApp(page)
+        await openApp(page, { startScreen: true })
         // From here on the server gives no page data (a restart, a dropped
         // connection): Next's router would load the address anew
         await page.route("**/*", (route) =>
@@ -341,7 +341,10 @@ test.describe("Saved chats", () => {
         page,
     }) => {
         await page.route("**/api/chat", drawFlowchart)
-        await openApp(page, { path: "/?session=from-another-browser" })
+        await openApp(page, {
+            path: "/?session=from-another-browser",
+            startScreen: true,
+        })
         await expect(page.locator('[data-testid="lobby-hero"]')).toBeVisible()
         await sendMessage(page, "Create a flowchart")
         await waitForComplete(page)

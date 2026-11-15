@@ -12,6 +12,10 @@
 import { create } from "zustand"
 import { isSameDocument, plainLabel, sameFileVars } from "@/lib/diagram-diff"
 import {
+    invokeEditorAction,
+    readEditorAction,
+} from "@/lib/drawio/editor-actions"
+import {
     createShapeToolbox,
     type ShapeGroup,
     type ToolboxLabels,
@@ -25,6 +29,15 @@ type FrameWindow = any
 
 let ui: EditorUi | null = null
 let win: FrameWindow | null = null
+
+export function editorActionState(name: string) {
+    return readEditorAction(ui, name)
+}
+export function runEditorAction(name: string) {
+    const result = invokeEditorAction(ui, name)
+    syncAll()
+    return result
+}
 
 /** Web-only EMC controls; returns null for external/cross-origin editors. */
 export function connectShapeToolbox(

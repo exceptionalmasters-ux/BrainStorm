@@ -1,4 +1,24 @@
 {
+    "editor": {
+        "fullscreen": "全屏",
+        "hideAssistant": "隐藏 AI 助手",
+        "workspaceSettings": "工作区设置",
+        "file": "文件",
+        "edit": "编辑",
+        "view": "视图",
+        "insert": "插入",
+        "arrange": "排列",
+        "tools": "工具",
+        "window": "窗口",
+        "help": "帮助",
+        "menuBar": "编辑器菜单",
+        "saveFile": "保存文件",
+        "saveAs": "另存为…",
+        "localWorkspace": "本地工作区 · 浏览器自动保存",
+        "resetLayout": "重置布局",
+        "commandUnavailable": "当前选择无法使用此命令。",
+        "startDescription": "选择开始绘图的方式，或打开现有文件。"
+    },
     "toolbox": {
         "title": "绘图工具箱",
         "basic": "基本形状",

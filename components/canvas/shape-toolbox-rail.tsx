@@ -41,9 +41,12 @@ export function ShapeToolboxRail() {
         const onEscape = (event: KeyboardEvent) => {
             if (event.key === "Escape") controller.current?.close()
         }
+        const reset = () => controller.current?.close()
+        window.addEventListener("emc-close-toolbox", reset)
         document.addEventListener("pointerdown", outside)
         document.addEventListener("keydown", onEscape)
         return () => {
+            window.removeEventListener("emc-close-toolbox", reset)
             document.removeEventListener("pointerdown", outside)
             document.removeEventListener("keydown", onEscape)
             controller.current?.dispose()

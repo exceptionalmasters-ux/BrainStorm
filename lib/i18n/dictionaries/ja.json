@@ -1,4 +1,24 @@
 {
+    "editor": {
+        "fullscreen": "全画面",
+        "hideAssistant": "AIアシスタントを閉じる",
+        "workspaceSettings": "作業領域の設定",
+        "file": "ファイル",
+        "edit": "編集",
+        "view": "表示",
+        "insert": "挿入",
+        "arrange": "配置",
+        "tools": "ツール",
+        "window": "ウィンドウ",
+        "help": "ヘルプ",
+        "menuBar": "エディターメニュー",
+        "saveFile": "ファイルを保存",
+        "saveAs": "名前を付けて保存…",
+        "localWorkspace": "ローカル作業領域 · ブラウザー自動保存",
+        "resetLayout": "レイアウトをリセット",
+        "commandUnavailable": "現在の選択にはこの操作を使用できません。",
+        "startDescription": "図面の開始方法を選ぶか、既存のファイルを開いてください。"
+    },
     "toolbox": {
         "title": "描画ツール",
         "basic": "基本図形",

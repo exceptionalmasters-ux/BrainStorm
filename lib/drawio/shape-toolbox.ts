@@ -1,3 +1,5 @@
+import { withStableViewport } from "./stable-viewport"
+
 /** Adapter for the pinned draw.io editor. Shape DOM and drag handlers stay in its own document. */
 export const SHAPE_GROUPS = {
     basic: "general;basic",
@@ -37,6 +39,7 @@ export function createShapeToolbox(
         disposed = false
     const recent: any[] = []
     doc.body.classList.add("emc-shape-tools")
+    ui.sidebarContainer?.classList.add("emc-shape-overlay")
     let header: HTMLElement | null = null
     const changed = () => onChange(active, pinned)
     const close = () => {
@@ -44,17 +47,16 @@ export function createShapeToolbox(
         active = null
         header?.remove()
         header = null
-        doc.body.classList.remove("emc-shape-flyout")
-        sidebar.showEntries()
-        if (ui.sidebarWindow?.window) ui.sidebarWindow.window.setVisible(false)
-        else {
-            const previousWidth = ui.hsplitPosition || 0
-            const scrollLeft = ui.diagramContainer?.scrollLeft
-            ui.hsplitPosition = 0
-            ui.refresh()
-            if (scrollLeft != null)
-                ui.diagramContainer.scrollLeft = scrollLeft - previousWidth
-        }
+        withStableViewport(ui, () => {
+            doc.body.classList.remove("emc-shape-flyout")
+            sidebar.showEntries()
+            if (ui.sidebarWindow?.window)
+                ui.sidebarWindow.window.setVisible(false)
+            else {
+                ui.hsplitPosition = 0
+                ui.refresh()
+            }
+        })
         changed()
     }
     const catalog = () => {
@@ -157,10 +159,25 @@ export function createShapeToolbox(
         sidebar.showPalette?.("emcRecent", false)
         sidebar.showPalette?.("search", true)
         if (group === "recent") showRecent()
-        ui.showSidebar()
-        doc.body.classList.add("emc-shape-flyout")
+        withStableViewport(ui, () => {
+            const panel = ui.sidebarContainer
+            if (
+                panel?.offsetParent &&
+                ui.diagramContainer?.getBoundingClientRect
+            ) {
+                const parent = panel.offsetParent
+                const top =
+                    ui.diagramContainer.getBoundingClientRect().top -
+                    parent.getBoundingClientRect().top +
+                    parent.scrollTop
+                panel.style.setProperty("--emc-tools-top", `${top}px`)
+            }
+            doc.body.classList.add("emc-shape-flyout")
+            ui.showSidebar()
+        })
         buildHeader(title)
         sidebar.container.scrollTop = 0
+        if (ui.sidebarContainer) ui.sidebarContainer.scrollTop = 0
         changed()
         if (group === "search") doc.getElementById("geOmniSearch")?.focus()
         return true
@@ -238,6 +255,7 @@ export function createShapeToolbox(
             doc.removeEventListener("keydown", key)
             ui.editor?.graph?.removeListener?.(inserted)
             sidebar.removePalette?.("emcRecent")
+            ui.sidebarContainer?.classList.remove("emc-shape-overlay")
             doc.body.classList.remove("emc-shape-tools")
         },
     }

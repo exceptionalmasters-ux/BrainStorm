@@ -228,9 +228,9 @@ test("the narrowest chat panel shows the model's name in full", async ({
     await page.addInitScript(() => {
         localStorage.setItem("next-ai-draw-io-panel-width", "320")
     })
-    await openApp(page, { config: PROVIDERS })
+    await openApp(page, { startScreen: true, config: PROVIDERS })
     // The panel at the side, as after a first diagram
-    await page.getByTestId("draw-yourself").click()
+    await page.getByTestId("draw-on-the-fly").click()
     const name = page.getByTestId("model-selector").getByText("deepseek-chat")
     await expect(name).toBeVisible()
     // Shown, not only kept for screen readers, and not cut short

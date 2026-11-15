@@ -65,7 +65,11 @@ export const MODEL_CONFIGS_KEY = "next-ai-draw-io-model-configs"
  */
 export async function openApp(
     page: Page,
-    { path = "/", config }: { path?: string; config?: object } = {},
+    {
+        path = "/",
+        config,
+        startScreen = false,
+    }: { path?: string; config?: object; startScreen?: boolean } = {},
 ) {
     if (config) {
         await page.addInitScript(
@@ -89,7 +93,12 @@ export async function openApp(
         }),
     )
     await page.goto(path, { waitUntil: "networkidle" })
-    await getIframe(page).waitFor({ state: "visible", timeout: 30000 })
+    await getIframe(page).waitFor({ state: "attached", timeout: 30000 })
+    await expect(page.getByTestId("canvas-loading")).toHaveCount(0, {
+        timeout: 30000,
+    })
+    if (!startScreen && (await page.getByTestId("draw-on-the-fly").isVisible()))
+        await page.getByTestId("draw-on-the-fly").click()
 }
 
 /** The model configs as saved in the browser */
@@ -118,11 +127,24 @@ export async function changeInAnotherTab(
     )
 }
 
+/** Enter the assistant from either the start screen or the drawing workspace. */
+export async function openAssistant(page: Page) {
+    if (await page.getByTestId("draw-on-the-fly").isVisible())
+        await page.getByTestId("draw-on-the-fly").click()
+    else if (await page.getByTestId("show-panel").isVisible())
+        await page.getByTestId("show-panel").click()
+}
+
 /** Send a message in the chat input */
 export async function sendMessage(page: Page, message: string) {
     const chatInput = getChatInput(page)
-    await expect(chatInput).toBeVisible({ timeout: 10000 })
-    await chatInput.fill(message)
+    // New-session restoration can replace the previous composer with the
+    // starter screen after the click that requested it has already returned.
+    await expect(async () => {
+        await openAssistant(page)
+        await expect(chatInput).toBeVisible({ timeout: 500 })
+        await chatInput.fill(message, { timeout: 700 })
+    }).toPass({ timeout: 10000 })
     await chatInput.press("ControlOrMeta+Enter")
 }
 

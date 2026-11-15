@@ -77,7 +77,7 @@ test.describe("History and Session Restore", () => {
         await expect(
             page.locator('text="Created your test diagram."'),
         ).toHaveCount(0, { timeout: 5000 })
-        await expect(page.getByText("Paper to diagram")).toBeVisible()
+        await expect(page.getByTestId("lobby-hero")).toBeVisible()
     })
 
     test("the offer to go on without saving goes away with its chat", async ({
@@ -97,6 +97,7 @@ test.describe("History and Session Restore", () => {
         await waitForText(page, "Answer 1.")
         await page.waitForTimeout(1500)
         await page.locator('[data-testid="new-chat-button"]').click()
+        await expect(page.getByTestId("lobby-hero")).toBeVisible()
         await sendMessage(page, "Second chat")
         await waitForText(page, "Answer 2.")
         // Storage is full: leaving the second chat offers to go on unsaved
@@ -155,9 +156,9 @@ test.describe("History and Session Restore", () => {
     test("new chat keeps a diagram without messages that could not be saved", async ({
         page,
     }) => {
-        await openApp(page)
+        await openApp(page, { startScreen: true })
         // Leave the start screen to draw on the canvas
-        await page.getByTestId("draw-yourself").click()
+        await page.getByTestId("draw-on-the-fly").click()
         await drawByHand(page, "Hand drawn")
         await expect(
             getIframeContent(page).getByText("Hand drawn", { exact: true }),
@@ -185,7 +186,7 @@ test.describe("History and Session Restore", () => {
                 ),
             })
         })
-        await openApp(page)
+        await openApp(page, { startScreen: true })
         await sendMessage(page, "Create a test diagram")
         await waitForText(page, "Created your test diagram.")
         await page.waitForTimeout(1500)
@@ -194,7 +195,7 @@ test.describe("History and Session Restore", () => {
         await expect(page.getByTestId("lobby-hero")).toBeVisible({
             timeout: 10000,
         })
-        await page.getByTestId("draw-yourself").click()
+        await page.getByTestId("draw-on-the-fly").click()
         await drawByHand(page, "Hand drawn")
         await expect(
             getIframeContent(page).getByText("Hand drawn", { exact: true }),
