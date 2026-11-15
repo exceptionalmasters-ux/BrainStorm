@@ -401,8 +401,6 @@ function WorkspaceLayout() {
                     />
                 )}
 
-                {!showHero && <DrawingToolbar />}
-
                 {getOperationsContext()?.brief && (
                     <details className="shrink-0 border-b border-border px-3 py-1 text-xs">
                         <summary className="cursor-pointer text-primary">
@@ -429,6 +427,17 @@ function WorkspaceLayout() {
                         Tab would go into the hidden draw.io, and keys typed
                         there would draw shapes */}
                     <div className="absolute inset-0" inert={heroCoversCanvas}>
+                        {!showHero &&
+                            (!isMobile || mobileView === "canvas") && (
+                                <div
+                                    className="absolute top-0 left-0 z-20"
+                                    style={{
+                                        right: isMobile ? 0 : canvasRight,
+                                    }}
+                                >
+                                    <DrawingToolbar />
+                                </div>
+                            )}
                         <CanvasStage
                             className={
                                 isMobile
@@ -446,9 +455,10 @@ function WorkspaceLayout() {
                                               "transition-[right] duration-300 ease-[var(--ease-out)] motion-reduce:duration-[1ms]",
                                       )
                             }
-                            style={
-                                isMobile ? undefined : { right: canvasRight }
-                            }
+                            style={{
+                                top: showHero ? 0 : 40,
+                                ...(isMobile ? {} : { right: canvasRight }),
+                            }}
                             hideOverlays={heroCoversCanvas}
                             overlay={(size) => (
                                 <SelectionAsk

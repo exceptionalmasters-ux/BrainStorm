@@ -98,7 +98,7 @@ export function DrawingToolbar() {
             <div
                 role="toolbar"
                 aria-label="Drawing tools"
-                className="flex items-center gap-0.5 overflow-x-auto px-2 py-1"
+                className="flex h-10 items-center gap-0.5 overflow-x-auto px-2 py-1"
             >
                 {action("zoomOut", "zoomOut", "Zoom out", ZoomOut)}
                 {action("zoomIn", "zoomIn", "Zoom in", ZoomIn)}
@@ -156,13 +156,13 @@ export function DrawingToolbar() {
                         {editorLabel(tab, tab)}
                     </button>
                 ))}
+                {!selection.length && ready && (
+                    <span className="shrink-0 px-2 text-[11px] text-muted-foreground">
+                        Select a shape or connector to edit its text, style and
+                        arrangement.
+                    </span>
+                )}
             </div>
-            {!selection.length && ready && (
-                <p className="px-3 pb-1 text-[11px] text-muted-foreground">
-                    Select a shape or connector to edit its text, style and
-                    arrangement.
-                </p>
-            )}
         </div>
     )
 }

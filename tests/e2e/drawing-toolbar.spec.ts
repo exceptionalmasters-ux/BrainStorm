@@ -58,7 +58,7 @@ test("format shortcuts reveal native Style, Text and Arrange tabs for the select
             return String(sessions[0]?.diagramXml || "").toLowerCase()
         })
     await expect.poll(savedXml).toContain("fillcolor=#ff0000")
-    await colors.locator('img[title="Close"]').click()
+    await expect(colors).toBeHidden()
     await page.getByTestId("editor-undo").click()
     await expect.poll(savedXml).not.toContain("fillcolor=#ff0000")
     await page.getByTestId("editor-redo").click()
@@ -79,6 +79,8 @@ test("drawing tools stay reachable on a phone without stretching the workspace",
 }) => {
     await page.setViewportSize({ width: 390, height: 844 })
     await openApp(page)
+    if (await page.getByTestId("hide-assistant").isVisible())
+        await page.getByTestId("hide-assistant").click()
     const toolbar = page.getByTestId("drawing-toolbar")
     const controls = toolbar.getByRole("toolbar")
     await page.getByTestId("drawing-format-style").scrollIntoViewIfNeeded()
