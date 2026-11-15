@@ -22,6 +22,7 @@ describe("native format tools", () => {
             isEnabled: () => true,
         }
         const ui = {
+            formatWidth: 240,
             editor: { graph: { isSelectionEmpty: () => false } },
             isFormatPanelVisible: () => visible,
             actions: { get: () => action },

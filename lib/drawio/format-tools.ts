@@ -4,7 +4,11 @@ export type FormatTab = "style" | "text" | "arrange"
 export function showFormatTab(ui: any, resources: any, tab: FormatTab) {
     const graph = ui?.editor?.graph
     if (!graph || (tab !== "style" && graph.isSelectionEmpty())) return false
-    if (!ui.isFormatPanelVisible?.() && !(ui.formatWidth > 0)) {
+    const visible =
+        typeof ui.isFormatPanelVisible === "function"
+            ? ui.isFormatPanelVisible()
+            : ui.formatWidth > 0
+    if (!visible) {
         const action = ui.actions?.get?.("format")
         if (!action?.funct || action.isEnabled?.() === false) return false
         action.funct()
