@@ -38,3 +38,6 @@ export const TRUNCATED_XML = `<mxCell id="node1" value="Start" style="rounded=1;
 // Simple boxes for multi-turn tests
 export const createBoxXml = (id: string, label: string, y = 100) =>
     `<mxCell id="${id}" value="${label}" style="rounded=1;" vertex="1" parent="1"><mxGeometry x="100" y="${y}" width="100" height="40" as="geometry"/></mxCell>`
+
+/** A complete editable file for the file picker (AI responses use cells only). */
+export const SINGLE_BOX_DRAWIO_FILE = `<mxfile><diagram name="Page-1"><mxGraphModel page="1"><root><mxCell id="0"/><mxCell id="1" parent="0"/>${SINGLE_BOX_XML}</root></mxGraphModel></diagram></mxfile>`

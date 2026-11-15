@@ -1,4 +1,4 @@
-import { SINGLE_BOX_XML } from "./fixtures/diagrams"
+import { SINGLE_BOX_DRAWIO_FILE } from "./fixtures/diagrams"
 import {
     expect,
     getChatInput,
@@ -17,7 +17,7 @@ for (const entry of ["file", "history", "assistant", "phone"] as const) {
         const errors: string[] = []
         page.on("pageerror", (error) => errors.push(error.message))
         await openApp(page)
-        await openDrawioFile(page, "original.drawio", SINGLE_BOX_XML)
+        await openDrawioFile(page, "original.drawio", SINGLE_BOX_DRAWIO_FILE)
         if (entry === "phone")
             await page
                 .getByRole("button", { name: "Canvas", exact: true })
