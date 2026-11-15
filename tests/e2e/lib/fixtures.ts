@@ -141,7 +141,7 @@ export async function closeDrawing(page: Page) {
     await page.getByTestId("editor-menu-file").click()
     await page
         .getByTestId("editor-menu-popup")
-        .getByRole("menuitem", { name: "Close drawing", exact: true })
+        .getByTestId("editor-close-drawing")
         .click()
 }
 

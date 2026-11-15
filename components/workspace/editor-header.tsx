@@ -19,6 +19,7 @@ import { useCanvasStore } from "@/stores/canvas-store"
 
 type Item = {
     label: string
+    testId?: string
     action?: string
     run?: () => void
     selected?: boolean
@@ -102,7 +103,12 @@ export function EditorHeader({
                     run: onExport,
                     disabled: !ready || busy,
                 },
-                { label: t.closeDrawing, run: onClose, disabled: busy },
+                {
+                    label: t.closeDrawing,
+                    run: onClose,
+                    disabled: busy,
+                    testId: "editor-close-drawing",
+                },
                 native("pageSetup", "Page setup…"),
                 native("print", "Print…"),
             ],
@@ -447,9 +453,10 @@ export function EditorHeader({
                                     (!!item.action && (!state?.enabled || busy))
                                 }
                                 data-testid={
-                                    item.action
+                                    item.testId ||
+                                    (item.action
                                         ? `editor-action-${item.action}`
-                                        : undefined
+                                        : undefined)
                                 }
                                 onClick={() => perform(item)}
                                 className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-xs hover:bg-primary/10 focus:bg-primary/10 focus:outline-none disabled:opacity-35"
