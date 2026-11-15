@@ -355,7 +355,9 @@ test.describe("Saved chats", () => {
             .poll(async () => Object.keys(await storedChats(page)))
             .toHaveLength(1)
         const [id] = Object.keys(await storedChats(page))
-        await expect(page).toHaveURL(new RegExp(`session=${id}$`))
+        await expect
+            .poll(() => new URL(page.url()).searchParams.get("session"))
+            .toBe(id)
         await page.reload({ waitUntil: "networkidle" })
         await expect(page.getByText("Here is the flowchart.")).toBeVisible({
             timeout: 30000,

@@ -2429,6 +2429,10 @@ export function ChatEngineProvider({
     }
 
     const newChat = async () => {
+        if (getOperationsContext()?.readOnly) {
+            toast.info("This workspace is read-only.")
+            return
+        }
         if (!canStartTurn()) return
         noteAction("new drawing tab")
         if (!notifyWorkbench({ type: "new" })) startNewChat()

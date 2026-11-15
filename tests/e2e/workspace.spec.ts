@@ -1480,7 +1480,12 @@ test.describe("Workspace", () => {
         await openSettingsTab(page, "general")
         await page.locator("#language-select").click()
         await page.getByRole("option", { name: "日本語", exact: true }).click()
-        await expect(page).toHaveURL(/\/ja\?session=/, { timeout: 15000 })
+        await expect(page).toHaveURL(/\/ja\?/, { timeout: 15000 })
+        await expect
+            .poll(() => new URL(page.url()).searchParams.has("session"), {
+                timeout: 15000,
+            })
+            .toBe(true)
         await expect(page.getByText("Create a flowchart").first()).toBeVisible({
             timeout: 15000,
         })
@@ -2173,7 +2178,12 @@ test.describe("Workspace", () => {
         await openSettingsTab(page, "general")
         await page.locator("#language-select").click()
         await page.getByRole("option", { name: "日本語", exact: true }).click()
-        await expect(page).toHaveURL(/\/ja\?session=/, { timeout: 15000 })
+        await expect(page).toHaveURL(/\/ja\?/, { timeout: 15000 })
+        await expect
+            .poll(() => new URL(page.url()).searchParams.has("session"), {
+                timeout: 15000,
+            })
+            .toBe(true)
         const background = () =>
             getIframeContent(page)
                 .locator(".geBackgroundPage")

@@ -113,6 +113,12 @@ function Workbench() {
     }, [tabs])
 
     const add = (sessionId: string | null = null, file?: File) => {
+        if (getOperationsContext()?.readOnly && (!sessionId || file)) {
+            toast.info(
+                "This workspace is read-only. Open an existing drawing from Recent diagrams.",
+            )
+            return
+        }
         const existing =
             sessionId &&
             tabsRef.current.find((tab) => tab.sessionId === sessionId)
@@ -350,6 +356,7 @@ function Workbench() {
     }, [])
 
     const close = (tab: Tab) => {
+        setActive(tab.id)
         if (tab.busy) {
             toast.info(
                 "Finish or stop the current operation before closing this drawing.",
@@ -396,7 +403,11 @@ function Workbench() {
             <div className="relative min-h-0 flex-1">
                 <div
                     className="absolute inset-0"
-                    style={{ display: active === "root" ? "block" : "none" }}
+                    style={{
+                        visibility: active === "root" ? "visible" : "hidden",
+                        pointerEvents: active === "root" ? "auto" : "none",
+                    }}
+                    inert={active !== "root"}
                     aria-hidden={active !== "root"}
                 >
                     <Workspace />
@@ -416,8 +427,13 @@ function Workbench() {
                             data-active={active === tab.id}
                             className="absolute inset-0 h-full w-full border-0"
                             style={{
-                                display: active === tab.id ? "block" : "none",
+                                visibility:
+                                    active === tab.id ? "visible" : "hidden",
+                                pointerEvents:
+                                    active === tab.id ? "auto" : "none",
                             }}
+                            inert={active !== tab.id}
+                            aria-hidden={active !== tab.id}
                             allow="clipboard-read; clipboard-write"
                         />
                     ))}
