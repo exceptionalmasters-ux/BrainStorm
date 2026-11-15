@@ -10,8 +10,6 @@ Native palettes now float above the drawing instead of reducing the graph viewpo
 
 Validation includes adapter unit tests, live Chromium menu commands/local download, clean-start assertions, repeated native palette cycles and the existing drawing/AI workflows. Shared E2E setup explicitly enters the assistant workspace by default; start-screen cases opt into the start screen. Removed UI-only example/video tests correspond to removed home features; cached-response and assistant attachment behavior remain tested separately.
 
-## Separate browser tabs
+## Document tabs
 
-New diagram (File, recent-diagrams menu and assistant toolbar) opens the locale's editor URL in a new browser tab with no session query or hash. `noopener,noreferrer` isolates the opener and avoids copying the source tab's sessionStorage draft. The existing canvas, selected session, unsent text and undo stack are not reset or disposed. The new tab starts at the drawing chooser; choosing Blank drawing still requires no AI model.
-
-File > Close drawing is the distinct, explicit command for saving the current session and returning to the chooser in the same tab. It retains the existing storage-full safeguards. Session lifecycle tests use this close command; dedicated popup regressions cover all New diagram entry points, mobile, draft preservation and opener isolation.
+New diagram now opens a document in the bottom workbench tab strip. The earlier browser-popup implementation is superseded. Each document retains its own editor, native undo, chat and unsent draft. File > Close drawing closes that document after saving changed contents. See [Operations integration](09-operations-integration.md) for storage, access control, failure behavior and deployment requirements.

@@ -2,6 +2,15 @@
 
 Najnowsze na górze.
 
+## 2026-11-15 — document tabs and Operations integration
+
+- Internal bottom document tabs replace browser popups; phone Canvas/Chat footer removed, assistant remains in the header.
+- Independent document frames preserve undo, chat and unsent drafts while switching.
+- Operations bridge adds authenticated private Storage persistence with optimistic revisions and explicit save/close acknowledgement.
+- API access uses existing Operations membership/MFA; read-only workspaces and revoked access are enforced by the database.
+- Supabase schema deployed and verified; frontend activation still requires the actual Cloudflare editor URL and deployment variables. See `09-operations-integration.md` for validation and limits.
+
+
 ## 2026-11-14 (model AI i narzędzia draw.io)
 
 - `env.example` ustawiony pod OpenAI: `AI_PROVIDER=openai`, `AI_MODEL=gpt-5.4,gpt-5.4-mini` (pierwszy to domyślny, drugi trafia do wyboru modelu), pusty `OPENAI_API_KEY`. Dodano uwagi: klucz tylko po stronie serwera, `ACCESS_CODE_LIST` do ustawienia przed udostępnieniem aplikacji w internecie.

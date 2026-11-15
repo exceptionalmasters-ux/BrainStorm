@@ -2,7 +2,7 @@ import type { Viewport } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
-import { Workspace } from "@/components/workspace/workspace"
+import { DocumentWorkbench } from "@/components/workspace/document-workbench"
 import { DiagramProvider } from "@/contexts/diagram-context"
 import { getDictionary, hasLocale } from "@/lib/i18n/dictionaries"
 
@@ -48,7 +48,11 @@ export default async function Home({
                     <Suspense
                         fallback={<div className="fixed inset-0 bg-canvas" />}
                     >
-                        <Workspace />
+                        <DocumentWorkbench
+                            requireOperations={
+                                process.env.EMC_OPERATIONS_ONLY === "1"
+                            }
+                        />
                     </Suspense>
                 </main>
             </DiagramProvider>

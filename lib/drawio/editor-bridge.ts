@@ -20,6 +20,7 @@ import {
     type ShapeGroup,
     type ToolboxLabels,
 } from "@/lib/drawio/shape-toolbox"
+import { getOperationsContext } from "@/lib/operations-bridge"
 import { hasCells } from "@/packages/mcp-server/src/pages.ts"
 import type { SelectionAnswer } from "@/packages/mcp-server/src/selection.ts"
 import { type SelectedCell, useCanvasStore } from "@/stores/canvas-store"
@@ -90,6 +91,7 @@ export function attachEditor(editorUi: EditorUi, frameWindow: FrameWindow) {
     detachEditor()
     ui = editorUi
     win = frameWindow
+    if (getOperationsContext()?.readOnly) ui.editor?.graph?.setEnabled(false)
     detachListeners = installListeners()
     keepPanelsOnResize()
     closeSidePanels()

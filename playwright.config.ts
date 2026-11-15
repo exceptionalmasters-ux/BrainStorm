@@ -18,6 +18,12 @@ export default defineConfig({
             ? "http://localhost:6001"
             : "http://localhost:6002",
         trace: "on-first-retry",
+        launchOptions: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
+            ? {
+                  executablePath:
+                      process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
+              }
+            : undefined,
     },
     projects: [
         {

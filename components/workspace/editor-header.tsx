@@ -29,6 +29,7 @@ type Item = {
 export function EditorHeader({
     onOpen,
     onSave,
+    saveLabel,
     onExport,
     onNew,
     onClose,
@@ -39,6 +40,7 @@ export function EditorHeader({
 }: {
     onOpen: () => void
     onSave: () => void
+    saveLabel?: string
     onExport: () => void
     onNew: () => void
     onClose: () => void
@@ -92,7 +94,7 @@ export function EditorHeader({
                     run: () => setTimeout(() => history.current?.click(), 0),
                 },
                 {
-                    label: t.saveFile,
+                    label: saveLabel || t.saveFile,
                     run: onSave,
                     disabled: !ready || busy,
                     shortcut: "Ctrl/⌘ S",
@@ -283,7 +285,7 @@ export function EditorHeader({
                         <FileUp />
                     </IconButton>
                     <IconButton
-                        label={t.saveFile}
+                        label={saveLabel || t.saveFile}
                         onClick={() => perform({ label: "", run: onSave })}
                         disabled={!ready || busy}
                         data-testid="editor-save"

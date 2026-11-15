@@ -5,6 +5,7 @@ import { defineConfig } from "vitest/config"
 export default defineConfig({
     plugins: [tsconfigPaths(), react()],
     test: {
+        setupFiles: ["./tests/setup-offline.ts"],
         environment: "jsdom",
         include: ["tests/**/*.test.{ts,tsx}"],
         // vi.stubEnv values are undone after each test

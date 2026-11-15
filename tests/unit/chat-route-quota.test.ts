@@ -46,6 +46,9 @@ vi.mock("@/lib/ssrf-protection", async (importOriginal) => ({
     ...(await importOriginal<typeof import("@/lib/ssrf-protection")>()),
     isPrivateUrl: async (url: string) =>
         /^https?:\/\/(127\.0\.0\.1|localhost)\b/.test(url),
+    // The real redirect guard uses undici, bypassing the global fetch mock.
+    // Keep provider transports inside this test's explicit no-network boundary.
+    redirectGuardedFetch: () => globalThis.fetch,
 }))
 
 import { POST as chat } from "@/app/api/chat/route"

@@ -69,7 +69,13 @@ export async function openApp(
         path = "/",
         config,
         startScreen = false,
-    }: { path?: string; config?: object; startScreen?: boolean } = {},
+        singleDocument = true,
+    }: {
+        path?: string
+        config?: object
+        startScreen?: boolean
+        singleDocument?: boolean
+    } = {},
 ) {
     if (config) {
         await page.addInitScript(
@@ -92,7 +98,13 @@ export async function openApp(
             body: '<svg xmlns="http://www.w3.org/2000/svg"/>',
         }),
     )
-    await page.goto(path, { waitUntil: "networkidle" })
+    // Existing editor regressions exercise a single document. Workbench tests
+    // opt into the full shell and explicitly inspect multiple document frames.
+    const target = new URL(path, "http://test.local")
+    if (singleDocument) target.searchParams.set("documentFrame", "1")
+    await page.goto(`${target.pathname}${target.search}${target.hash}`, {
+        waitUntil: "networkidle",
+    })
     await getIframe(page).waitFor({ state: "attached", timeout: 30000 })
     await expect(page.getByTestId("canvas-loading")).toHaveCount(0, {
         timeout: 30000,
