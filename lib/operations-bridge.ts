@@ -16,6 +16,10 @@ export interface OperationsContext {
 let currentContext: OperationsContext | null = null
 export const getOperationsContext = () => currentContext
 
+/** Additional document frames use their parent; the workspace window uses its opener. */
+export const operationsHost = (): Window | null =>
+    window.parent !== window ? window.parent : window.opener
+
 /** The parent supplies only a current access token; refresh tokens stay in Operations. */
 export async function connectOperations(
     isCancelled: () => boolean = () => false,
@@ -85,7 +89,8 @@ export function operationsRequest<T>(
     method: OperationsMethod,
     payload?: unknown,
 ): Promise<T> {
-    if (!isOperationsMode() || window.parent === window)
+    const host = operationsHost()
+    if (!isOperationsMode() || !host || host.closed)
         return Promise.reject(new Error("Open this drawing from Operations."))
     let origin: string
     try {
@@ -100,8 +105,7 @@ export function operationsRequest<T>(
             window.removeEventListener("message", receive)
         }
         const receive = (event: MessageEvent) => {
-            if (event.source !== window.parent || event.origin !== origin)
-                return
+            if (event.source !== host || event.origin !== origin) return
             const data = event.data
             if (
                 data?.protocol !== OPERATIONS_PROTOCOL ||
@@ -122,7 +126,7 @@ export function operationsRequest<T>(
             )
         }, 45000)
         window.addEventListener("message", receive)
-        window.parent.postMessage(
+        host.postMessage(
             {
                 protocol: OPERATIONS_PROTOCOL,
                 kind: "request",

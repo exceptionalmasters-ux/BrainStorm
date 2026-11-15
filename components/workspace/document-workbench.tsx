@@ -13,6 +13,7 @@ import {
     getOperationsContext,
     isOperationsMode,
     OPERATIONS_PROTOCOL,
+    operationsHost,
     operationsParentOrigin,
 } from "@/lib/operations-bridge"
 
@@ -209,7 +210,7 @@ function Workbench() {
             if (
                 data?.protocol === OPERATIONS_PROTOCOL &&
                 data.kind === "flush" &&
-                event.source === window.parent &&
+                event.source === operationsHost() &&
                 isOperationsMode()
             ) {
                 let origin: string
@@ -253,7 +254,7 @@ function Workbench() {
                         }),
                 )
                 void Promise.all(saves).then((results) =>
-                    window.parent.postMessage(
+                    operationsHost()?.postMessage(
                         {
                             protocol: OPERATIONS_PROTOCOL,
                             kind: "flush-result",
@@ -268,7 +269,7 @@ function Workbench() {
             if (
                 data?.protocol === OPERATIONS_PROTOCOL &&
                 data.kind === "response" &&
-                event.source === window.parent &&
+                event.source === operationsHost() &&
                 isOperationsMode()
             ) {
                 let origin: string
@@ -342,7 +343,7 @@ function Workbench() {
                     source: event.source as Window,
                     originalId: data.requestId,
                 })
-                window.parent.postMessage({ ...data, requestId }, origin)
+                operationsHost()?.postMessage({ ...data, requestId }, origin)
                 setTimeout(() => relay.current.delete(requestId), 46000)
             }
         }

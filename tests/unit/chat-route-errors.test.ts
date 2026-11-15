@@ -142,6 +142,77 @@ describe("provider error texts in the stream", () => {
 })
 
 describe("the output cap", () => {
+    it("keeps the selected concept brief in user context, separate from the drawing instruction", async () => {
+        const sent: string[] = []
+        vi.stubGlobal(
+            "fetch",
+            vi.fn(async (_url: string, init?: RequestInit) => {
+                sent.push(String(init?.body ?? ""))
+                return new Response("{}", { status: 400 })
+            }),
+        )
+        const res = await chat(
+            new Request("http://localhost/api/chat", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-ai-provider": "ollama",
+                    "x-ai-base-url": "http://127.0.0.1:11434/api",
+                    "x-ai-model": "llama3",
+                },
+                body: JSON.stringify({
+                    messages: [
+                        {
+                            id: "u1",
+                            role: "user",
+                            parts: [
+                                { type: "text", text: "Draw the control loop" },
+                            ],
+                        },
+                    ],
+                    conceptBrief: "A controller for a ventilation system",
+                    xml: "",
+                }),
+            }),
+        )
+        await res.text()
+        expect(sent.length).toBeGreaterThan(0)
+        const payload = JSON.parse(sent[0])
+        const user = payload.messages.filter(
+            (m: { role: string }) => m.role === "user",
+        )
+        expect(JSON.stringify(user)).toContain("Draw the control loop")
+        expect(JSON.stringify(user)).toContain(
+            "A controller for a ventilation system",
+        )
+        expect(
+            JSON.stringify(
+                payload.messages.filter(
+                    (m: { role: string }) => m.role === "system",
+                ),
+            ),
+        ).not.toContain("A controller for a ventilation system")
+    })
+
+    it("rejects invalid or oversized concept context before contacting a provider", async () => {
+        const fetch = vi.fn()
+        vi.stubGlobal("fetch", fetch)
+        for (const conceptBrief of [
+            { objective: "Unselected raw data" },
+            "x".repeat(30001),
+        ]) {
+            const res = await chat(
+                new Request("http://localhost/api/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ messages: [], conceptBrief }),
+                }),
+            )
+            expect(res.status).toBe(400)
+        }
+        expect(fetch).not.toHaveBeenCalled()
+    })
+
     it("holds for the server's own keyless endpoints too", async () => {
         vi.stubEnv("MAX_OUTPUT_TOKENS", "8000")
         const sent: string[] = []

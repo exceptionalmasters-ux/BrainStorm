@@ -400,19 +400,19 @@ function WorkspaceLayout() {
                     />
                 )}
 
-                {!showHero && getOperationsContext()?.brief && (
-                    <button
-                        type="button"
-                        className="shrink-0 border-b border-border px-3 py-1 text-left text-xs text-primary"
-                        onClick={() => {
-                            engine.setInput(
-                                `Create an editable technical drawing based on this Technical Brief:\n\n${getOperationsContext()?.brief}`,
-                            )
-                            focusComposer()
-                        }}
-                    >
-                        Prepare drawing from this workspace's Technical Brief →
-                    </button>
+                {getOperationsContext()?.brief && (
+                    <details className="shrink-0 border-b border-border px-3 py-1 text-xs">
+                        <summary className="cursor-pointer text-primary">
+                            Technical Brief · concept context
+                        </summary>
+                        <p className="py-2 text-muted-foreground">
+                            This is reference information. Enter what to draw in
+                            the assistant separately.
+                        </p>
+                        <pre className="max-h-48 overflow-auto whitespace-pre-wrap pb-2 font-sans">
+                            {getOperationsContext()?.brief}
+                        </pre>
+                    </details>
                 )}
 
                 {getOperationsContext()?.readOnly && (

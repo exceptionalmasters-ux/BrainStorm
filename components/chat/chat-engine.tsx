@@ -593,6 +593,7 @@ export function ChatEngineProvider({
                         ...body,
                         id,
                         messages: withoutOldImagesAndThinking(messages),
+                        conceptBrief: getOperationsContext()?.brief || "",
                         trigger,
                         messageId,
                     },

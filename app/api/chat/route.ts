@@ -140,6 +140,16 @@ async function handleChatRequest(req: Request): Promise<Response> {
     if (accessDenied) return accessDenied
 
     const body = await req.json()
+    if (
+        body.conceptBrief !== undefined &&
+        (typeof body.conceptBrief !== "string" ||
+            body.conceptBrief.length > 30000)
+    ) {
+        return Response.json(
+            { error: "Concept brief must be text up to 30,000 characters." },
+            { status: 400 },
+        )
+    }
     // The messages in the SDK's UI shape. The route writes its own system
     // messages, so none may come from the client.
     const validated = await safeValidateUIMessages<ChatUIMessage>({
@@ -476,6 +486,9 @@ async function handleChatRequest(req: Request): Promise<Response> {
                 : isNewest
                   ? diagramContextText({ xml: xml || "", pageId: null })
                   : "",
+            isNewest && body.conceptBrief?.trim()
+                ? `Reference Technical Brief (context only; the drawing instruction is the user's message):\n${body.conceptBrief}`
+                : "",
             formatSelectionContext(
                 message.metadata?.selectedCells ??
                     (isNewest ? body.selectedCells : undefined),

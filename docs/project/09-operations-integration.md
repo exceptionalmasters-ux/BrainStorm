@@ -12,7 +12,7 @@ The initial document lives in the shell, and additional documents use `?document
 
 ## Authenticated integration
 
-EMC embeds BrainStorm from Client Request and Project Drawings sections. The parent owns the selected entity and all Supabase Storage operations. The child never supplies a different Request/Project to the parent. Both sides validate exact origin and window source; requests have unique IDs and timeouts. The shell relays additional document requests and validates their source window as well.
+EMC opens BrainStorm in a separate browser window from the Technical Brief attachments in Client Request and Project. The root workspace uses `window.opener`; additional document frames retain their same-origin parent bridge. The parent owns the selected entity and all Supabase Storage operations. The child never supplies a different Request/Project to the parent. Both sides validate exact origin and window source; requests have unique IDs and timeouts. The shell relays additional document requests and validates their source window as well.
 
 Operations mode uses the parent bridge exclusively for list/read/save/archive; it never falls back to IndexedDB or applies the local fifty-session eviction policy. Cloud failures retain the current document. A revision mismatch is an error, not an automatic overwrite. Reopen the saved version after exporting any local changes that must be preserved.
 
@@ -20,7 +20,7 @@ The parent obtains the current Supabase access token for same-origin BrainStorm 
 
 Storage uses the private `brainstorm-files` bucket, with immutable `.drawio` XML and companion `.json` session files per revision. Database metadata and revision pointers are committed only after both uploads exist and belong to the current uploader. Compare-and-swap prevents an old window from overwriting a newer revision. A lost response is reconciled by the exact immutable revision path. Failed/uncommitted uploads are private staging objects; a future retention job must use the Storage API, never SQL deletion of storage.objects.
 
-Request-to-Project conversion is resolved by the database. Project lists include drawings originating in its Request; the next save attaches that document to the authoritative Project. Legacy closed Requests and COMPLETED/CANCELLED Projects are read-only. Access is Operations membership with the existing MFA checks; Expert disclosure is not added by this delivery.
+Request-to-Project conversion is resolved by the database. Project lists include drawings originating in its Request; the next save attaches that document to the authoritative Project. Legacy closed Requests and COMPLETED/CANCELLED Projects are read-only. Editing remains restricted to Operations membership with existing MFA checks. EMC extends the existing Expert Project Access package with selected drawing revisions. Experts can download only approved XML attachments; conversation JSON is never disclosed. The current request, leader approval, notification and revocation flow is reused.
 
 ## Deployment
 
@@ -34,10 +34,16 @@ Request-to-Project conversion is resolved by the database. Project lists include
 3. Set EMC's build-time `NEXT_PUBLIC_BRAINSTORM_URL` to the actual deployed HTTPS editor URL including `/en`, and rebuild EMC. Its header-generation script allows exactly this frame origin on normal pages while preserving private-chat isolation.
 4. BrainStorm sets frame-ancestors to self plus the configured Operations origin. No broad Cloudflare wildcard is needed.
 
-The supplied target name was `brainstorm-workers`; GitHub's latest dev check still links to the existing `brainstorm-worker` service. The checked-in worker name is retained until the intended target URL/service is confirmed; do not create/rename a worker just to configure the iframe URL.
+The confirmed deployment is `https://brainstorm-worker.exceptionalmasters.workers.dev/`, using the existing `brainstorm-worker` service. EMC defaults to its `/en` route. Keep the Operations opener page open while editing.
 
 ## Verification
 
-Local production builds for both repositories passed. All 1,288 root unit tests passed with unmocked fetch and TCP transports disabled. The targeted editor tests cover tab state/origin checks, cloud-only persistence and stale revisions, API authorization, the editor bridge, XML context and toolbox. EMC tests cover SQL/RLS/MFA, terminal locks, conversion, immutable files (including a deliberately broad unrelated Storage policy), stale saves, audit, upload size/path validation, response reconciliation, parent context and CSP. The full EMC panel suite passed.
+Local production builds for both repositories passed. All 1,292 root unit tests passed with unmocked fetch and TCP transports disabled. The targeted editor tests cover tab state/origin checks, cloud-only persistence and stale revisions, API authorization, the editor bridge, XML context and toolbox. EMC tests cover SQL/RLS/MFA, terminal locks, conversion, immutable files (including a deliberately broad unrelated Storage policy), stale saves, audit, upload size/path validation, response reconciliation, parent context and CSP. The full EMC panel suite passed.
 
 Local Chromium could not start because the execution environment denies its singleton socket; the checked-in Playwright cases verify desktop/phone tabs, independent drafts and native undo across switches in CI. A quota regression's missing redirect-transport mock was repaired, and the root unit suite now blocks unmocked fetch/TCP transport before fixture data can reach Ollama, Bedrock or other external services. Final Cloudflare/browser acceptance requires the configured live deployments and signed-in Operations access.
+
+## Technical Brief context
+
+Operations first displays a selection/edit dialog. `OPEN WITH BRIEF` passes only the approved text; `SKIP BRIEF` passes an empty string. The complete raw Brief is never returned by the bridge by default. Context is visible as an expandable reference panel, separate from the composer. Every model request carries `conceptBrief`; the route bounds it to 30,000 characters and adds it to the newest user message as reference data, never a system instruction. No generation occurs on launch. Operations saves the selected concept snapshot with the document session JSON. The OpenAI API account/key connection is deferred.
+
+The popup bridge validates the exact opener window and configured Operations origin, and retains all-document flush acknowledgements before `SAVE & CLOSE EDITOR`. Missing/closed openers fail immediately. Storage remains private Supabase Storage; there is no local-storage fallback.
