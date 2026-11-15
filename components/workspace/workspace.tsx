@@ -344,6 +344,9 @@ function WorkspaceLayout() {
                         onNew={() => {
                             void engine.newChat()
                         }}
+                        onClose={() => {
+                            void engine.closeDrawing()
+                        }}
                         onSettings={() =>
                             useUiStore.getState().openSettings("general")
                         }

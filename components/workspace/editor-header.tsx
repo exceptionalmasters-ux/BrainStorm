@@ -30,6 +30,7 @@ export function EditorHeader({
     onSave,
     onExport,
     onNew,
+    onClose,
     onSettings,
     onAssistant,
     assistantOpen,
@@ -39,6 +40,7 @@ export function EditorHeader({
     onSave: () => void
     onExport: () => void
     onNew: () => void
+    onClose: () => void
     onSettings: () => void
     onAssistant: () => void
     assistantOpen: boolean
@@ -100,6 +102,7 @@ export function EditorHeader({
                     run: onExport,
                     disabled: !ready || busy,
                 },
+                { label: t.closeDrawing, run: onClose, disabled: busy },
                 native("pageSetup", "Page setup…"),
                 native("print", "Print…"),
             ],

@@ -1,5 +1,6 @@
 {
     "editor": {
+        "closeDrawing": "図面を閉じる",
         "fullscreen": "全画面",
         "hideAssistant": "AIアシスタントを閉じる",
         "workspaceSettings": "作業領域の設定",
