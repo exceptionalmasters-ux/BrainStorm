@@ -1,5 +1,9 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it, vi } from "vitest"
+import { GET as editorConfig } from "@/app/api/config/route"
+
+vi.mock("@/lib/langfuse", () => ({ getLangfuseClient: () => null }))
+
 import { verifyOperationsRequest } from "@/lib/operations-api-auth"
 
 afterEach(() => vi.unstubAllGlobals())
@@ -62,6 +66,15 @@ describe("Operations API authorization (all requests mocked)", () => {
         ).toBeNull()
         fetch.mockRejectedValue(new Error("offline"))
         expect((await verifyOperationsRequest(request()))?.status).toBe(503)
+    })
+    it("does not ask Operations users for an additional editor access code", async () => {
+        vi.stubEnv("ACCESS_CODE_LIST", "standalone-test-code")
+        const integrated = await editorConfig(request())
+        expect((await integrated.json()).accessCodeRequired).toBe(false)
+        const standalone = await editorConfig(
+            new Request("https://editor.example/api/config"),
+        )
+        expect((await standalone.json()).accessCodeRequired).toBe(true)
     })
     it("retains standalone mode only when Operations-only mode is explicitly off", async () => {
         vi.stubEnv("EMC_OPERATIONS_ONLY", "")

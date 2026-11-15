@@ -1081,6 +1081,10 @@ test.describe("Workspace", () => {
             page.locator('[data-testid="version-card"]').last(),
         ).toContainText("v21")
 
+        // The version change preserves the existing viewport. Bring the
+        // returned drawing into view before testing native text-edit Escape.
+        await page.getByTestId("editor-menu-view").click()
+        await page.getByTestId("editor-action-fitWindow").click()
         // The first Escape in the canvas is draw.io's again: it ends editing
         await canvas.getByText("Start", { exact: true }).dblclick()
         await expect(canvas.locator(".mxCellEditor")).toBeVisible()

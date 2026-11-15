@@ -5,13 +5,15 @@ import {
     resolveMaxOutputTokens,
 } from "@/lib/output-token-limit"
 
-export async function GET() {
+export async function GET(request?: Request) {
     // Read through `env`, so the id is the one the server runs with: a
     // written-out process.env.NEXT_PUBLIC_GA_ID is fixed when the app is
     // built, and the published Docker image is built without one
     const env = process.env
     return NextResponse.json({
-        accessCodeRequired: !!process.env.ACCESS_CODE_LIST,
+        accessCodeRequired:
+            !request?.headers.has("x-emc-access-token") &&
+            !!process.env.ACCESS_CODE_LIST,
         // For the settings' output token limit: what the server's own
         // models get at most, and the highest value taken from a user
         maxOutputTokens: {
