@@ -18,6 +18,7 @@ import { SaveDialog } from "@/components/save-dialog"
 import { SettingsDialog } from "@/components/settings-dialog"
 import { BrandMark } from "@/components/workspace/brand-mark"
 import { DocsButton } from "@/components/workspace/docs-button"
+import { DrawingToolbar } from "@/components/workspace/drawing-toolbar"
 import { EditorHeader } from "@/components/workspace/editor-header"
 import { IconButton } from "@/components/workspace/icon-button"
 import { useDiagram } from "@/contexts/diagram-context"
@@ -399,6 +400,8 @@ function WorkspaceLayout() {
                         }}
                     />
                 )}
+
+                {!showHero && <DrawingToolbar />}
 
                 {getOperationsContext()?.brief && (
                     <details className="shrink-0 border-b border-border px-3 py-1 text-xs">

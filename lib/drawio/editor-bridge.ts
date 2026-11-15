@@ -16,6 +16,11 @@ import {
     readEditorAction,
 } from "@/lib/drawio/editor-actions"
 import {
+    type FormatTab,
+    showEditorMenu,
+    showFormatTab,
+} from "@/lib/drawio/format-tools"
+import {
     createShapeToolbox,
     type ShapeGroup,
     type ToolboxLabels,
@@ -38,6 +43,31 @@ export function runEditorAction(name: string) {
     const result = invokeEditorAction(ui, name)
     syncAll()
     return result
+}
+
+export function editorLabel(key: string, fallback: string) {
+    return win?.mxResources?.get?.(key) || fallback
+}
+
+export function openEditorFormatTab(tab: FormatTab) {
+    const result = showFormatTab(ui, win?.mxResources, tab)
+    syncAll()
+    return result
+}
+
+export function editorMenuAvailable(name: string) {
+    const menu = ui?.menus?.get?.(name)
+    return !!menu?.funct && menu.isEnabled?.() !== false
+}
+
+/** React controls are above the frame; native menus use coordinates inside it. */
+export function openNativeEditorMenu(name: string, anchor: DOMRect) {
+    const frame = win?.frameElement?.getBoundingClientRect?.()
+    if (!frame) return false
+    return showEditorMenu(ui, name, {
+        x: Math.max(0, Math.min(anchor.left - frame.left, frame.width - 180)),
+        y: Math.max(0, anchor.bottom - frame.top),
+    })
 }
 
 /** Web-only EMC controls; returns null for external/cross-origin editors. */

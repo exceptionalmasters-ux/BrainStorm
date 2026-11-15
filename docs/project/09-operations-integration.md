@@ -47,3 +47,9 @@ Local Chromium could not start because the execution environment denies its sing
 Operations first displays a selection/edit dialog. `OPEN WITH BRIEF` passes only the approved text; `SKIP BRIEF` passes an empty string. The complete raw Brief is never returned by the bridge by default. Context is visible as an expandable reference panel, separate from the composer. Every model request carries `conceptBrief`; the route bounds it to 30,000 characters and adds it to the newest user message as reference data, never a system instruction. No generation occurs on launch. Operations saves the selected concept snapshot with the document session JSON. The OpenAI API account/key connection is deferred.
 
 The popup bridge validates the exact opener window and configured Operations origin, and retains all-document flush acknowledgements before `SAVE & CLOSE EDITOR`. Missing/closed openers fail immediately. Storage remains private Supabase Storage; there is no local-storage fallback.
+
+## Drawing toolbar and contextual formatting
+
+The web workspace adds a horizontally scrollable toolbar below its menu: zoom, fit, native insertion and connector menus, fill/line colour, and direct Style/Text/Arrange shortcuts. Controls call the pinned draw.io actions and menus; the native model transactions own undo/redo and autosave. On small screens the tools scroll inside their row rather than widening the workspace. The MCP canvas shell is unchanged.
+
+The right-hand native panel is contextual: no selection shows Diagram/Style, selecting a shape or connector exposes Style/Text/Arrange, and in-place text editing shows Text. Text/Arrange shortcuts are disabled without a selection, with a visible selection hint. The adapter selects translated native tabs by their resource title rather than hard-coded tab indices. Operations read-only and busy states disable mutation tools.
