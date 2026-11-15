@@ -13,7 +13,7 @@ describe("stable drawing viewport", () => {
         const view = {
             scale: 1.75,
             translate: { x: 18, y: 35 },
-            setScaleAndTranslate(scale: number, x: number, y: number) {
+            scaleAndTranslate(scale: number, x: number, y: number) {
                 this.scale = scale
                 this.translate = { x, y }
             },
@@ -72,7 +72,7 @@ describe("stable drawing viewport", () => {
         const view = {
             scale: 2,
             translate: { x: 5, y: 8 },
-            setScaleAndTranslate: vi.fn(),
+            scaleAndTranslate: vi.fn(),
         }
         const ui = {
             editor: { graph: { view } },
@@ -88,7 +88,7 @@ describe("stable drawing viewport", () => {
                 throw new Error("layout failed")
             }),
         ).toThrow("layout failed")
-        expect(view.setScaleAndTranslate).toHaveBeenCalledWith(2, 5, 8)
+        expect(view.scaleAndTranslate).toHaveBeenCalledWith(2, 5, 8)
     })
 })
 

@@ -5,7 +5,7 @@ export function withStableViewport(ui: any, change: () => void) {
     const view = graph?.view
     if (
         !view?.translate ||
-        !view.setScaleAndTranslate ||
+        !view.scaleAndTranslate ||
         !container?.getBoundingClientRect
     ) {
         change()
@@ -29,7 +29,7 @@ export function withStableViewport(ui: any, change: () => void) {
         // Keep that translation and compensate with scroll, as draw.io's own
         // restoreScrollState does, instead of forcing the previous page origin.
         if (view.scale !== before.scale) {
-            view.setScaleAndTranslate(
+            view.scaleAndTranslate(
                 before.scale,
                 view.translate.x,
                 view.translate.y,
@@ -46,7 +46,7 @@ export function withStableViewport(ui: any, change: () => void) {
             before.top +
             (view.translate.y - before.y) * before.scale
         if (x < 0 || y < 0) {
-            view.setScaleAndTranslate(
+            view.scaleAndTranslate(
                 before.scale,
                 view.translate.x - Math.min(0, x) / before.scale,
                 view.translate.y - Math.min(0, y) / before.scale,
