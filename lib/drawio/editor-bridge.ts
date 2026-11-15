@@ -11,6 +11,11 @@
  */
 import { create } from "zustand"
 import { isSameDocument, plainLabel, sameFileVars } from "@/lib/diagram-diff"
+import {
+    createShapeToolbox,
+    type ShapeGroup,
+    type ToolboxLabels,
+} from "@/lib/drawio/shape-toolbox"
 import { hasCells } from "@/packages/mcp-server/src/pages.ts"
 import type { SelectionAnswer } from "@/packages/mcp-server/src/selection.ts"
 import { type SelectedCell, useCanvasStore } from "@/stores/canvas-store"
@@ -20,6 +25,14 @@ type FrameWindow = any
 
 let ui: EditorUi | null = null
 let win: FrameWindow | null = null
+
+/** Web-only EMC controls; returns null for external/cross-origin editors. */
+export function connectShapeToolbox(
+    labels: ToolboxLabels,
+    onChange: (group: ShapeGroup | null, pinned: boolean) => void,
+) {
+    return createShapeToolbox(ui, labels, onChange)
+}
 let detachListeners: (() => void) | null = null
 const warned = new Set<string>()
 // Keyboard shortcuts of the app that must also work while focus is inside

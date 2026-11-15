@@ -1,4 +1,18 @@
 {
+    "toolbox": {
+        "title": "描画ツール",
+        "basic": "基本図形",
+        "arrows": "線と矢印",
+        "diagrams": "フローチャートと図",
+        "technical": "技術ライブラリ",
+        "network": "ネットワークとクラウド",
+        "search": "図形を検索",
+        "recent": "最近使用した図形",
+        "pin": "パネルを固定",
+        "close": "パネルを閉じる",
+        "allLibraries": "すべてのライブラリ",
+        "emptyRecent": "このキャンバスに追加した図形がここに表示されます。"
+    },
     "common": {
         "save": "保存",
         "cancel": "キャンセル",

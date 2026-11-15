@@ -138,4 +138,10 @@ body:not(.geDarkMode) .geSimpleMainMenu { border-bottom: 1px solid #e4e7eb !impo
 body.geDarkMode { --workspace-color: #050505; }
 body.geDarkMode .geDiagramContainer { background-color: #050505; }
 a[href*="github.com/jgraph/drawio"] { display: none !important; }
+body.emc-shape-flyout .geSidebarContainer:not(.geFormatContainer) { border-right: 1px solid #a48532 !important; }
+.emc-shape-header { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 3px; min-height: 40px; padding: 0 6px; box-sizing: border-box; background: #101310; color: #edcb6d; border-bottom: 1px solid #3d472c; font: 12px Arial, sans-serif; }
+.emc-shape-header strong { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.emc-shape-header button { width: 28px; height: 30px; border: 1px solid transparent; border-radius: 5px; background: transparent; color: #edcb6d; cursor: pointer; font-size: 18px; }
+.emc-shape-header button:hover, .emc-shape-header button:focus-visible, .emc-shape-header button[aria-pressed="true"] { border-color: #cfad46; background: #263b2a; }
+.emc-shape-empty { padding: 12px; font: 12px Arial, sans-serif; }
 `

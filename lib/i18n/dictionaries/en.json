@@ -1,4 +1,18 @@
 {
+    "toolbox": {
+        "title": "Drawing toolbox",
+        "basic": "Basic shapes",
+        "arrows": "Lines and arrows",
+        "diagrams": "Flowcharts and diagrams",
+        "technical": "Technical libraries",
+        "network": "Network and cloud",
+        "search": "Search shapes",
+        "recent": "Recently used shapes",
+        "pin": "Pin flyout",
+        "close": "Close flyout",
+        "allLibraries": "All libraries",
+        "emptyRecent": "Shapes added on this canvas will appear here."
+    },
     "common": {
         "save": "Save",
         "cancel": "Cancel",

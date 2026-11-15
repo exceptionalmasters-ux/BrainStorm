@@ -326,6 +326,7 @@ function WorkspaceLayout() {
                                 />
                             )}
                             waitForSavedLocale
+                            toolbox
                         />
                     </div>
                     {/* Below draw.io's toolbar (50 px), whose
