@@ -40,6 +40,7 @@ export function createShapeToolbox(
     const recent: any[] = []
     doc.body.classList.add("emc-shape-tools")
     ui.sidebarContainer?.classList.add("emc-shape-overlay")
+    sidebar.container.classList.add("emc-shape-scroll")
     let header: HTMLElement | null = null
     const changed = () => onChange(active, pinned)
     const close = () => {
@@ -255,6 +256,7 @@ export function createShapeToolbox(
             doc.removeEventListener("keydown", key)
             ui.editor?.graph?.removeListener?.(inserted)
             sidebar.removePalette?.("emcRecent")
+            sidebar.container.classList.remove("emc-shape-scroll")
             ui.sidebarContainer?.classList.remove("emc-shape-overlay")
             doc.body.classList.remove("emc-shape-tools")
         },

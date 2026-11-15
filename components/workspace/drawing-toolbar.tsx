@@ -1,13 +1,16 @@
 import {
+    ArrowRight,
     GitBranch,
     LayoutPanelTop,
     MousePointer2,
+    MoveRight,
     PaintBucket,
     Pencil,
     PenTool,
     Plus,
     Route,
     Scan,
+    Shapes,
     SlidersHorizontal,
     Type,
     ZoomIn,
@@ -20,6 +23,7 @@ import {
     editorMenuAvailable,
     openEditorFormatTab,
     openNativeEditorMenu,
+    openQuickInsertMenu,
     runEditorAction,
 } from "@/lib/drawio/editor-bridge"
 import { getOperationsContext } from "@/lib/operations-bridge"
@@ -147,6 +151,33 @@ export function DrawingToolbar() {
                     aria-hidden
                     className="mx-1 h-5 shrink-0 border-l border-border"
                 />
+                {(
+                    [
+                        ["lines", "Lines", MoveRight],
+                        ["shapes", "Shapes", Shapes],
+                        ["arrows", "Arrows", ArrowRight],
+                    ] as const
+                ).map(([group, label, Icon]) => (
+                    <button
+                        key={group}
+                        type="button"
+                        className={base}
+                        data-testid={`drawing-insert-${group}`}
+                        title={label}
+                        aria-haspopup="menu"
+                        disabled={!ready || busy || readOnly}
+                        onClick={(event) =>
+                            openQuickInsertMenu(
+                                group,
+                                event.currentTarget.getBoundingClientRect(),
+                            )
+                        }
+                    >
+                        <Icon size={16} />
+                        {label}
+                        <span aria-hidden>▾</span>
+                    </button>
+                ))}
                 {menu("insert", "insert", "Insert", Plus)}
                 {menu("edgeShape", "connection", "Connection", GitBranch, true)}
                 {menu("edgeStyle", "waypoints", "Waypoints", Route, true)}

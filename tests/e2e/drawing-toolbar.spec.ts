@@ -139,3 +139,29 @@ test("selection pointer exits freehand and polygon points use the native editor"
     await expect(canvas.locator(".geDialog")).toBeVisible()
     await canvas.getByRole("button", { name: "Cancel", exact: true }).click()
 })
+
+test("quick insert creates native shapes and arrow lines with undo", async ({
+    page,
+}) => {
+    await openApp(page)
+    const frame = getIframeContent(page)
+    await page.getByTestId("drawing-insert-shapes").click()
+    await frame
+        .locator(".mxPopupMenu:visible")
+        .getByText("Circle", { exact: true })
+        .click()
+    await expect(page.getByTestId("drawing-format-text")).toBeEnabled()
+    await page.getByTestId("drawing-insert-lines").click()
+    await frame
+        .locator(".mxPopupMenu:visible")
+        .getByText("Double arrow", { exact: true })
+        .click()
+    await expect(page.getByTestId("editor-undo")).toBeEnabled()
+    await page.getByTestId("editor-undo").click()
+    await expect(page.getByTestId("editor-redo")).toBeEnabled()
+    await page.getByTestId("drawing-insert-arrows").click()
+    await frame
+        .locator(".mxPopupMenu:visible")
+        .getByText("Right arrow", { exact: true })
+        .click()
+})

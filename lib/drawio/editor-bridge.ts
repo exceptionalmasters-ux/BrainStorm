@@ -22,6 +22,11 @@ import {
     showFormatTab,
 } from "@/lib/drawio/format-tools"
 import {
+    insertQuickCell,
+    type QuickInsertGroup,
+    quickInsertGroups,
+} from "@/lib/drawio/quick-insert"
+import {
     createShapeToolbox,
     type ShapeGroup,
     type ToolboxLabels,
@@ -75,6 +80,35 @@ export function openNativeEditorMenu(name: string, anchor: DOMRect) {
         x: Math.max(0, Math.min(anchor.left - frame.left, frame.width - 180)),
         y: Math.max(0, anchor.bottom - frame.top),
     })
+}
+
+/** Use the iframe's native popup so menus are not clipped by the toolbar scroller. */
+export function openQuickInsertMenu(group: QuickInsertGroup, anchor: DOMRect) {
+    if (getOperationsContext()?.readOnly || !ui?.editor?.graph?.isEnabled?.())
+        return false
+    const frame = win?.frameElement?.getBoundingClientRect?.()
+    if (!frame || !ui.showPopupMenu) return false
+    const editor = ui,
+        frameWindow = win
+    editor.hideCurrentMenu?.()
+    editor.showPopupMenu(
+        (popup: any, parent: any) => {
+            quickInsertGroups[group].forEach(([label], index) => {
+                popup.addItem(
+                    label,
+                    null,
+                    () => {
+                        insertQuickCell(editor, frameWindow, group, index)
+                        syncAll()
+                    },
+                    parent,
+                )
+            })
+        },
+        Math.max(0, Math.min(anchor.left - frame.left, frame.width - 180)),
+        Math.max(0, anchor.bottom - frame.top),
+    )
+    return true
 }
 
 /** Web-only EMC controls; returns null for external/cross-origin editors. */

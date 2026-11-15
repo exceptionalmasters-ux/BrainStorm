@@ -109,3 +109,25 @@ test("phone toolbox opens and closes an unpinned flyout without reloading draw.i
         )
         .toBe("kept")
 })
+
+test("expanded technical libraries scroll inside a short viewport", async ({
+    page,
+}) => {
+    await page.setViewportSize({ width: 1100, height: 540 })
+    await openApp(page, { startScreen: true })
+    await page.getByTestId("draw-manually").click()
+    await page.getByTestId("toolbox-technical").click()
+    const scroll = getIframeContent(page).locator(".emc-shape-scroll")
+    await expect(scroll).toBeVisible()
+    await expect
+        .poll(() => scroll.evaluate((el) => el.scrollHeight > el.clientHeight))
+        .toBe(true)
+    await scroll.evaluate((el) => {
+        el.scrollTop = el.scrollHeight
+    })
+    await expect
+        .poll(() => scroll.evaluate((el) => el.scrollTop))
+        .toBeGreaterThan(0)
+    const bounds = await scroll.boundingBox()
+    expect(bounds && bounds.y + bounds.height).toBeLessThanOrEqual(540)
+})

@@ -140,6 +140,13 @@ body.geDarkMode .geDiagramContainer { background-color: #050505; }
 /* Native palettes float above the page: opening a tool must not resize the graph. */
 body.emc-shape-tools .emc-shape-overlay { position: absolute !important; left: 0 !important; top: var(--emc-tools-top, 48px) !important; bottom: 0 !important; width: 0 !important; z-index: 20; background: #101310; }
 body.emc-shape-flyout .emc-shape-overlay { width: 232px !important; max-width: calc(100% - 32px); }
+/* The flyout is viewport-bounded; native inline heights must not clip long palettes. */
+body.emc-shape-tools .emc-shape-overlay { height: auto !important; min-height: 0 !important; overflow: hidden !important; }
+body.emc-shape-flyout .emc-shape-scroll:not(.emc-shape-overlay) { position: absolute !important; inset: 0 !important; width: 100% !important; }
+body.emc-shape-flyout .emc-shape-scroll { height: auto !important; max-height: none !important; overflow-x: hidden !important; overflow-y: scroll !important; scrollbar-gutter: stable; overscroll-behavior: contain; scrollbar-width: auto; scrollbar-color: #a48532 #101310; }
+body.emc-shape-flyout .emc-shape-scroll::-webkit-scrollbar { width: 12px; }
+body.emc-shape-flyout .emc-shape-scroll::-webkit-scrollbar-thumb { background: #a48532; border-radius: 6px; border: 2px solid #101310; }
+body.emc-shape-flyout .emc-shape-scroll:has(.geSidebarFooter) > div:first-child { max-height: none !important; overflow: visible !important; }
 body.emc-shape-tools .geDiagramContainer { left: 0 !important; }
 body.emc-shape-tools .geHsplit { display: none !important; }
 body.emc-shape-tools .geDiagramContainer, body.emc-shape-tools .geBackgroundPage { color-scheme: light; }
