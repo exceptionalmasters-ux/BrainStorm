@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import { DrawioFrame } from "@/components/canvas/drawio-frame"
 import { useLocale } from "@/components/canvas/locale-context"
 import { OutlineOffer } from "@/components/canvas/outline-offer"
+import { ShapeToolboxRail } from "@/components/canvas/shape-toolbox-rail"
 import { useDiagram } from "@/contexts/diagram-context"
 import { useDictionary } from "@/hooks/use-dictionary"
 import {
@@ -40,6 +41,7 @@ export function CanvasStage({
     overlay,
     drawioSource,
     waitForSavedLocale = false,
+    toolbox = false,
 }: {
     className?: string
     style?: React.CSSProperties
@@ -54,6 +56,8 @@ export function CanvasStage({
      * time (useSavedLocale in the workspace); do not load draw.io in the
      * URL's language meanwhile */
     waitForSavedLocale?: boolean
+    /** EMC controls are web-only; shared MCP canvas keeps its native layout. */
+    toolbox?: boolean
 }) {
     const dict = useDictionary()
     const lang = useLocale()
@@ -134,6 +138,12 @@ export function CanvasStage({
     }, [])
 
     const showOverlays = hasEditor && isDrawioReady && !hideOverlays
+    const showToolbox = toolbox && editorAccess === true && showOverlays
+    useEffect(() => {
+        if (!showToolbox) return
+        const frame = requestAnimationFrame(() => refitIfRecent(4000))
+        return () => cancelAnimationFrame(frame)
+    }, [showToolbox])
 
     return (
         <div
@@ -156,35 +166,45 @@ export function CanvasStage({
                 }, 60)
             }}
         >
-            {src && (
-                <DrawioFrame
-                    key={src}
-                    ref={drawioRef}
-                    src={src}
-                    css={DRAWIO_CSS}
-                    dark={isDark}
-                    onLoad={onDrawioLoad}
-                    onAutoSave={handleDiagramAutoSave}
-                    onExport={handleDiagramExport}
-                    onEditorAccess={setEditorAccess}
-                />
-            )}
+            {showToolbox && <ShapeToolboxRail />}
+            <div
+                className="absolute inset-y-0 right-0"
+                style={{ left: showToolbox ? 52 : 0 }}
+            >
+                {src && (
+                    <DrawioFrame
+                        key={src}
+                        ref={drawioRef}
+                        src={src}
+                        css={DRAWIO_CSS}
+                        dark={isDark}
+                        onLoad={onDrawioLoad}
+                        onAutoSave={handleDiagramAutoSave}
+                        onExport={handleDiagramExport}
+                        onEditorAccess={setEditorAccess}
+                    />
+                )}
 
-            {/* Covers the iframe until draw.io has loaded and been styled */}
-            {(!isDrawioReady || editorAccess === null) && (
-                <div
-                    className="absolute inset-0 flex items-center justify-center bg-canvas"
-                    data-testid="canvas-loading"
-                >
-                    <div className="flex items-center gap-2.5 text-[13px] text-muted-foreground">
-                        <span className="size-3.5 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground" />
-                        {dict.workspace.canvasLoading}
+                {/* Covers the iframe until draw.io has loaded and been styled */}
+                {(!isDrawioReady || editorAccess === null) && (
+                    <div
+                        className="absolute inset-0 flex items-center justify-center bg-canvas"
+                        data-testid="canvas-loading"
+                    >
+                        <div className="flex items-center gap-2.5 text-[13px] text-muted-foreground">
+                            <span className="size-3.5 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground" />
+                            {dict.workspace.canvasLoading}
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
 
-            {showOverlays && overlay?.(size)}
-            {showOverlays && <OutlineOffer />}
+                {showOverlays &&
+                    overlay?.({
+                        ...size,
+                        width: Math.max(0, size.width - (showToolbox ? 52 : 0)),
+                    })}
+                {showOverlays && <OutlineOffer />}
+            </div>
         </div>
     )
 }

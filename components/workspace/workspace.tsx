@@ -326,6 +326,7 @@ function WorkspaceLayout() {
                                 />
                             )}
                             waitForSavedLocale
+                            toolbox
                         />
                     </div>
                     {/* Below draw.io's toolbar (50 px), whose
@@ -333,7 +334,7 @@ function WorkspaceLayout() {
                     {!showHero &&
                         ((!isMobile && !panelOpen) ||
                             (isMobile && mobileView === "canvas")) && (
-                            <div className="absolute top-[60px] right-3 left-3 md:left-auto z-20 flex items-center gap-1 rounded-xl bg-card p-1 shadow-float animate-fade-in">
+                            <div className="emc-canvas-actions absolute top-[60px] right-3 left-3 md:left-auto z-20 flex items-center gap-1 rounded-xl bg-card p-1 shadow-float animate-fade-in">
                                 <BrandMark className="mx-0.5 size-6" />
                                 <SessionMenu align="end" onOpenFile={openFile}>
                                     <button

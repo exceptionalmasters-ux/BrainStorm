@@ -1,4 +1,18 @@
 {
+    "toolbox": {
+        "title": "绘图工具箱",
+        "basic": "基本形状",
+        "arrows": "线条和箭头",
+        "diagrams": "流程图和图表",
+        "technical": "技术图形库",
+        "network": "网络和云",
+        "search": "搜索形状",
+        "recent": "最近使用的形状",
+        "pin": "固定面板",
+        "close": "关闭面板",
+        "allLibraries": "全部图形库",
+        "emptyRecent": "在此画布添加的形状将显示在这里。"
+    },
     "common": {
         "save": "保存",
         "cancel": "取消",

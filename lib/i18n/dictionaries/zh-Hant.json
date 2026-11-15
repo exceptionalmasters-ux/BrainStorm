@@ -1,4 +1,18 @@
 {
+    "toolbox": {
+        "title": "繪圖工具箱",
+        "basic": "基本形狀",
+        "arrows": "線條和箭頭",
+        "diagrams": "流程圖和圖表",
+        "technical": "技術圖形庫",
+        "network": "網路和雲端",
+        "search": "搜尋形狀",
+        "recent": "最近使用的形狀",
+        "pin": "固定面板",
+        "close": "關閉面板",
+        "allLibraries": "全部圖形庫",
+        "emptyRecent": "在此畫布新增的形狀將顯示在這裡。"
+    },
     "common": {
         "save": "儲存",
         "cancel": "取消",
