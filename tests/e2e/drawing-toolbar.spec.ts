@@ -102,8 +102,12 @@ test("selection pointer exits freehand and polygon points use the native editor"
     const canvas = getIframeContent(page)
     await canvas.getByText("Toolbar shape", { exact: true }).click()
     await expect(page.getByTestId("drawing-tool-editPolygon")).toBeDisabled()
-    // X is the pinned editor's native freehand shortcut.
-    await page.keyboard.press("x")
+    // Start through the visible native menu: imported files do not force keyboard focus.
+    await page.getByTestId("drawing-tool-insert").click()
+    await canvas
+        .locator(".mxPopupMenu:visible")
+        .getByText("Freehand", { exact: true })
+        .click()
     await expect(page.getByTestId("drawing-tool-select")).toHaveAttribute(
         "aria-pressed",
         "false",
