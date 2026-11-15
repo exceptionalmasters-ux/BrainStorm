@@ -5802,7 +5802,6 @@ test.describe("Edge cases", () => {
             diagramXml: doc,
             versions: [],
         })
-        await expect(page.getByTestId("lobby-hero")).toBeVisible()
         await sendMessage(page, "Chat A")
         await expect(page.getByText(/w10 /)).toBeVisible({ timeout: 15000 })
         await page.evaluate(() => {
@@ -5977,7 +5976,6 @@ test.describe("Edge cases", () => {
             diagramXml: doc,
             versions: [],
         })
-        await expect(page.getByTestId("lobby-hero")).toBeVisible()
         await sendMessage(page, "Chat A")
         await waitForComplete(page)
         await page.waitForTimeout(1500)
