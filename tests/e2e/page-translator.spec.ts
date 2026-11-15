@@ -1,5 +1,6 @@
 import { createBoxXml } from "./fixtures/diagrams"
 import {
+    closeDrawing,
     createMultiTurnMock,
     expect,
     getChatInput,
@@ -71,7 +72,7 @@ test("the editor stays up when the browser translates the page", async ({
     await expect(page.locator("iframe")).toBeVisible()
 
     // And the chat still works
-    await page.getByTestId("new-chat-button").click()
+    await closeDrawing(page)
     await expect(page.getByTestId("lobby-hero")).toBeVisible()
     await sendMessage(page, "Draw a third box")
     await waitForCompleteCount(page, 1)

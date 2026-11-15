@@ -2,6 +2,7 @@ import type { Page, Route } from "@playwright/test"
 import { FLOWCHART_XML } from "./fixtures/diagrams"
 import {
     chunkedReplies,
+    closeDrawing,
     expect,
     getIframeContent,
     getSendButton,
@@ -154,7 +155,7 @@ test.describe("Saved chats", () => {
         expect(chats.one.messages).toHaveLength(4)
         expect(chats.one.updatedAt).toBe(2000)
         // A new diagram leaves chat two, which was only looked at as well
-        await page.locator('[data-testid="new-chat-button"]').click()
+        await closeDrawing(page)
         await expect(page.locator('[data-testid="lobby-hero"]')).toBeVisible()
         await page.waitForTimeout(1500)
         chats = await storedChats(page)
@@ -185,7 +186,7 @@ test.describe("Saved chats", () => {
         await page.waitForTimeout(1500)
         expect(await samePage()).toBe(true)
         // A new diagram takes the session out of the address
-        await page.locator('[data-testid="new-chat-button"]').click()
+        await closeDrawing(page)
         await expect(page).not.toHaveURL(/session=/)
         await page.waitForTimeout(1500)
         expect(await samePage()).toBe(true)

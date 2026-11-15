@@ -1,6 +1,7 @@
 import type { Page } from "@playwright/test"
 import { SINGLE_BOX_XML } from "./fixtures/diagrams"
 import {
+    closeDrawing,
     expect,
     getIframeContent,
     openApp,
@@ -34,7 +35,7 @@ test.describe("History and Session Restore", () => {
                 throw new DOMException("Storage is full", "QuotaExceededError")
             }
         })
-        await page.locator('[data-testid="new-chat-button"]').click()
+        await closeDrawing(page)
 
         await expect(
             page.getByText(/Could not save this chat/).first(),
@@ -70,7 +71,7 @@ test.describe("History and Session Restore", () => {
                 throw new DOMException("Storage is full", "QuotaExceededError")
             }
         })
-        await page.locator('[data-testid="new-chat-button"]').click()
+        await closeDrawing(page)
         await page
             .getByRole("button", { name: "Continue without saving" })
             .click({ timeout: 5000 })
@@ -96,7 +97,7 @@ test.describe("History and Session Restore", () => {
         await sendMessage(page, "First chat")
         await waitForText(page, "Answer 1.")
         await page.waitForTimeout(1500)
-        await page.locator('[data-testid="new-chat-button"]').click()
+        await closeDrawing(page)
         await expect(page.getByTestId("lobby-hero")).toBeVisible()
         await sendMessage(page, "Second chat")
         await waitForText(page, "Answer 2.")
@@ -110,7 +111,7 @@ test.describe("History and Session Restore", () => {
                 throw new DOMException("Storage is full", "QuotaExceededError")
             }
         })
-        await page.locator('[data-testid="new-chat-button"]').click()
+        await closeDrawing(page)
         const offer = page.getByRole("button", {
             name: "Continue without saving",
         })
@@ -164,7 +165,7 @@ test.describe("History and Session Restore", () => {
             getIframeContent(page).getByText("Hand drawn", { exact: true }),
         ).toBeVisible({ timeout: 10000 })
         await storageFull(page)
-        await page.locator('[data-testid="new-chat-button"]').click()
+        await closeDrawing(page)
         await expect(
             page.getByText(/Could not save this chat/).first(),
         ).toBeVisible({ timeout: 5000 })
@@ -190,7 +191,7 @@ test.describe("History and Session Restore", () => {
         await sendMessage(page, "Create a test diagram")
         await waitForText(page, "Created your test diagram.")
         await page.waitForTimeout(1500)
-        await page.locator('[data-testid="new-chat-button"]').click()
+        await closeDrawing(page)
         // The empty chat shows the start screen; draw something by hand
         await expect(page.getByTestId("lobby-hero")).toBeVisible({
             timeout: 10000,
@@ -253,14 +254,14 @@ test("new chat right after an answer saves that chat once", async ({
         })
     })
     await openApp(page)
-    const newChat = page.locator('[data-testid="new-chat-button"]')
+    const closeCurrent = () => closeDrawing(page)
     // The auto-save runs a second after the answer; New Chat around then
     // waits for its thumbnail while the auto-save starts
     for (let run = 1; run <= 10; run++) {
         await sendMessage(page, `Draw box ${run}`)
         await waitForText(page, "Drew the box.")
         await page.waitForTimeout(500 + run * 100)
-        await newChat.click()
+        await closeCurrent()
         await expect(page.getByText("Drew the box.")).toHaveCount(0)
         await page.waitForTimeout(2500)
         expect(await countSessions(page), `run ${run}`).toBe(run)

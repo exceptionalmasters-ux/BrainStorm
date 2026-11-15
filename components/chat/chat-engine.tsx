@@ -306,7 +306,10 @@ export interface ChatEngine {
     currentSessionId: string | null
     currentTitle: string | null
     isRestored: boolean
+    /** Starts another drawing without changing this tab. */
     newChat: () => Promise<void>
+    /** Saves and closes this drawing in the current tab. */
+    closeDrawing: () => Promise<void>
     selectSession: (id: string) => Promise<void>
     deleteSession: (id: string) => Promise<void>
     renameSession: (title: string) => Promise<void>
@@ -2387,7 +2390,16 @@ export function ChatEngineProvider({
 
     const newChat = async () => {
         if (!canStartTurn()) return
-        noteAction("new chat")
+        noteAction("new drawing tab")
+        const url = new URL(window.location.href)
+        url.search = ""
+        url.hash = ""
+        window.open(url.href, "_blank", "noopener,noreferrer")
+    }
+
+    const closeDrawing = async () => {
+        if (!canStartTurn()) return
+        noteAction("close drawing")
         const start = () => {
             if (isTurnActive()) return
             startNewChat()
@@ -2511,6 +2523,7 @@ export function ChatEngineProvider({
         currentTitle: sessionManager.currentSession?.title ?? pendingTitle,
         isRestored,
         newChat,
+        closeDrawing,
         selectSession,
         deleteSession,
         renameSession,

@@ -1,4 +1,4 @@
-import { SINGLE_BOX_XML } from "./fixtures/diagrams"
+import { SINGLE_BOX_DRAWIO_FILE } from "./fixtures/diagrams"
 import {
     expect,
     getIframeContent,
@@ -65,13 +65,27 @@ for (const mobile of [false, true]) {
             page.getByRole("dialog", { name: "Settings" }),
         ).toBeVisible()
         await page.keyboard.press("Escape")
-        await openDrawioFile(page, "manual-concept.drawio", SINGLE_BOX_XML)
+        await openDrawioFile(
+            page,
+            "manual-concept.drawio",
+            SINGLE_BOX_DRAWIO_FILE,
+        )
         await expect(page.getByTestId("lobby-hero")).toHaveCount(0)
         // A local file is editable, and can be exported without configuring AI.
+        if (mobile)
+            await page
+                .getByRole("button", { name: "Canvas", exact: true })
+                .click()
+        await expect(
+            getIframeContent(page).getByText("Test Box", { exact: true }),
+        ).toBeVisible()
         await page.getByTestId("manual-export-button").click()
         const dialog = page.getByRole("dialog", { name: "Export diagram" })
         await expect(dialog).toBeVisible()
-        await page.keyboard.press("Escape")
+        await dialog
+            .getByRole("button", { name: "Cancel", exact: true })
+            .click()
+        await expect(dialog).toHaveCount(0)
         await page.getByTestId("show-panel").click()
         await expect(page.getByTestId("chat-panel")).toBeVisible()
         expect(modelRequests).toEqual([])

@@ -1,5 +1,6 @@
 {
     "editor": {
+        "closeDrawing": "關閉繪圖",
         "fullscreen": "全螢幕",
         "hideAssistant": "隱藏 AI 助手",
         "workspaceSettings": "工作區設定",

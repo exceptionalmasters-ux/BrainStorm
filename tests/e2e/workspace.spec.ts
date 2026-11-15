@@ -2,6 +2,7 @@ import type { Locator, Page, Route } from "@playwright/test"
 import { FLOWCHART_XML } from "./fixtures/diagrams"
 import {
     chunkedReplies,
+    closeDrawing,
     expect,
     getAttachmentInput,
     getChatInput,
@@ -537,7 +538,7 @@ test.describe("Workspace", () => {
         await sendMessage(page, "Create a flowchart")
         await waitForComplete(page)
         await page.waitForTimeout(1500)
-        await page.locator('[data-testid="new-chat-button"]').click()
+        await closeDrawing(page)
         await expect(page.locator('[data-testid="lobby-hero"]')).toBeVisible()
         // An answer that takes a while
         await page.unroute("**/api/chat")
@@ -1168,7 +1169,7 @@ test.describe("Workspace", () => {
         await openApp(page, { startScreen: true })
         await page.locator('[data-testid="draw-on-the-fly"]').click()
         await expect(page.locator('[data-testid="lobby-hero"]')).toHaveCount(0)
-        await page.locator('[data-testid="new-chat-button"]').click()
+        await closeDrawing(page)
         await expect(page.locator('[data-testid="lobby-hero"]')).toBeVisible()
     })
 
@@ -1210,7 +1211,7 @@ test.describe("Workspace", () => {
         await page.locator('[data-testid="compare-restore"]').click()
         const toast = page.getByText("Restored v1")
         await expect(toast).toBeVisible()
-        await page.locator('[data-testid="new-chat-button"]').click()
+        await closeDrawing(page)
         await expect(toast).toHaveCount(0)
     })
 
@@ -1520,7 +1521,7 @@ test.describe("Workspace", () => {
         await waitForComplete(page)
         await expect(page).toHaveURL(/session=/)
         await page.waitForTimeout(1500)
-        await page.locator('[data-testid="new-chat-button"]').click()
+        await closeDrawing(page)
         await expect(page.getByTestId("lobby-hero")).toBeVisible()
         await sendMessage(page, "Second chat")
         await waitForComplete(page)
@@ -1634,10 +1635,7 @@ test.describe("Workspace", () => {
         const chatB = new URL(page.url()).searchParams.get("session")
         await page.waitForTimeout(1200)
         await page.locator('[data-testid="session-title"]').click()
-        await page
-            .getByRole("dialog")
-            .getByRole("button", { name: "New diagram" })
-            .click()
+        await closeDrawing(page)
         await expect(page.getByTestId("lobby-hero")).toBeVisible()
         await sendMessage(page, "Chat A")
         await expect(page.locator('[data-testid="retry-button"]')).toBeVisible({
@@ -2247,10 +2245,7 @@ test.describe("Workspace", () => {
         await expect(page).toHaveURL(/session=/)
         await page.waitForTimeout(1200)
         await page.locator('[data-testid="session-title"]').click()
-        await page
-            .getByRole("dialog")
-            .getByRole("button", { name: "New diagram" })
-            .click()
+        await closeDrawing(page)
         await expect(page.getByTestId("draw-manually")).toBeFocused()
         // Another tab deletes the flowchart chat
         await page.evaluate(async () => {
@@ -2294,10 +2289,7 @@ test.describe("Workspace", () => {
         await page.waitForTimeout(1200)
         // A new chat, named before anything is in it
         await page.locator('[data-testid="session-title"]').click()
-        await page
-            .getByRole("dialog")
-            .getByRole("button", { name: "New diagram" })
-            .click()
+        await closeDrawing(page)
         await expect(page.locator('[data-testid="lobby-hero"]')).toBeVisible()
         // The new drawing puts focus on the primary starter
         await expect(page.getByTestId("draw-manually")).toBeFocused()
@@ -2708,10 +2700,7 @@ async function twoChats(page: Page) {
     const chatB = new URL(page.url()).searchParams.get("session")
     await page.waitForTimeout(1200)
     await page.locator('[data-testid="session-title"]').click()
-    await page
-        .getByRole("dialog")
-        .getByRole("button", { name: "New diagram" })
-        .click()
+    await closeDrawing(page)
     // Its address goes first: a URL change while that one is still on the
     // way would replace it, and the page would never see a change
     await expect(page).not.toHaveURL(/session=/)
@@ -3000,10 +2989,7 @@ test.describe("Edge cases", () => {
         await waitForComplete(page)
         await page.waitForTimeout(1200)
         await page.locator('[data-testid="session-title"]').click()
-        await page
-            .getByRole("dialog")
-            .getByRole("button", { name: "New diagram" })
-            .click()
+        await closeDrawing(page)
         await expect(page.getByTestId("draw-manually")).toBeFocused()
         await page.getByRole("button", { name: "Recent diagrams" }).click()
         await page.locator('[data-testid="rename-session"]').click()
@@ -3399,10 +3385,7 @@ test.describe("Edge cases", () => {
         const chatB = new URL(page.url()).searchParams.get("session")
         await page.waitForTimeout(1200)
         await page.locator('[data-testid="session-title"]').click()
-        await page
-            .getByRole("dialog")
-            .getByRole("button", { name: "New diagram" })
-            .click()
+        await closeDrawing(page)
         await sendMessage(page, "Chat A one")
         await waitForCompleteCount(page, 1)
         await page.waitForTimeout(1200)
@@ -5501,10 +5484,7 @@ test.describe("Edge cases", () => {
         const chatB = new URL(page.url()).searchParams.get("session")
         await page.waitForTimeout(1200)
         await page.locator('[data-testid="session-title"]').click()
-        await page
-            .getByRole("dialog")
-            .getByRole("button", { name: "New diagram" })
-            .click()
+        await closeDrawing(page)
         await expect(page).not.toHaveURL(/session=/)
         await sendMessage(page, "Chat A two")
         await expect(page.getByText("A is answering.")).toBeVisible({

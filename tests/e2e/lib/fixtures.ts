@@ -135,6 +135,16 @@ export async function openAssistant(page: Page) {
         await page.getByTestId("show-panel").click()
 }
 
+/** Explicitly close the current drawing, leaving the chooser in this tab. */
+export async function closeDrawing(page: Page) {
+    await page.keyboard.press("Escape")
+    await page.getByTestId("editor-menu-file").click()
+    await page
+        .getByTestId("editor-menu-popup")
+        .getByTestId("editor-close-drawing")
+        .click()
+}
+
 /** Send a message in the chat input */
 export async function sendMessage(page: Page, message: string) {
     const chatInput = getChatInput(page)

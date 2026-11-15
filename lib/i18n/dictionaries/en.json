@@ -1,5 +1,6 @@
 {
     "editor": {
+        "closeDrawing": "Close drawing",
         "fullscreen": "Full screen",
         "hideAssistant": "Hide AI assistant",
         "workspaceSettings": "Workspace settings",
