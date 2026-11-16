@@ -135,7 +135,7 @@ export function ChatPanel({
         <aside
             className={cn(
                 "flex flex-col bg-card",
-                webEnabled && "ring-2 ring-red-500",
+                webEnabled && "ring-2 ring-inset ring-red-500",
                 mobile
                     ? "absolute inset-0"
                     : "absolute top-3 right-3 bottom-3 z-20 rounded-2xl shadow-float animate-panel-in",

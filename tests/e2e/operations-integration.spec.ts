@@ -11,6 +11,7 @@ for (const withBrief of [true, false]) {
     }) => {
         let modelRequests = 0
         let approvals = 0
+        const documentRequests: string[] = []
         const fixtureSymbol = {
             name: "Fixture module",
             device: "Fixture",
@@ -67,6 +68,7 @@ for (const withBrief of [true, false]) {
             }
             if (path === "/api/operations-documents") {
                 const body = route.request().postDataJSON()
+                documentRequests.push(body.method)
                 data = await page.evaluate(({ method, payload, brief }) => {
                     const records = (window as any).records as Map<string, any>
                     if (method === "list")
@@ -355,8 +357,14 @@ for (const withBrief of [true, false]) {
         await expect(
             getIframeContent(reopened).locator(".geDiagramContainer"),
         ).toBeVisible()
-        expect(await page.evaluate(() => (window as any).requests)).toContain(
-            "get",
+        const bridgeRequests = await page.evaluate(
+            () => (window as any).requests,
         )
+        expect(withBrief ? documentRequests : bridgeRequests).toContain("get")
+        if (withBrief) {
+            expect(bridgeRequests).not.toContain("authorize")
+            expect(bridgeRequests).not.toContain("save")
+            expect(documentRequests).toContain("save")
+        }
     })
 }
