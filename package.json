@@ -12,7 +12,7 @@
         "start": "next start --port 6001",
         "lint": "biome lint .",
         "format": "biome check --write .",
-        "check": "biome ci",
+        "check": "biome ci --max-diagnostics=100",
         "prepare": "husky",
         "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
         "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",

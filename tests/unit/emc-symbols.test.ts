@@ -1,6 +1,11 @@
 import { generateText } from "ai"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { EMC_MODEL_ID, emcGatewayHeaders, emcModel } from "@/lib/emc-ai"
+import {
+    callEmcGateway,
+    EMC_MODEL_ID,
+    emcGatewayHeaders,
+    emcModel,
+} from "@/lib/emc-ai"
 import {
     type EmcSymbol,
     emcPinLabel,
@@ -422,4 +427,23 @@ it("analyses and drafts a private attachment with Web off", async () => {
     expect(fetchMock.mock.calls[1][0]).toContain("/draft")
     expect(JSON.parse(fetchMock.mock.calls[1][1].body).webEnabled).toBe(false)
     expect(useDeviceResearch.getState().draft).toEqual(symbol)
+})
+
+it("limits Web lookup only, preserving unbounded drafting and user cancellation", async () => {
+    const timeout = vi.spyOn(AbortSignal, "timeout")
+    vi.stubGlobal(
+        "fetch",
+        vi.fn(async () => Response.json({})),
+    )
+    const request = new Request("https://editor.example/api/chat", {
+        headers: { "x-emc-access-token": "fixture" },
+    })
+    for (const action of ["draft", "source-research", "approve", "library"]) {
+        await callEmcGateway(request, action, {})
+    }
+    expect(timeout).not.toHaveBeenCalled()
+    expect(vi.mocked(fetch).mock.calls[0][1]?.signal).toBe(request.signal)
+    await callEmcGateway(request, "research", {})
+    expect(timeout).toHaveBeenCalledWith(125000)
+    timeout.mockRestore()
 })

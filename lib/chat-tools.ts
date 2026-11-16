@@ -1,12 +1,11 @@
 import { type InferUITools, tool } from "ai"
-import path from "path"
 import { z } from "zod"
 import {
     DIAGRAM_TYPE_LIST,
     getDiagramGuide,
 } from "@/packages/mcp-server/src/diagram-types/index.ts"
 import {
-    getShapeLibrary,
+    getBundledShapeLibrary,
     SHAPE_LIBRARY_LIST,
 } from "@/packages/mcp-server/src/shape-library.ts"
 import {
@@ -145,11 +144,8 @@ Call this tool to get shape names and usage syntax for a specific library.`,
                 ),
         }),
         execute: async ({ library }) => {
-            // Only known library names reach the file system
-            const result = await getShapeLibrary(
-                library,
-                path.join(process.cwd(), "docs/shape-libraries"),
-            )
+            // Bundle docs into the Worker: it has no repository filesystem.
+            const result = getBundledShapeLibrary(library)
             return result.ok ? result.text : result.error
         },
     }),

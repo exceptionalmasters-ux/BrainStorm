@@ -2,7 +2,15 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { watchReplyDeadline } from "@/lib/reply-deadline"
 
 afterEach(() => vi.useRealTimers())
-describe("managed reply deadline", () => {
+describe("Web-only reply deadline", () => {
+    it("does not stop drawing when no Web deadline is supplied", () => {
+        vi.useFakeTimers()
+        const expired = vi.fn()
+        const dispose = watchReplyDeadline(expired)
+        vi.advanceTimersByTime(3600000)
+        expect(expired).not.toHaveBeenCalled()
+        dispose()
+    })
     it("ends once at the total limit even while the connection remains active", () => {
         vi.useFakeTimers()
         const expired = vi.fn()

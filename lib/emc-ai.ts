@@ -57,7 +57,10 @@ export async function callEmcGateway(
         method: "POST",
         headers: emcGatewayHeaders(request),
         body: JSON.stringify(body),
-        signal: AbortSignal.any([request.signal, AbortSignal.timeout(125000)]),
+        signal:
+            action === "research"
+                ? AbortSignal.any([request.signal, AbortSignal.timeout(125000)])
+                : request.signal,
         cache: "no-store",
     })
 }

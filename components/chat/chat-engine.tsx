@@ -1142,6 +1142,7 @@ export function ChatEngineProvider({
     }
 
     const isBusy = status === "streaming" || status === "submitted"
+    const webEnabled = useDeviceResearch((state) => state.webEnabled)
     // isBusy of the latest render, for code that runs after an await
     const busyRef = useRef(isBusy)
     busyRef.current = isBusy
@@ -2400,17 +2401,21 @@ export function ChatEngineProvider({
     handleStopRef.current = handleStop
     useEffect(() => {
         if (!isBusy || modelConfig.selectedModelId !== EMC_MODEL_ID) return
-        return watchReplyDeadline(() => {
-            deadlineExpiredRef.current = true
-            handleStopRef.current()
-            setMessages((current) => [
-                ...current,
-                noticeMessage({
-                    text: "EMC OpenAI did not finish within 3 minutes. The request was stopped. Your drawing is kept; retry with a more specific instruction.",
-                }),
-            ])
-        })
-    }, [isBusy, modelConfig.selectedModelId, setMessages])
+        return watchReplyDeadline(
+            () => {
+                deadlineExpiredRef.current = true
+                handleStopRef.current()
+                setMessages((current) => [
+                    ...current,
+                    noticeMessage({
+                        text: "Web research did not finish within 3 minutes. The search was stopped. Your drawing is kept; retry with a more specific device query.",
+                    }),
+                ])
+            },
+            webEnabled ? 180000 : undefined,
+        )
+    }, [isBusy, modelConfig.selectedModelId, setMessages, webEnabled])
+
     const restoreAfterStopRef = useRef<string | null>(null)
     useEffect(() => {
         const id = restoreAfterStopRef.current
