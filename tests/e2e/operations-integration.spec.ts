@@ -358,12 +358,21 @@ for (const withBrief of [true, false]) {
             await expect(popup.getByTestId("chat-panel")).not.toHaveClass(
                 /ring-red-500/,
             )
-            await popup
-                .getByRole("button", { name: "EMC library", exact: true })
-                .click()
-            await popup
+            await popup.getByTestId("hide-chat-panel").click()
+            await expect(popup.getByTestId("chat-panel")).not.toBeVisible()
+            await popup.setViewportSize({ width: 600, height: 900 })
+            await popup.getByTestId("toolbox-emc-library").click()
+            const library = popup.getByTestId("emc-library-panel")
+            await expect(library).toBeVisible()
+            await library
                 .getByRole("button", { name: "Insert", exact: true })
                 .click()
+            await library
+                .getByRole("button", { name: "Close EMC library" })
+                .click()
+            await expect(library).toHaveCount(0)
+            await popup.setViewportSize({ width: 1440, height: 960 })
+            await popup.getByTestId("show-panel").click()
             await expect
                 .poll(() =>
                     getIframeContent(popup)

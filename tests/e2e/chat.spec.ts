@@ -46,7 +46,7 @@ test.describe("Crossing the mobile breakpoint", () => {
             .filter({ hasText: "Tell me a story" })
 
         // Phones show the canvas or the chat, one at a time
-        await page.setViewportSize({ width: 600, height: 900 })
+        await page.setViewportSize({ width: 390, height: 900 })
         if (await page.getByTestId("show-panel").isVisible())
             await page.getByTestId("show-panel").click()
         await expect(message).toBeVisible()
@@ -62,7 +62,7 @@ test.describe("Crossing the mobile breakpoint", () => {
         await page.getByRole("button", { name: "Hide chat panel" }).click()
         await expect(getChatInput(page)).toBeHidden()
 
-        await page.setViewportSize({ width: 600, height: 900 })
+        await page.setViewportSize({ width: 390, height: 900 })
         if (await page.getByTestId("show-panel").isVisible())
             await page.getByTestId("show-panel").click()
         await expect(getChatInput(page)).toBeVisible()
