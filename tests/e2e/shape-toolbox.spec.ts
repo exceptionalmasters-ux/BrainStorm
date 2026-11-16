@@ -62,7 +62,7 @@ test("EMC groups keep native shape dragging, recent shapes, pinning and the full
     await expect(pin).toHaveAttribute("aria-pressed", "true")
     await frame
         .locator(".geDiagramContainer")
-        .click({ position: { x: 20, y: 20 } })
+        .click({ position: { x: 300, y: 80 } })
     await expect(pin).toBeVisible()
     await testInfo.attach("emc-toolbox-desktop", {
         body: await page.screenshot(),
@@ -108,4 +108,26 @@ test("phone toolbox opens and closes an unpinned flyout without reloading draw.i
             ),
         )
         .toBe("kept")
+})
+
+test("expanded technical libraries scroll inside a short viewport", async ({
+    page,
+}) => {
+    await page.setViewportSize({ width: 1100, height: 540 })
+    await openApp(page, { startScreen: true })
+    await page.getByTestId("draw-manually").click()
+    await page.getByTestId("toolbox-technical").click()
+    const scroll = getIframeContent(page).locator(".emc-shape-scroll")
+    await expect(scroll).toBeVisible()
+    await expect
+        .poll(() => scroll.evaluate((el) => el.scrollHeight > el.clientHeight))
+        .toBe(true)
+    await scroll.evaluate((el) => {
+        el.scrollTop = el.scrollHeight
+    })
+    await expect
+        .poll(() => scroll.evaluate((el) => el.scrollTop))
+        .toBeGreaterThan(0)
+    const bounds = await scroll.boundingBox()
+    expect(bounds && bounds.y + bounds.height).toBeLessThanOrEqual(540)
 })

@@ -56,14 +56,22 @@ import {
 } from "@/lib/diagram-context"
 import { diffDiagrams, isSameDocument } from "@/lib/diagram-diff"
 import { pageModelXml, placeOnPage } from "@/lib/diagram-pages"
+import {
+    composerStorageKey,
+    type FlushDocumentEvent,
+    notifyWorkbench,
+    WORKBENCH_PROTOCOL,
+} from "@/lib/document-workbench"
 import { EMPTY_DRAWIO_DOCUMENT } from "@/lib/drawio/drawio-config"
 import { clearHighlights } from "@/lib/drawio/editor-bridge"
 import { formatMessage } from "@/lib/i18n/utils"
 import { isLookupTool } from "@/lib/lookup-tools"
+import { getOperationsContext, isOperationsMode } from "@/lib/operations-bridge"
 import { isPdfFile, isTextFile } from "@/lib/pdf-utils"
 import type { SessionMetadata, StoredMessage } from "@/lib/session-storage"
-import { sanitizeMessages } from "@/lib/session-storage"
+import { extractTitle, sanitizeMessages } from "@/lib/session-storage"
 import { STORAGE_KEYS } from "@/lib/storage"
+import { askUnsavedChanges } from "@/lib/unsaved-dialog"
 import type { UrlData } from "@/lib/url-utils"
 import { type FileData, useFileProcessor } from "@/lib/use-file-processor"
 import { useQuotaManager } from "@/lib/use-quota-manager"
@@ -79,6 +87,7 @@ import {
     resetStyleClasses,
 } from "@/packages/mcp-server/src/style-classes.ts"
 import { type SelectedCell, useCanvasStore } from "@/stores/canvas-store"
+import { useDocumentSaveStore } from "@/stores/document-save-store"
 import { useSettingsStore } from "@/stores/settings-store"
 import { useUiStore } from "@/stores/ui-store"
 import { useVersionsStore } from "@/stores/versions-store"
@@ -87,7 +96,10 @@ import { useDiagramStreaming } from "./use-diagram-streaming"
 import { useVersions } from "./use-versions"
 
 // sessionStorage key for the unsent input (survives remounts and reloads)
-const SESSION_STORAGE_INPUT_KEY = "next-ai-draw-io-input"
+const inputStorageKey = () =>
+    isOperationsMode()
+        ? `brainstorm-operations-input:${getOperationsContext()?.userId}:${composerStorageKey()}`
+        : composerStorageKey()
 
 const TOOL_ERROR_STATE = "output-error" as const
 // 3 to support VLM validation retries (matches MAX_VALIDATION_RETRIES)
@@ -264,10 +276,17 @@ class FileReadError extends Error {}
  * a chat's first answer).
  */
 function setUrlSession(id: string | null) {
+    const url = new URL(window.location.href)
+    const params = new URLSearchParams()
+    if (id) params.set("session", id)
+    url.searchParams.forEach((value, key) => {
+        if (key !== "session") params.append(key, value)
+    })
+    url.search = params.toString()
     window.history.replaceState(
         null,
         "",
-        id ? `?session=${id}` : window.location.pathname,
+        `${url.pathname}${url.search}${url.hash}`,
     )
 }
 
@@ -308,6 +327,7 @@ export interface ChatEngine {
     isRestored: boolean
     /** Starts another drawing without changing this tab. */
     newChat: () => Promise<void>
+    saveDocument: () => Promise<boolean>
     /** Saves and closes this drawing in the current tab. */
     closeDrawing: () => Promise<void>
     selectSession: (id: string) => Promise<void>
@@ -398,7 +418,7 @@ export function ChatEngineProvider({
         const params = new URLSearchParams(window.location.search)
         const prompt = params.get("prompt")
         if (prompt) {
-            sessionStorage.setItem(SESSION_STORAGE_INPUT_KEY, prompt)
+            sessionStorage.setItem(inputStorageKey(), prompt)
             params.delete("prompt")
             const query = params.toString()
             window.history.replaceState(
@@ -407,7 +427,7 @@ export function ChatEngineProvider({
                 `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`,
             )
         }
-        const savedInput = sessionStorage.getItem(SESSION_STORAGE_INPUT_KEY)
+        const savedInput = sessionStorage.getItem(inputStorageKey())
         if (savedInput) {
             inputRef.current = savedInput
             setInputState(savedInput)
@@ -419,8 +439,8 @@ export function ChatEngineProvider({
     const setInput = useCallback((value: string) => {
         inputRef.current = value
         setInputState(value)
-        if (value) sessionStorage.setItem(SESSION_STORAGE_INPUT_KEY, value)
-        else sessionStorage.removeItem(SESSION_STORAGE_INPUT_KEY)
+        if (value) sessionStorage.setItem(inputStorageKey(), value)
+        else sessionStorage.removeItem(inputStorageKey())
     }, [])
 
     const quotaManager = useQuotaManager({
@@ -442,6 +462,45 @@ export function ChatEngineProvider({
     // Title for a session that is not saved yet (opened file, early rename)
     const [pendingTitle, setPendingTitleState] = useState<string | null>(null)
     const pendingTitleRef = useRef<string | null>(null)
+    const autoSave = useDocumentSaveStore((state) => state.autoSave)
+    const documentDirty = useDocumentSaveStore((state) => state.dirty)
+    const declinedNameRef = useRef(false)
+    const closePendingRef = useRef(false)
+    const ensureDocumentName = (automatic = false) => {
+        if (
+            pendingTitleRef.current ||
+            (sessionManager.currentSession?.title &&
+                sessionManager.currentSession.title !== "New Chat" &&
+                sessionManager.currentSession.title !== dict.workspace.untitled)
+        )
+            return true
+        if (
+            automatic &&
+            (declinedNameRef.current || document.visibilityState !== "visible")
+        )
+            return false
+        const name = window.prompt(
+            "Name this drawing before saving:",
+            messagesRef.current.length
+                ? extractTitle(messagesRef.current)
+                : "Drawing",
+        )
+        if (!name?.trim()) {
+            if (automatic) declinedNameRef.current = true
+            return false
+        }
+        setPendingTitle(
+            name
+                .trim()
+                .replace(/\.drawio$/i, "")
+                .slice(0, 100),
+        )
+        return true
+    }
+    useEffect(() => {
+        declinedNameRef.current = false
+    }, [autoSave])
+
     const setPendingTitle = (title: string | null) => {
         pendingTitleRef.current = title
         setPendingTitleState(title)
@@ -575,6 +634,7 @@ export function ChatEngineProvider({
                         ...body,
                         id,
                         messages: withoutOldImagesAndThinking(messages),
+                        conceptBrief: getOperationsContext()?.brief || "",
                         trigger,
                         messageId,
                     },
@@ -1104,6 +1164,7 @@ export function ChatEngineProvider({
     // (A save that began earlier can end later)
     const markSaved = (changes: number) => {
         savedChangesRef.current = Math.max(savedChangesRef.current, changes)
+        useDocumentSaveStore.setState({ dirty: hasUnsavedChanges() })
     }
     // Whether hiding the tab or leaving the chat has something to save: a
     // chat with content (also just a title, of an opened blank file) that
@@ -1113,7 +1174,8 @@ export function ChatEngineProvider({
     const hasUnsavedChanges = () =>
         (messagesRef.current.length > 0 ||
             isRealDiagram(chartXMLRef.current) ||
-            pendingTitleRef.current !== null) &&
+            pendingTitleRef.current !== null ||
+            sessionManager.getCurrentSessionId() !== null) &&
         (sessionManager.getCurrentSessionId() === null ||
             savedChangesRef.current !== changesRef.current)
 
@@ -1161,6 +1223,7 @@ export function ChatEngineProvider({
             setPendingTitle(null)
             // What comes on screen is what storage holds
             savedChangesRef.current = changesRef.current
+            useDocumentSaveStore.setState({ dirty: false })
             // A saved chat shows its canvas (it can hold just a blank
             // file); one with nothing in it, or none, shows the start screen
             useUiStore
@@ -1392,6 +1455,13 @@ export function ChatEngineProvider({
     // Save the chat on screen as it is now, with the thumbnail it has
     // (taking a new one takes a moment)
     const saveNow = async () => {
+        if (
+            !useDocumentSaveStore.getState().autoSave ||
+            getOperationsContext()?.readOnly ||
+            !ensureDocumentName(true)
+        )
+            return
+        useDocumentSaveStore.setState({ saving: true })
         try {
             const changes = changesRef.current
             const ticket = getSaveTicket()
@@ -1401,6 +1471,8 @@ export function ChatEngineProvider({
             }
         } catch (error) {
             console.error("Failed to save session:", error)
+        } finally {
+            useDocumentSaveStore.setState({ saving: false })
         }
     }
 
@@ -1410,14 +1482,29 @@ export function ChatEngineProvider({
     // The user message on screen when a sent message was saved last
     const savedSentRef = useRef<ChatUIMessage | undefined>(undefined)
 
+    const previousSaveContentRef = useRef<unknown[]>([])
+
     // Auto-save: at once when a message is sent and when its answer ends,
     // and a second after each change while no answer comes in
     useEffect(() => {
         if (!hasRestoredRef.current) return
         if (!sessionIsAvailable) return
+        const content = [
+            chartXML,
+            messages,
+            versions,
+            status,
+            pendingTitle,
+            shownChats,
+        ]
+        const changed = content.some(
+            (value, index) => value !== previousSaveContentRef.current[index],
+        )
+        previousSaveContentRef.current = content
         if (status === "streaming" || status === "submitted") {
             // The answer coming in is a change, saved when it ends
-            changesRef.current++
+            if (changed) changesRef.current++
+            useDocumentSaveStore.setState({ dirty: hasUnsavedChanges() })
             answeringRef.current = true
             // The message is saved the moment it is sent: its answer can
             // take a minute, and the page can be reloaded or closed
@@ -1454,7 +1541,8 @@ export function ChatEngineProvider({
                 return
             }
         }
-        changesRef.current++
+        if (changed) changesRef.current++
+        useDocumentSaveStore.setState({ dirty: hasUnsavedChanges() })
         // The answer just ended: saved at once, so leaving the page in the
         // next second keeps it. The save below adds the thumbnail. (A chat
         // that is being left stopped its answer, and saves itself.)
@@ -1462,6 +1550,13 @@ export function ChatEngineProvider({
             void saveNow()
         }
         if (saveDebounceRef.current) clearTimeout(saveDebounceRef.current)
+
+        if (
+            !autoSave ||
+            getOperationsContext()?.readOnly ||
+            !hasUnsavedChanges()
+        )
+            return
 
         // Capture the chat on screen at schedule time; the save is dropped
         // if another chat is on screen by the time it runs
@@ -1472,6 +1567,14 @@ export function ChatEngineProvider({
 
         saveDebounceRef.current = setTimeout(async () => {
             try {
+                if (
+                    scheduledForChat !== getChatGeneration() ||
+                    leavingRef.current ||
+                    !useDocumentSaveStore.getState().autoSave ||
+                    !ensureDocumentName(true)
+                )
+                    return
+                useDocumentSaveStore.setState({ saving: true })
                 // Also a chat with just a title (an opened blank file)
                 if (
                     messagesRef.current.length > 0 ||
@@ -1496,6 +1599,8 @@ export function ChatEngineProvider({
                 }
             } catch (error) {
                 console.error("Failed to save session:", error)
+            } finally {
+                useDocumentSaveStore.setState({ saving: false })
             }
         }, SAVE_DEBOUNCE_MS)
 
@@ -1504,6 +1609,7 @@ export function ChatEngineProvider({
         }
     }, [
         chartXML,
+        autoSave,
         messages,
         versions,
         status,
@@ -1527,11 +1633,30 @@ export function ChatEngineProvider({
         }
     }, [sessionManager.currentSessionId, urlSessionId])
 
+    const unsavedCheckRef = useRef(hasUnsavedChanges)
+    unsavedCheckRef.current = hasUnsavedChanges
+    useEffect(() => {
+        const warn = (event: BeforeUnloadEvent) => {
+            if (unsavedCheckRef.current()) {
+                event.preventDefault()
+                event.returnValue = ""
+            }
+        }
+        window.addEventListener("beforeunload", warn)
+        return () => window.removeEventListener("beforeunload", warn)
+    }, [])
+
     // Save when the page is hidden (more reliable than beforeunload for IndexedDB)
     useEffect(() => {
         if (!sessionManager.isAvailable) return
         const handleVisibilityChange = () => {
-            if (document.visibilityState === "hidden" && hasUnsavedChanges()) {
+            if (
+                document.visibilityState === "hidden" &&
+                hasUnsavedChanges() &&
+                useDocumentSaveStore.getState().autoSave &&
+                (pendingTitleRef.current ||
+                    sessionManager.currentSession?.title)
+            ) {
                 void saveNow()
             }
         }
@@ -2202,14 +2327,20 @@ export function ChatEngineProvider({
     // (storage full), stay on it unless the user goes on without saving:
     // then proceed runs later. Resolves to whether the caller can leave now.
     const saveBeforeLeaving = async (proceed: () => void) => {
-        if (!sessionManager.isAvailable) return true
+        if (!sessionManager.isAvailable) return !isOperationsMode()
         if (!hasUnsavedChanges()) return true
+        if (saveDebounceRef.current) clearTimeout(saveDebounceRef.current)
+        const choice = await askUnsavedChanges()
+        if (choice === "cancel") return false
+        if (choice === "discard") return true
+        if (!ensureDocumentName()) return false
         // Of the chat on screen now, also if another one comes on screen
         // while the thumbnail is taken
         const changes = changesRef.current
         const ticket = sessionManager.getSaveTicket()
         const sessionData = await buildSessionData({ withThumbnail: true })
         if (!(await sessionManager.saveCurrentSession(sessionData, ticket))) {
+            if (isOperationsMode()) return false
             offerToContinueUnsaved(proceed)
             return false
         }
@@ -2307,6 +2438,7 @@ export function ChatEngineProvider({
     const selectSession = async (id: string) => {
         if (!sessionManager.isAvailable || !canStartTurn()) return
         noteAction("open chat")
+        if (notifyWorkbench({ type: "open", sessionId: id })) return
         const open = async () => {
             if (isTurnActive()) return
             const sessionData = await sessionManager.switchSession(id)
@@ -2366,6 +2498,8 @@ export function ChatEngineProvider({
         // Clear session state BEFORE the URL, so the URL effect does not
         // bring the old session back
         sessionManager.clearCurrentSession()
+        useDocumentSaveStore.setState({ dirty: false, autoSave: true })
+        declinedNameRef.current = false
         toast.dismiss("version-restored")
         toast.dismiss("session-save-leave")
         // A new conversation brings the start screen back
@@ -2388,30 +2522,63 @@ export function ChatEngineProvider({
         setUrlSession(null)
     }
 
+    const saveDocument = async () => {
+        if (isTurnActive() || leavingRef.current) return false
+        if (getOperationsContext()?.readOnly) {
+            toast.info("This workspace is read-only.")
+            return false
+        }
+        return await saveCurrentDocument()
+    }
+    const saveCurrentDocument = async () => {
+        if (!ensureDocumentName()) return false
+        useDocumentSaveStore.setState({ saving: true })
+        try {
+            const changes = changesRef.current
+            const ticket = sessionManager.getSaveTicket()
+            const data = await buildSessionData({ withThumbnail: true })
+            data.diagramXml ||= EMPTY_DRAWIO_DOCUMENT
+            data.title ||=
+                sessionManager.currentSession?.title || dict.workspace.untitled
+            const saved = await sessionManager.saveCurrentSession(data, ticket)
+            if (saved) markSaved(changes)
+            return saved
+        } finally {
+            useDocumentSaveStore.setState({ saving: false })
+        }
+    }
+
     const newChat = async () => {
+        if (getOperationsContext()?.readOnly) {
+            toast.info("This workspace is read-only.")
+            return
+        }
         if (!canStartTurn()) return
         noteAction("new drawing tab")
-        const url = new URL(window.location.href)
-        url.search = ""
-        url.hash = ""
-        window.open(url.href, "_blank", "noopener,noreferrer")
+        if (!notifyWorkbench({ type: "new" })) startNewChat()
     }
 
     const closeDrawing = async () => {
-        if (!canStartTurn()) return
-        noteAction("close drawing")
-        const start = () => {
-            if (isTurnActive()) return
-            startNewChat()
-            toast.success(dict.dialogs.clearSuccess)
-            focusComposer()
+        if (closePendingRef.current || !canStartTurn()) return
+        closePendingRef.current = true
+        try {
+            noteAction("close drawing")
+            const start = () => {
+                if (isTurnActive()) return
+                startNewChat()
+                notifyWorkbench({ type: "close" })
+                toast.success(dict.dialogs.clearSuccess)
+                focusComposer()
+            }
+            await whileLeaving(async () => {
+                if (!(await saveBeforeLeaving(start))) return
+                // The list shows the chat just saved
+                await sessionManager.refreshSessions()
+                start()
+            })
+        } finally {
+            closePendingRef.current = false
         }
-        await whileLeaving(async () => {
-            if (!(await saveBeforeLeaving(start))) return
-            // The list shows the chat just saved
-            await sessionManager.refreshSessions()
-            start()
-        })
     }
 
     const renameSession = useCallback(
@@ -2424,6 +2591,7 @@ export function ChatEngineProvider({
                 return
             }
             await sessionManager.renameSession(id, title)
+            setPendingTitle(title.trim().slice(0, 100) || null)
         },
         [sessionManager],
     )
@@ -2457,6 +2625,13 @@ export function ChatEngineProvider({
             return
         }
         if (!canStartTurn()) return
+        if (
+            sessionManager.currentSessionId ||
+            isRealDiagram(chartXMLRef.current) ||
+            messagesRef.current.length
+        ) {
+            if (notifyWorkbench({ type: "import", file })) return
+        }
         await whileLeaving(() => openFile(file, keepComposer))
     }
 
@@ -2495,6 +2670,96 @@ export function ChatEngineProvider({
         if (await saveBeforeLeaving(proceed)) open()
     }
 
+    useEffect(() => {
+        notifyWorkbench({
+            type: "state",
+            sessionId: sessionManager.currentSessionId,
+            title:
+                sessionManager.currentSession?.title ||
+                pendingTitle ||
+                dict.workspace.untitled,
+            busy: isBusy || isLeaving,
+            dirty: documentDirty,
+        })
+    }, [
+        documentDirty,
+        sessionManager.currentSessionId,
+        sessionManager.currentSession?.title,
+        pendingTitle,
+        isBusy,
+        isLeaving,
+        dict.workspace.untitled,
+    ])
+
+    const flushDocument = async () => {
+        if (busyRef.current || leavingRef.current) return false
+        if (!hasUnsavedChanges()) return true
+        try {
+            return await saveCurrentDocument()
+        } catch {
+            return false
+        }
+    }
+    const workbenchActions = useRef({
+        closeDrawing,
+        openDiagramFile,
+        flushDocument,
+    })
+    workbenchActions.current = { closeDrawing, openDiagramFile, flushDocument }
+    useEffect(() => {
+        const close = () => {
+            void workbenchActions.current.closeDrawing()
+        }
+        const flush = (event: Event) => {
+            void workbenchActions.current
+                .flushDocument()
+                .then((event as FlushDocumentEvent).detail.resolve)
+        }
+        const receive = (event: MessageEvent) => {
+            if (
+                event.origin !== window.location.origin ||
+                event.source !== window.parent ||
+                event.data?.protocol !== WORKBENCH_PROTOCOL
+            )
+                return
+            if (event.data.type === "close-request") close()
+            if (
+                event.data.type === "load-file" &&
+                event.data.file instanceof File
+            )
+                void workbenchActions.current.openDiagramFile(event.data.file)
+            if (event.data.type === "flush-request")
+                void workbenchActions.current.flushDocument().then((ok) =>
+                    window.parent.postMessage(
+                        {
+                            protocol: WORKBENCH_PROTOCOL,
+                            type: "flushed",
+                            requestId: event.data.requestId,
+                            ok,
+                        },
+                        window.location.origin,
+                    ),
+                )
+        }
+        window.addEventListener("brainstorm-close-document", close)
+        window.addEventListener("brainstorm-flush-document", flush)
+        window.addEventListener("message", receive)
+        if (
+            new URLSearchParams(window.location.search).get("documentFrame") ===
+                "1" &&
+            isRestored
+        )
+            window.parent.postMessage(
+                { protocol: WORKBENCH_PROTOCOL, type: "ready" },
+                window.location.origin,
+            )
+        return () => {
+            window.removeEventListener("brainstorm-close-document", close)
+            window.removeEventListener("brainstorm-flush-document", flush)
+            window.removeEventListener("message", receive)
+        }
+    }, [isRestored])
+
     const engine: ChatEngine = {
         messages,
         status,
@@ -2523,6 +2788,7 @@ export function ChatEngineProvider({
         currentTitle: sessionManager.currentSession?.title ?? pendingTitle,
         isRestored,
         newChat,
+        saveDocument,
         closeDrawing,
         selectSession,
         deleteSession,

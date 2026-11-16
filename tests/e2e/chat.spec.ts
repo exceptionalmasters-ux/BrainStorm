@@ -47,7 +47,8 @@ test.describe("Crossing the mobile breakpoint", () => {
 
         // Phones show the canvas or the chat, one at a time
         await page.setViewportSize({ width: 600, height: 900 })
-        await page.getByRole("button", { name: "Chat", exact: true }).click()
+        if (await page.getByTestId("show-panel").isVisible())
+            await page.getByTestId("show-panel").click()
         await expect(message).toBeVisible()
 
         await page.setViewportSize({ width: 1280, height: 800 })
@@ -62,7 +63,8 @@ test.describe("Crossing the mobile breakpoint", () => {
         await expect(getChatInput(page)).toBeHidden()
 
         await page.setViewportSize({ width: 600, height: 900 })
-        await page.getByRole("button", { name: "Chat", exact: true }).click()
+        if (await page.getByTestId("show-panel").isVisible())
+            await page.getByTestId("show-panel").click()
         await expect(getChatInput(page)).toBeVisible()
 
         await page.setViewportSize({ width: 1280, height: 800 })

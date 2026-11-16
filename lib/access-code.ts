@@ -32,6 +32,8 @@ export function rejectCrossSite(req: Request): Response | null {
  * request may continue (including when no access codes are configured).
  */
 export function checkAccessCode(req: Request): Response | null {
+    // The API proxy has independently verified this token with Operations.
+    if (req.headers.has("x-emc-access-token")) return null
     const accessCodes =
         process.env.ACCESS_CODE_LIST?.split(",")
             .map((code) => code.trim())

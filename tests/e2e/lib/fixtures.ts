@@ -11,6 +11,17 @@ export { expect, test } from "@playwright/test"
 // Locator helpers
 // ============================================
 
+/** Legacy persistence tests accept the suggested filename; naming tests opt out. */
+export async function acceptFirstDrawingName(page: Page) {
+    await page.addInitScript(() => {
+        const original = window.prompt.bind(window)
+        window.prompt = (message, suggested) =>
+            message === "Name this drawing before saving:"
+                ? suggested || "Drawing"
+                : original(message, suggested)
+    })
+}
+
 /** Get the chat input textarea */
 export function getChatInput(page: Page) {
     return page.getByTestId("chat-input")
@@ -69,8 +80,39 @@ export async function openApp(
         path = "/",
         config,
         startScreen = false,
-    }: { path?: string; config?: object; startScreen?: boolean } = {},
+        singleDocument = true,
+        acceptDrawingNames = true,
+        acceptUnsavedChanges = true,
+    }: {
+        path?: string
+        config?: object
+        startScreen?: boolean
+        singleDocument?: boolean
+        acceptDrawingNames?: boolean
+        acceptUnsavedChanges?: boolean
+    } = {},
 ) {
+    // Existing session-switch regressions choose Save in the new close dialog.
+    // Tests of the dialog itself opt out and exercise all three choices.
+    if (acceptUnsavedChanges) {
+        await page.addInitScript(() => {
+            new MutationObserver(() => {
+                const dialog = document.querySelector(
+                    'dialog[aria-label="Unsaved changes"]',
+                )
+                const save = Array.from(
+                    dialog?.querySelectorAll("button") || [],
+                ).find((button) => button.textContent === "Save")
+                if (dialog?.hasAttribute("open")) save?.click()
+            }).observe(document, {
+                childList: true,
+                subtree: true,
+                attributes: true,
+                attributeFilter: ["open"],
+            })
+        })
+    }
+    if (acceptDrawingNames) await acceptFirstDrawingName(page)
     if (config) {
         await page.addInitScript(
             ([key, config]) => {
@@ -92,7 +134,13 @@ export async function openApp(
             body: '<svg xmlns="http://www.w3.org/2000/svg"/>',
         }),
     )
-    await page.goto(path, { waitUntil: "networkidle" })
+    // Existing editor regressions exercise a single document. Workbench tests
+    // opt into the full shell and explicitly inspect multiple document frames.
+    const target = new URL(path, "http://test.local")
+    if (singleDocument) target.searchParams.set("documentFrame", "1")
+    await page.goto(`${target.pathname}${target.search}${target.hash}`, {
+        waitUntil: "networkidle",
+    })
     await getIframe(page).waitFor({ state: "attached", timeout: 30000 })
     await expect(page.getByTestId("canvas-loading")).toHaveCount(0, {
         timeout: 30000,

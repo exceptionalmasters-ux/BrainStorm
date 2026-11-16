@@ -72,10 +72,8 @@ for (const mobile of [false, true]) {
         )
         await expect(page.getByTestId("lobby-hero")).toHaveCount(0)
         // A local file is editable, and can be exported without configuring AI.
-        if (mobile)
-            await page
-                .getByRole("button", { name: "Canvas", exact: true })
-                .click()
+        if (mobile && (await page.getByTestId("hide-assistant").isVisible()))
+            await page.getByTestId("hide-assistant").click()
         await expect(
             getIframeContent(page).getByText("Test Box", { exact: true }),
         ).toBeVisible()

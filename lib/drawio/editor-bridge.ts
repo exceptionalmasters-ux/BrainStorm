@@ -16,10 +16,22 @@ import {
     readEditorAction,
 } from "@/lib/drawio/editor-actions"
 import {
+    type FormatTab,
+    selectObjects,
+    showEditorMenu,
+    showFormatTab,
+} from "@/lib/drawio/format-tools"
+import {
+    insertQuickCell,
+    populateQuickInsertMenu,
+    type QuickInsertGroup,
+} from "@/lib/drawio/quick-insert"
+import {
     createShapeToolbox,
     type ShapeGroup,
     type ToolboxLabels,
 } from "@/lib/drawio/shape-toolbox"
+import { getOperationsContext } from "@/lib/operations-bridge"
 import { hasCells } from "@/packages/mcp-server/src/pages.ts"
 import type { SelectionAnswer } from "@/packages/mcp-server/src/selection.ts"
 import { type SelectedCell, useCanvasStore } from "@/stores/canvas-store"
@@ -37,6 +49,68 @@ export function runEditorAction(name: string) {
     const result = invokeEditorAction(ui, name)
     syncAll()
     return result
+}
+
+export function editorLabel(key: string, fallback: string) {
+    return win?.mxResources?.get?.(key) || fallback
+}
+
+export function activateSelectionPointer() {
+    const result = selectObjects(ui)
+    syncAll()
+    return result
+}
+
+export function openEditorFormatTab(tab: FormatTab) {
+    const result = showFormatTab(ui, win?.mxResources, tab)
+    syncAll()
+    return result
+}
+
+export function editorMenuAvailable(name: string) {
+    const menu = ui?.menus?.get?.(name)
+    return !!menu?.funct && menu.isEnabled?.() !== false
+}
+
+/** React controls are above the frame; native menus use coordinates inside it. */
+export function openNativeEditorMenu(name: string, anchor: DOMRect) {
+    const frame = win?.frameElement?.getBoundingClientRect?.()
+    if (!frame) return false
+    return showEditorMenu(ui, name, {
+        x: Math.max(0, Math.min(anchor.left - frame.left, frame.width - 180)),
+        y: Math.max(0, anchor.bottom - frame.top),
+    })
+}
+
+/** Direct equivalents of the native toolbar's text and basic-shape buttons. */
+export function insertQuickDrawing(group: QuickInsertGroup, index: number) {
+    if (getOperationsContext()?.readOnly) return false
+    selectObjects(ui)
+    const inserted = insertQuickCell(ui, win, group, index)
+    syncAll()
+    return inserted
+}
+
+/** Use the iframe's native popup so menus are not clipped by the toolbar scroller. */
+export function openQuickInsertMenu(group: QuickInsertGroup, anchor: DOMRect) {
+    if (getOperationsContext()?.readOnly || !ui?.editor?.graph?.isEnabled?.())
+        return false
+    const frame = win?.frameElement?.getBoundingClientRect?.()
+    if (!frame || !ui.showPopupMenu) return false
+    const editor = ui,
+        frameWindow = win
+    editor.hideCurrentMenu?.()
+    editor.showPopupMenu(
+        (popup: any, parent: any) => {
+            populateQuickInsertMenu(popup, parent, group, (index) => {
+                insertQuickCell(editor, frameWindow, group, index)
+                syncAll()
+            })
+        },
+        Math.max(0, Math.min(anchor.left - frame.left, frame.width - 180)),
+        Math.max(0, anchor.bottom - frame.top),
+    )
+    return true
 }
 
 /** Web-only EMC controls; returns null for external/cross-origin editors. */
@@ -90,6 +164,7 @@ export function attachEditor(editorUi: EditorUi, frameWindow: FrameWindow) {
     detachEditor()
     ui = editorUi
     win = frameWindow
+    if (getOperationsContext()?.readOnly) ui.editor?.graph?.setEnabled(false)
     detachListeners = installListeners()
     keepPanelsOnResize()
     closeSidePanels()

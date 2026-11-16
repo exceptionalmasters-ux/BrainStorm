@@ -132,9 +132,9 @@ async function clickEmptyCanvas(page: Page, shape: Locator) {
     })
 }
 
-/** draw.io's own Undo button: draw.io sets "disabled" with nothing to undo */
+/** Unified Undo button uses the native action state. */
 function drawioUndo(page: Page) {
-    return getIframeContent(page).locator('.geSimpleMainMenu a[title="Undo"]')
+    return page.getByTestId("editor-undo")
 }
 
 /** draw.io's own page tabs */
@@ -577,7 +577,7 @@ test.describe("Workspace", () => {
         await openApp(page, { startScreen: true })
         await page.locator('[data-testid="draw-on-the-fly"]').click()
         const canvas = getIframeContent(page)
-        await canvas.locator('.geSimpleMainMenu a[title="Insert"]').click()
+        await page.getByTestId("drawing-tool-insert").click()
         const menus = canvas.locator(".mxPopupMenu")
         await expect(
             menus.first().getByText("Mermaid...", { exact: true }),
@@ -750,7 +750,7 @@ test.describe("Workspace", () => {
         await canvas.getByText("Process", { exact: true }).click()
         const ask = page.locator('[data-testid="selection-style"]')
         await expect(ask).toBeVisible()
-        await canvas.locator('.geSimpleMainMenu a[title="Insert"]').click()
+        await page.getByTestId("drawing-tool-insert").click()
         await expect(canvas.locator(".mxPopupMenu").first()).toBeVisible()
         await expect(ask).toBeHidden()
         // A click on the shape closes the menu and keeps it selected
@@ -811,10 +811,7 @@ test.describe("Workspace", () => {
         await expect.poll(formatWidth).toBeGreaterThan(0)
         await expect(style).toBeHidden()
         // Closed from draw.io's own toolbar: the button is back
-        await canvas
-            .locator('.geSimpleMainMenu a[title^="Format"]')
-            .first()
-            .click()
+        await page.getByTestId("drawing-tool-format").click()
         await expect.poll(formatWidth).toBe(0)
         await expect(style).toBeVisible()
     })
@@ -890,26 +887,18 @@ test.describe("Workspace", () => {
         await page.waitForTimeout(600)
         const canvas = getIframeContent(page)
         const chip = await boxOf(show.locator(".."))
-        for (const title of [
-            "Diagram",
-            "Format (⌘+⇧+P)",
-            "Format (Ctrl+Shift+P)",
-        ]) {
-            const button = canvas.locator(
-                `.geSimpleMainMenu a[title="${title}"]`,
-            )
-            if ((await button.count()) === 0) continue
+        for (const id of ["drawing-tool-diagram", "drawing-tool-format"]) {
+            const button = page.getByTestId(id)
+            await button.scrollIntoViewIfNeeded()
             const box = await boxOf(button)
             const overlaps =
                 box.x < chip.x + chip.width &&
                 chip.x < box.x + box.width &&
                 box.y < chip.y + chip.height &&
                 chip.y < box.y + box.height
-            expect(overlaps, title).toBe(false)
+            expect(overlaps, id).toBe(false)
         }
-        await canvas
-            .locator('.geSimpleMainMenu a[title="Diagram"]')
-            .click({ timeout: 3000 })
+        await page.getByTestId("drawing-tool-diagram").click({ timeout: 3000 })
         await expect(canvas.locator(".mxPopupMenu").first()).toBeVisible()
     })
 
@@ -1061,7 +1050,9 @@ test.describe("Workspace", () => {
                 diagramXml: boxFile("Box 20"),
             },
         )
-        await page.goto("/?session=many", { waitUntil: "networkidle" })
+        await page.goto("/?session=many&documentFrame=1", {
+            waitUntil: "networkidle",
+        })
         const canvas = getIframeContent(page)
         await expect(canvas.getByText("Box 20")).toBeVisible({ timeout: 30000 })
         const thumbs = page.locator('[data-testid="version-thumb"]')
@@ -1079,6 +1070,10 @@ test.describe("Workspace", () => {
             page.locator('[data-testid="version-card"]').last(),
         ).toContainText("v21")
 
+        // The version change preserves the existing viewport. Bring the
+        // returned drawing into view before testing native text-edit Escape.
+        await page.getByTestId("editor-menu-view").click()
+        await page.getByTestId("editor-action-fitWindow").click()
         // The first Escape in the canvas is draw.io's again: it ends editing
         await canvas.getByText("Start", { exact: true }).dblclick()
         await expect(canvas.locator(".mxCellEditor")).toBeVisible()
@@ -1390,7 +1385,7 @@ test.describe("Workspace", () => {
         await page.setViewportSize({ width: 800, height: 800 })
         await openApp(page, { startScreen: true })
         await page.locator('[data-testid="draw-on-the-fly"]').click()
-        const toolbar = getIframeContent(page).locator(".geSimpleMainMenu")
+        const toolbar = page.getByTestId("drawing-toolbar")
         await expect(toolbar).toBeVisible()
         await page.waitForTimeout(600)
         const panel = await boxOf(page.locator('[data-testid="chat-panel"]'))
@@ -1399,7 +1394,8 @@ test.describe("Workspace", () => {
         expect(stage.width).toBeGreaterThanOrEqual(370)
         // draw.io's toolbar fits the canvas, its diagram menu (the last
         // button) included; the chat panel has the export button
-        const menu = await boxOf(toolbar.locator('a[title="Diagram"]'))
+        await page.getByTestId("drawing-tool-diagram").scrollIntoViewIfNeeded()
+        const menu = await boxOf(page.getByTestId("drawing-tool-diagram"))
         expect(menu.x).toBeGreaterThanOrEqual(stage.x)
         expect(menu.x + menu.width).toBeLessThanOrEqual(stage.x + stage.width)
         await expect(
@@ -1478,7 +1474,12 @@ test.describe("Workspace", () => {
         await openSettingsTab(page, "general")
         await page.locator("#language-select").click()
         await page.getByRole("option", { name: "日本語", exact: true }).click()
-        await expect(page).toHaveURL(/\/ja\?session=/, { timeout: 15000 })
+        await expect(page).toHaveURL(/\/ja\?/, { timeout: 15000 })
+        await expect
+            .poll(() => new URL(page.url()).searchParams.has("session"), {
+                timeout: 15000,
+            })
+            .toBe(true)
         await expect(page.getByText("Create a flowchart").first()).toBeVisible({
             timeout: 15000,
         })
@@ -2171,7 +2172,12 @@ test.describe("Workspace", () => {
         await openSettingsTab(page, "general")
         await page.locator("#language-select").click()
         await page.getByRole("option", { name: "日本語", exact: true }).click()
-        await expect(page).toHaveURL(/\/ja\?session=/, { timeout: 15000 })
+        await expect(page).toHaveURL(/\/ja\?/, { timeout: 15000 })
+        await expect
+            .poll(() => new URL(page.url()).searchParams.has("session"), {
+                timeout: 15000,
+            })
+            .toBe(true)
         const background = () =>
             getIframeContent(page)
                 .locator(".geBackgroundPage")
@@ -2538,7 +2544,9 @@ test.describe("Workspace", () => {
                 },
             })),
         })
-        await page.goto("/?session=strip", { waitUntil: "networkidle" })
+        await page.goto("/?session=strip&documentFrame=1", {
+            waitUntil: "networkidle",
+        })
         const canvas = getIframeContent(page)
         await expect(canvas.getByText("Box 8")).toBeVisible({ timeout: 30000 })
         const thumbs = page.locator('[data-testid="version-thumb"]')
@@ -3217,7 +3225,9 @@ test.describe("Edge cases", () => {
             })
             db.close()
         })
-        await page.goto("/?session=lib", { waitUntil: "networkidle" })
+        await page.goto("/?session=lib&documentFrame=1", {
+            waitUntil: "networkidle",
+        })
         await expect(page.getByText("AWS please").first()).toBeVisible({
             timeout: 30000,
         })
@@ -3575,7 +3585,9 @@ test.describe("Edge cases", () => {
             },
             [legacy("A", "AlphaA"), legacy("B", "BetaB")],
         )
-        await page.goto("/?session=A", { waitUntil: "networkidle" })
+        await page.goto("/?session=A&documentFrame=1", {
+            waitUntil: "networkidle",
+        })
         await expect(getIframeContent(page).getByText("AlphaA")).toBeVisible({
             timeout: 30000,
         })
@@ -4058,7 +4070,9 @@ test.describe("Edge cases", () => {
             diagramXml: "",
             versions: [],
         })
-        await page.goto("/?session=old", { waitUntil: "networkidle" })
+        await page.goto("/?session=old&documentFrame=1", {
+            waitUntil: "networkidle",
+        })
         const row = page.locator('[data-testid="tool-row"]')
         await expect(row).toBeVisible({ timeout: 30000 })
         await row.getByRole("button").first().click()
@@ -4281,7 +4295,9 @@ test.describe("Edge cases", () => {
             diagramXml: "",
             versions: [],
         })
-        await page.goto("/?session=nosnap", { waitUntil: "networkidle" })
+        await page.goto("/?session=nosnap&documentFrame=1", {
+            waitUntil: "networkidle",
+        })
         await expect(page.getByText("Done.")).toBeVisible({ timeout: 30000 })
         await page.getByText("No snapshot", { exact: true }).last().hover()
         await page.getByRole("button", { name: "Edit message" }).click()
@@ -5148,7 +5164,9 @@ test.describe("Edge cases", () => {
             diagramXml: doc,
             versions: [],
         })
-        await page.goto("/?session=cut", { waitUntil: "networkidle" })
+        await page.goto("/?session=cut&documentFrame=1", {
+            waitUntil: "networkidle",
+        })
         await expect(
             getIframeContent(page).getByText("BeeOne", { exact: true }),
         ).toBeVisible({ timeout: 30000 })

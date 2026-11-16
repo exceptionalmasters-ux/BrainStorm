@@ -3,6 +3,7 @@ import Negotiator from "negotiator"
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 import { i18n } from "./lib/i18n/config"
+import { verifyOperationsRequest } from "./lib/operations-api-auth"
 
 // Taiwan, Hong Kong and Macau write Traditional Chinese
 const TRADITIONAL_CHINESE = /^zh-(hant|tw|hk|mo)\b/i
@@ -50,7 +51,7 @@ function isLanguageTag(language: string): boolean {
     }
 }
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
     const pathname = request.nextUrl.pathname
 
     if (pathname.startsWith("/api/")) {
@@ -61,6 +62,8 @@ export function proxy(request: NextRequest) {
         if (secret && request.headers.get("x-origin-secret") !== secret) {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 })
         }
+        const denied = await verifyOperationsRequest(request)
+        if (denied) return denied
         return
     }
 

@@ -13,16 +13,16 @@ describe("getUserIdFromRequest", () => {
         },
     })
 
-    it("uses the first X-Forwarded-For entry by default", () => {
+    it("uses the first X-Forwarded-For entry by default", async () => {
         expect(getUserIdFromRequest(req)).toBe(idFor("203.0.113.9"))
     })
 
-    it("uses CLIENT_IP_HEADER when set", () => {
+    it("uses CLIENT_IP_HEADER when set", async () => {
         vi.stubEnv("CLIENT_IP_HEADER", "cf-connecting-ip")
         expect(getUserIdFromRequest(req)).toBe(idFor("198.51.100.7"))
     })
 
-    it("is anonymous when the configured header is missing", () => {
+    it("is anonymous when the configured header is missing", async () => {
         vi.stubEnv("CLIENT_IP_HEADER", "cf-connecting-ip")
         expect(
             getUserIdFromRequest(new Request("http://localhost/api/chat")),
@@ -38,21 +38,24 @@ describe("ORIGIN_SECRET", () => {
             }),
         )
 
-    it("lets every API call through when unset", () => {
-        expect(call("/api/chat")).toBeUndefined()
+    it("lets every API call through when unset", async () => {
+        expect(await call("/api/chat")).toBeUndefined()
     })
 
     it("refuses API calls without the right header", async () => {
         vi.stubEnv("ORIGIN_SECRET", "s3cret")
-        for (const res of [call("/api/chat"), call("/api/chat", "wrong")]) {
+        for (const res of [
+            await call("/api/chat"),
+            await call("/api/chat", "wrong"),
+        ]) {
             expect(res?.status).toBe(403)
         }
-        expect(call("/api/chat", "s3cret")).toBeUndefined()
+        expect(await call("/api/chat", "s3cret")).toBeUndefined()
     })
 
-    it("leaves pages alone, such as the health check on /", () => {
+    it("leaves pages alone, such as the health check on /", async () => {
         vi.stubEnv("ORIGIN_SECRET", "s3cret")
-        expect(call("/")?.status).toBe(307)
-        expect(call("/en")).toBeUndefined()
+        expect((await call("/"))?.status).toBe(307)
+        expect(await call("/en")).toBeUndefined()
     })
 })

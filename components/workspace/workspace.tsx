@@ -1,8 +1,9 @@
 "use client"
 
-import { MessageSquare, Settings, Shapes } from "lucide-react"
+import { Settings } from "lucide-react"
 import { usePathname, useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
+import { toast } from "sonner"
 import { CanvasStage } from "@/components/canvas/canvas-stage"
 import { CompareDialog } from "@/components/canvas/compare-dialog"
 import { SelectionAsk } from "@/components/canvas/selection-ask"
@@ -17,11 +18,16 @@ import { SaveDialog } from "@/components/save-dialog"
 import { SettingsDialog } from "@/components/settings-dialog"
 import { BrandMark } from "@/components/workspace/brand-mark"
 import { DocsButton } from "@/components/workspace/docs-button"
+import { DrawingToolbar } from "@/components/workspace/drawing-toolbar"
 import { EditorHeader } from "@/components/workspace/editor-header"
 import { IconButton } from "@/components/workspace/icon-button"
 import { useDiagram } from "@/contexts/diagram-context"
 import { useDictionary } from "@/hooks/use-dictionary"
 import { usePanelWidth } from "@/hooks/use-panel-width"
+import {
+    isCurrentDocumentActive,
+    WORKBENCH_PROTOCOL,
+} from "@/lib/document-workbench"
 import {
     editorActionState,
     runEditorAction,
@@ -29,13 +35,13 @@ import {
     setFileTitle,
 } from "@/lib/drawio/editor-bridge"
 import { i18n, type Locale } from "@/lib/i18n/config"
+import { getOperationsContext, isOperationsMode } from "@/lib/operations-bridge"
 import { STORAGE_KEYS } from "@/lib/storage"
 import { startUsageLog } from "@/lib/usage-log"
 import { noteAction } from "@/lib/user-actions"
 import { cn, isRealDiagram } from "@/lib/utils"
 import { useSettingsStore } from "@/stores/settings-store"
 import { useUiStore } from "@/stores/ui-store"
-import { useVersionsStore } from "@/stores/versions-store"
 
 /** File types the "Open .drawio file" picker accepts */
 const DIAGRAM_FILE_ACCEPT = ".drawio,.xml,.svg,application/xml,image/svg+xml"
@@ -162,6 +168,13 @@ function WorkspaceLayout() {
     const heroDismissed = useUiStore((s) => s.heroDismissed)
     const setHeroDismissed = useUiStore((s) => s.setHeroDismissed)
     const fileInputRef = useRef<HTMLInputElement>(null)
+    useEffect(() => {
+        if (new URLSearchParams(window.location.search).get("blank") === "1") {
+            setHeroDismissed(true)
+            setPanelOpen(false)
+            setMobileView("canvas")
+        }
+    }, [setHeroDismissed, setPanelOpen, setMobileView])
 
     // Start screen: nothing said and nothing drawn yet. A new chat brings
     // it back, an opened file or saved chat puts it away (the chat engine).
@@ -174,27 +187,14 @@ function WorkspaceLayout() {
     // Phones: show the canvas while the AI draws and when a new version
     // lands, so the result is visible; the chat tab gets a dot meanwhile
     const isBusy = engine.isBusy
-    const versionCount = useVersionsStore((s) => s.versions.length)
-    const [chatUnread, setChatUnread] = useState(false)
-    const lastVersionCountRef = useRef(versionCount)
     useEffect(() => {
         if (isMobile && isBusy) setMobileView("canvas")
     }, [isMobile, isBusy, setMobileView])
-    useEffect(() => {
-        const grew = versionCount > lastVersionCountRef.current
-        lastVersionCountRef.current = versionCount
-        if (isMobile && grew && engine.isRestored) {
-            setMobileView("canvas")
-            setChatUnread(true)
-        }
-    }, [versionCount, isMobile, engine.isRestored, setMobileView])
-    useEffect(() => {
-        if (mobileView === "chat") setChatUnread(false)
-    }, [mobileView])
 
     // ⌘B toggles the panel; ⌘/ asks the AI about the selection
     useEffect(() => {
         const handle = (event: KeyboardEvent) => {
+            if (!isCurrentDocumentActive()) return false
             if (!(event.metaKey || event.ctrlKey)) return false
             // ⌘⇧B stays with the browser (Chrome's bookmarks bar)
             if (!event.shiftKey && (event.key === "b" || event.key === "B")) {
@@ -211,6 +211,12 @@ function WorkspaceLayout() {
                 return true
             }
             if (event.key.toLowerCase() === "s") {
+                if (isOperationsMode() && !event.shiftKey) {
+                    void engine.saveDocument().then((saved) => {
+                        if (saved) toast.success("Saved to Operations")
+                    })
+                    return true
+                }
                 if (!useUiStore.getState().saveDialogOpen)
                     setSaveDialogOpen(true)
                 return true
@@ -264,9 +270,21 @@ function WorkspaceLayout() {
             return handle(event)
         }
         window.addEventListener("keydown", onKeyDown)
+        const receiveShortcut = (event: MessageEvent) => {
+            if (
+                event.source !== window.parent ||
+                event.origin !== window.location.origin ||
+                event.data?.protocol !== WORKBENCH_PROTOCOL ||
+                event.data.type !== "shortcut"
+            )
+                return
+            handle(new KeyboardEvent("keydown", event.data.keys))
+        }
+        window.addEventListener("message", receiveShortcut)
         setAppShortcutHandler(handleInFrame)
         return () => {
             window.removeEventListener("keydown", onKeyDown)
+            window.removeEventListener("message", receiveShortcut)
             setAppShortcutHandler(null)
         }
     }, [
@@ -322,7 +340,7 @@ function WorkspaceLayout() {
 
     return (
         <div
-            className="fixed inset-0 overflow-hidden bg-canvas"
+            className="absolute inset-0 overflow-hidden bg-canvas"
             data-testid="workspace"
         >
             {/* One canvas for both layouts: a new one would reload draw.io
@@ -331,15 +349,30 @@ function WorkspaceLayout() {
                 {!showHero && (
                     <EditorHeader
                         onOpen={() => fileInputRef.current?.click()}
-                        onSave={() =>
-                            saveDiagramToFile(
-                                exportFilename(engine.currentTitle),
-                                "drawio",
-                                engine.langfuseSessionId,
-                                dict.save.savedSuccessfully,
-                                dict.save.exportFailed,
-                            )
+                        saveLabel={
+                            isOperationsMode()
+                                ? "Save to Operations"
+                                : undefined
                         }
+                        onSave={() => {
+                            if (isOperationsMode()) {
+                                void engine.saveDocument().then((saved) => {
+                                    if (saved)
+                                        toast.success("Saved to Operations")
+                                })
+                                return
+                            }
+                            void engine.saveDocument().then((saved) => {
+                                if (saved)
+                                    saveDiagramToFile(
+                                        exportFilename(engine.currentTitle),
+                                        "drawio",
+                                        engine.langfuseSessionId,
+                                        dict.save.savedSuccessfully,
+                                        dict.save.exportFailed,
+                                    )
+                            })
+                        }}
                         onExport={() => setSaveDialogOpen(true)}
                         onNew={() => {
                             void engine.newChat()
@@ -371,11 +404,43 @@ function WorkspaceLayout() {
                     />
                 )}
 
+                {getOperationsContext()?.brief && (
+                    <details className="shrink-0 border-b border-border px-3 py-1 text-xs">
+                        <summary className="cursor-pointer text-primary">
+                            Technical Brief · concept context
+                        </summary>
+                        <p className="py-2 text-muted-foreground">
+                            This is reference information. Enter what to draw in
+                            the assistant separately.
+                        </p>
+                        <pre className="max-h-48 overflow-auto whitespace-pre-wrap pb-2 font-sans">
+                            {getOperationsContext()?.brief}
+                        </pre>
+                    </details>
+                )}
+
+                {getOperationsContext()?.readOnly && (
+                    <div className="z-30 bg-card px-3 py-1 text-xs text-primary">
+                        Read-only workspace · saved drawings remain available
+                        for viewing and export.
+                    </div>
+                )}
                 <div className="relative min-h-0 flex-1">
                     {/* Under the start screen the canvas takes no focus:
                         Tab would go into the hidden draw.io, and keys typed
                         there would draw shapes */}
                     <div className="absolute inset-0" inert={heroCoversCanvas}>
+                        {!showHero &&
+                            (!isMobile || mobileView === "canvas") && (
+                                <div
+                                    className="absolute top-0 left-0 z-20"
+                                    style={{
+                                        right: isMobile ? 0 : canvasRight,
+                                    }}
+                                >
+                                    <DrawingToolbar />
+                                </div>
+                            )}
                         <CanvasStage
                             className={
                                 isMobile
@@ -393,9 +458,10 @@ function WorkspaceLayout() {
                                               "transition-[right] duration-300 ease-[var(--ease-out)] motion-reduce:duration-[1ms]",
                                       )
                             }
-                            style={
-                                isMobile ? undefined : { right: canvasRight }
-                            }
+                            style={{
+                                top: showHero ? 0 : 40,
+                                ...(isMobile ? {} : { right: canvasRight }),
+                            }}
                             hideOverlays={heroCoversCanvas}
                             overlay={(size) => (
                                 <SelectionAsk
@@ -454,44 +520,6 @@ function WorkspaceLayout() {
                         </>
                     )}
                 </div>
-                {isMobile && (
-                    <nav className="flex shrink-0 items-center justify-center gap-1 border-t border-border bg-card px-3 pt-1.5 pb-[max(6px,env(safe-area-inset-bottom))]">
-                        {(
-                            [
-                                {
-                                    view: "canvas",
-                                    label: dict.workspace.mobileCanvas,
-                                    icon: <Shapes />,
-                                },
-                                {
-                                    view: "chat",
-                                    label: dict.workspace.mobileChat,
-                                    icon: <MessageSquare />,
-                                },
-                            ] as const
-                        ).map((item) => (
-                            <button
-                                key={item.view}
-                                type="button"
-                                onClick={() => setMobileView(item.view)}
-                                aria-pressed={mobileView === item.view}
-                                className={cn(
-                                    "flex h-10 flex-1 items-center justify-center gap-2 rounded-xl text-[13px] text-muted-foreground [&_svg]:size-4",
-                                    mobileView === item.view &&
-                                        "bg-accent font-medium text-foreground",
-                                )}
-                            >
-                                {item.icon}
-                                {item.label}
-                                {item.view === "chat" &&
-                                    (isBusy || chatUnread) &&
-                                    mobileView !== "chat" && (
-                                        <span className="size-1.5 rounded-full bg-marker" />
-                                    )}
-                            </button>
-                        ))}
-                    </nav>
-                )}
             </div>
 
             <input

@@ -2,20 +2,21 @@ import {
     FileUp,
     PanelRightClose,
     PanelRightOpen,
-    Redo2,
     Save,
     Settings,
-    Undo2,
 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import { SessionMenu, useSessionTitle } from "@/components/chat/session-menu"
+import { Switch } from "@/components/ui/switch"
 import { BrandMark } from "@/components/workspace/brand-mark"
 import { IconButton } from "@/components/workspace/icon-button"
 import { useDictionary } from "@/hooks/use-dictionary"
 import { usePathLocale } from "@/hooks/use-path-locale"
 import { editorActionState, runEditorAction } from "@/lib/drawio/editor-bridge"
+import { getOperationsContext, isOperationsMode } from "@/lib/operations-bridge"
 import { useCanvasStore } from "@/stores/canvas-store"
+import { useDocumentSaveStore } from "@/stores/document-save-store"
 
 type Item = {
     label: string
@@ -29,6 +30,7 @@ type Item = {
 export function EditorHeader({
     onOpen,
     onSave,
+    saveLabel,
     onExport,
     onNew,
     onClose,
@@ -39,6 +41,7 @@ export function EditorHeader({
 }: {
     onOpen: () => void
     onSave: () => void
+    saveLabel?: string
     onExport: () => void
     onNew: () => void
     onClose: () => void
@@ -51,6 +54,7 @@ export function EditorHeader({
         t = dict.editor,
         lang = usePathLocale()
     const title = useSessionTitle()
+    const { autoSave, dirty, saving, setAutoSave } = useDocumentSaveStore()
     const ready = useCanvasStore((s) => s.hasEditor),
         busy = useCanvasStore((s) => s.isBusy)
     useCanvasStore((s) => s.selection)
@@ -92,7 +96,7 @@ export function EditorHeader({
                     run: () => setTimeout(() => history.current?.click(), 0),
                 },
                 {
-                    label: t.saveFile,
+                    label: saveLabel || t.saveFile,
                     run: onSave,
                     disabled: !ready || busy,
                     shortcut: "Ctrl/⌘ S",
@@ -125,6 +129,8 @@ export function EditorHeader({
                 native("duplicate", "Duplicate"),
                 native("delete", "Delete"),
                 native("selectAll", "Select all"),
+                native("editPolygon", "Edit polygon points…"),
+                native("editConnectionPoints", "Edit connection points…"),
                 native("findReplace", "Find and replace…"),
             ],
         },
@@ -271,8 +277,35 @@ export function EditorHeader({
                         {title}.drawio
                     </button>
                 </SessionMenu>
-                <span className="hidden text-xs text-muted-foreground lg:block">
-                    {t.localWorkspace}
+                <label
+                    className="flex shrink-0 items-center gap-1.5 text-[11px]"
+                    title={
+                        isOperationsMode()
+                            ? "Save to Supabase Storage"
+                            : "Local browser storage — open from Operations for Supabase"
+                    }
+                >
+                    <Switch
+                        checked={autoSave}
+                        onCheckedChange={setAutoSave}
+                        disabled={!!getOperationsContext()?.readOnly}
+                        aria-label="AutoSave"
+                        data-testid="document-autosave"
+                    />
+                    <span>AutoSave {autoSave ? "On" : "Off"}</span>
+                </label>
+                <span
+                    className="min-w-0 truncate text-[11px] text-muted-foreground"
+                    data-testid="document-save-status"
+                    role="status"
+                    title={
+                        isOperationsMode()
+                            ? "Supabase Storage"
+                            : "Local browser storage"
+                    }
+                >
+                    {saving ? "Saving…" : dirty ? "Unsaved" : "Saved"} ·{" "}
+                    {isOperationsMode() ? "Cloud" : "Local"}
                 </span>
                 <div className="ml-auto flex items-center gap-1">
                     <IconButton
@@ -283,7 +316,7 @@ export function EditorHeader({
                         <FileUp />
                     </IconButton>
                     <IconButton
-                        label={t.saveFile}
+                        label={saveLabel || t.saveFile}
                         onClick={() => perform({ label: "", run: onSave })}
                         disabled={!ready || busy}
                         data-testid="editor-save"
@@ -371,26 +404,6 @@ export function EditorHeader({
                         </button>
                     ))}
                 </div>
-                <button
-                    type="button"
-                    aria-label={editorActionState("undo").label || "Undo"}
-                    onClick={() => perform(native("undo", "Undo"))}
-                    disabled={!ready || busy}
-                    className="px-1 text-muted-foreground disabled:opacity-30"
-                    data-testid="editor-undo"
-                >
-                    <Undo2 className="size-4" />
-                </button>
-                <button
-                    type="button"
-                    aria-label={editorActionState("redo").label || "Redo"}
-                    onClick={() => perform(native("redo", "Redo"))}
-                    disabled={!ready || busy}
-                    className="px-1 text-muted-foreground disabled:opacity-30"
-                    data-testid="editor-redo"
-                >
-                    <Redo2 className="size-4" />
-                </button>
             </div>
             {active !== null && (
                 <div

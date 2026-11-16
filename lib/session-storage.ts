@@ -1,6 +1,7 @@
 import { type DBSchema, type IDBPDatabase, openDB } from "idb"
 import { nanoid } from "nanoid"
 import { toast } from "sonner"
+import { isOperationsMode, operationsRequest } from "@/lib/operations-bridge"
 import type { DiagramVersion } from "@/stores/versions-store"
 
 // Constants
@@ -10,6 +11,9 @@ const STORE_NAME = "sessions"
 export const MAX_SESSIONS = 50
 
 // Types
+const remoteRevisions = new Map<string, number>()
+const listedRevisions = new Map<string, number>()
+
 export interface ChatSession {
     id: string
     title: string
@@ -98,6 +102,7 @@ async function getDB(): Promise<IDBPDatabase<ChatSessionDB>> {
 // Check if IndexedDB is available
 export function isIndexedDBAvailable(): boolean {
     if (typeof window === "undefined") return false
+    if (isOperationsMode()) return true
     try {
         return "indexedDB" in window && window.indexedDB !== null
     } catch {
@@ -107,6 +112,14 @@ export function isIndexedDBAvailable(): boolean {
 
 // CRUD Operations
 export async function getAllSessionMetadata(): Promise<SessionMetadata[]> {
+    if (isOperationsMode()) {
+        const rows =
+            await operationsRequest<(SessionMetadata & { revision: number })[]>(
+                "list",
+            )
+        for (const row of rows) listedRevisions.set(row.id, row.revision)
+        return rows
+    }
     if (!isIndexedDBAvailable()) return []
     try {
         const db = await getDB()
@@ -141,6 +154,15 @@ export async function getAllSessionMetadata(): Promise<SessionMetadata[]> {
 }
 
 export async function getSession(id: string): Promise<ChatSession | null> {
+    if (isOperationsMode()) {
+        const result = await operationsRequest<{
+            session: ChatSession
+            revision: number
+        } | null>("get", { id })
+        if (!result) return null
+        remoteRevisions.set(id, result.revision)
+        return result.session
+    }
     if (!isIndexedDBAvailable()) return null
     try {
         const db = await getDB()
@@ -163,6 +185,17 @@ export async function saveSession(session: ChatSession): Promise<boolean> {
     saveError = undefined
     if (!isIndexedDBAvailable()) return false
     try {
+        if (isOperationsMode()) {
+            const saved = await operationsRequest<{ revision: number }>(
+                "save",
+                {
+                    session,
+                    expectedRevision: remoteRevisions.get(session.id) ?? 0,
+                },
+            )
+            remoteRevisions.set(session.id, saved.revision)
+            return true
+        }
         const db = await getDB()
         await db.put(STORE_NAME, session)
         // The desktop app opens this port (this origin's chats) next launch
@@ -177,6 +210,14 @@ export async function saveSession(session: ChatSession): Promise<boolean> {
 }
 
 export async function deleteSession(id: string): Promise<void> {
+    if (isOperationsMode()) {
+        await operationsRequest("delete", {
+            id,
+            expectedRevision:
+                remoteRevisions.get(id) ?? listedRevisions.get(id),
+        })
+        return
+    }
     if (!isIndexedDBAvailable()) return
     try {
         const db = await getDB()
@@ -193,6 +234,7 @@ export async function getSessionCount(): Promise<number> {
 
 /** The number of saved chats, or null when it could not be read */
 export async function readSessionCount(): Promise<number | null> {
+    if (isOperationsMode()) return (await getAllSessionMetadata()).length
     if (!isIndexedDBAvailable()) return null
     try {
         const db = await getDB()
@@ -215,7 +257,15 @@ export async function deleteOldestSession(
         const tx = db.transaction(STORE_NAME, "readwrite")
         const index = tx.store.index("by-updated")
         let cursor = await index.openCursor()
-        while (cursor && cursor.value.id === keepId) {
+        const open = new Set<string>(
+            JSON.parse(
+                sessionStorage.getItem("brainstorm-open-documents") || "[]",
+            ),
+        )
+        while (
+            cursor &&
+            (cursor.value.id === keepId || open.has(cursor.value.id))
+        ) {
             cursor = await cursor.continue()
         }
         const title = cursor?.value.title ?? null
@@ -238,6 +288,7 @@ export async function deleteOldestSession(
 export async function enforceSessionLimit(
     keep?: () => string | undefined,
 ): Promise<string[]> {
+    if (isOperationsMode()) return []
     const deleted: string[] = []
     const count = await getSessionCount()
     if (count > MAX_SESSIONS) {

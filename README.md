@@ -17,12 +17,14 @@ Dokumentacja jest częścią repozytorium i jest aktualizowana razem z kodem.
 | [docs/project/05-plan.md](docs/project/05-plan.md) | Plan prac i otwarte zadania |
 | [docs/upstream/README.md](docs/upstream/README.md) | Oryginalny README projektu bazowego |
 
+Integracja z Operations, zakładki dokumentów i konfiguracja wdrożenia: [09-operations-integration.md](docs/project/09-operations-integration.md).
+
 ## Stack
 
 - Next.js (React) z draw.io hostowanym z własnej domeny aplikacji
 - OpenAI API (wywoływane z serwera, klucz nigdy w przeglądarce)
 - Cloudflare (build i hosting, adapter OpenNext)
-- Supabase (konta, projekty, historia) - planowane
+- Supabase Storage i uprawnienia Operations przez integrację z panelem EMC
 - GitHub: gałąź `main` to produkcja, `dev` to bieżąca praca
 
 ## Uruchomienie lokalne

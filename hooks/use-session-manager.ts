@@ -172,8 +172,16 @@ export function useSessionManager(
 
     // Load sessions list
     const refreshSessions = useCallback(async () => {
-        setSessions(await getAllSessionMetadata())
-    }, [])
+        try {
+            setSessions(await getAllSessionMetadata())
+        } catch (error) {
+            toastUnexpectedError(
+                "Could not refresh Operations drawings. Your open drawing is retained.",
+                dict.report.button,
+                error,
+            )
+        }
+    }, [dict.report.button])
 
     // Initialize on mount
     useEffect(() => {
@@ -228,12 +236,19 @@ export function useSessionManager(
                     // If session not found, stay in blank state (URL has invalid session ID)
                 }
                 // If no initialSessionId, start with blank state (no auto-restore)
+            } catch (error) {
+                setIsAvailable(false)
+                toastUnexpectedError(
+                    "Could not load Operations drawings. Reload to retry before editing.",
+                    dict.report.button,
+                    error,
+                )
             } finally {
                 setIsLoading(false)
             }
         }
 
-        init()
+        void init()
     }, [initialSessionId, changeChat])
 
     // Handle URL session ID changes after initialization
@@ -422,10 +437,11 @@ export function useSessionManager(
                     updatedAt: Date.now(),
                     // Update title if it's still default and we have messages
                     title:
-                        currentSession.title === "New Chat" &&
+                        data.title ||
+                        (currentSession.title === "New Chat" &&
                         data.messages.length > 0
                             ? extractTitle(data.messages)
-                            : currentSession.title,
+                            : currentSession.title),
                 }
 
                 if (!(await saveSession(updatedSession))) {

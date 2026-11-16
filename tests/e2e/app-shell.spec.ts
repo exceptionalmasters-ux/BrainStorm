@@ -1,6 +1,7 @@
 import type { Page } from "@playwright/test"
 import { SINGLE_BOX_XML } from "./fixtures/diagrams"
 import {
+    acceptFirstDrawingName,
     expect,
     getChatInput,
     getIframe,
@@ -96,6 +97,7 @@ test.describe("Site pages", () => {
     test("the editor opened from a site page a second time starts a new chat, and Back and Forward return to the first", async ({
         page,
     }) => {
+        await acceptFirstDrawingName(page)
         // draw.io loads three times
         test.setTimeout(90_000)
         await page.route("**/api/chat", (route) =>

@@ -10,6 +10,7 @@ export default defineConfig({
     webServer: {
         command: process.env.CI ? "npm run start" : "npm run dev",
         port: process.env.CI ? 6001 : 6002,
+        env: { EMC_OPERATIONS_ONLY: process.env.EMC_OPERATIONS_ONLY ?? "0" },
         reuseExistingServer: !process.env.CI,
         timeout: 120 * 1000,
     },
@@ -18,6 +19,12 @@ export default defineConfig({
             ? "http://localhost:6001"
             : "http://localhost:6002",
         trace: "on-first-retry",
+        launchOptions: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
+            ? {
+                  executablePath:
+                      process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
+              }
+            : undefined,
     },
     projects: [
         {

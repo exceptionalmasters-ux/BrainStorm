@@ -126,6 +126,8 @@ export const DRAWIO_CONFIG = {
  */
 export const DRAWIO_CSS = `
 html, body { overflow: clip !important; }
+/* The web toolbar above the iframe replaces this duplicate native row. */
+html.emc-unified-toolbar .geSimpleMainMenu { display: none !important; }
 .geSketch > .geToolbarContainer:has(> .geStatus:empty):has(> .geButtonContainer:empty) { display: none !important; }
 body:not(.geDarkMode) {
     --workspace-color: #f4f5f7;
@@ -140,6 +142,13 @@ body.geDarkMode .geDiagramContainer { background-color: #050505; }
 /* Native palettes float above the page: opening a tool must not resize the graph. */
 body.emc-shape-tools .emc-shape-overlay { position: absolute !important; left: 0 !important; top: var(--emc-tools-top, 48px) !important; bottom: 0 !important; width: 0 !important; z-index: 20; background: #101310; }
 body.emc-shape-flyout .emc-shape-overlay { width: 232px !important; max-width: calc(100% - 32px); }
+/* The flyout is viewport-bounded; native inline heights must not clip long palettes. */
+body.emc-shape-tools .emc-shape-overlay { height: auto !important; min-height: 0 !important; overflow: hidden !important; }
+body.emc-shape-flyout .emc-shape-scroll:not(.emc-shape-overlay) { position: absolute !important; inset: 0 !important; width: 100% !important; }
+body.emc-shape-flyout .emc-shape-scroll { height: auto !important; max-height: none !important; overflow-x: hidden !important; overflow-y: scroll !important; scrollbar-gutter: stable; overscroll-behavior: contain; scrollbar-width: auto; scrollbar-color: #a48532 #101310; }
+body.emc-shape-flyout .emc-shape-scroll::-webkit-scrollbar { width: 12px; }
+body.emc-shape-flyout .emc-shape-scroll::-webkit-scrollbar-thumb { background: #a48532; border-radius: 6px; border: 2px solid #101310; }
+body.emc-shape-flyout .emc-shape-scroll:has(.geSidebarFooter) > div:first-child { max-height: none !important; overflow: visible !important; }
 body.emc-shape-tools .geDiagramContainer { left: 0 !important; }
 body.emc-shape-tools .geHsplit { display: none !important; }
 body.emc-shape-tools .geDiagramContainer, body.emc-shape-tools .geBackgroundPage { color-scheme: light; }
@@ -149,5 +158,13 @@ body.emc-shape-flyout .geSidebarContainer:not(.geFormatContainer) { border-right
 .emc-shape-header strong { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .emc-shape-header button { width: 28px; height: 30px; border: 1px solid transparent; border-radius: 5px; background: transparent; color: #edcb6d; cursor: pointer; font-size: 18px; }
 .emc-shape-header button:hover, .emc-shape-header button:focus-visible, .emc-shape-header button[aria-pressed="true"] { border-color: #cfad46; background: #263b2a; }
+/* Compact visual galleries use the native popup lifecycle and insertion actions. */
+div.emc-quick-insert-menu { max-width: calc(100vw - 12px); max-height: min(320px, calc(100vh - 12px)); overflow: auto; padding: 6px !important; }
+.emc-quick-insert-menu > table { width: auto !important; }
+.emc-quick-insert-menu > table > tbody { display: grid; grid-template-columns: repeat(4, 48px); gap: 3px; }
+.emc-quick-insert-menu [data-quick-insert] { display: flex; align-items: center; justify-content: center; width: 48px; height: 44px; border: 1px solid transparent; border-radius: 5px; cursor: pointer; }
+.emc-quick-insert-menu [data-quick-insert]:hover, .emc-quick-insert-menu [data-quick-insert]:focus-visible { border-color: #a48532; outline: none; background: #a4853226; }
+.emc-quick-insert-menu [data-quick-insert] > td:first-child { display: flex; align-items: center; justify-content: center; padding: 0 !important; width: 40px !important; background: transparent !important; }
+.emc-quick-insert-menu [data-quick-insert] > td:not(:first-child) { position: absolute; width: 1px; height: 1px; padding: 0 !important; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .emc-shape-empty { padding: 12px; font: 12px Arial, sans-serif; }
 `

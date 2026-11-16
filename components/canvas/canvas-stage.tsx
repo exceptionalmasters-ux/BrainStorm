@@ -178,6 +178,7 @@ export function CanvasStage({
                         src={src}
                         css={DRAWIO_CSS}
                         dark={isDark}
+                        unifiedToolbar={toolbox}
                         onLoad={onDrawioLoad}
                         onAutoSave={handleDiagramAutoSave}
                         onExport={handleDiagramExport}
