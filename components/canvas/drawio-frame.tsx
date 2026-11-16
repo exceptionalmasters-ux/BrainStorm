@@ -37,6 +37,8 @@ interface DrawioFrameProps {
     css: string
     /** draw.io's dark mode, switched in place when the editor is reachable */
     dark: boolean
+    /** Only the EMC web workspace replaces the native toolbar. */
+    unifiedToolbar?: boolean
     onLoad?: () => void
     onAutoSave?: (data: { xml?: string }) => void
     onExport?: (data: DrawioExportEvent) => void
@@ -53,10 +55,27 @@ const STYLE_ID = "next-ai-drawio-theme"
  */
 export const DrawioFrame = forwardRef<DrawioFrameHandle, DrawioFrameProps>(
     function DrawioFrame(
-        { src, css, dark, onLoad, onAutoSave, onExport, onEditorAccess },
+        {
+            src,
+            css,
+            dark,
+            unifiedToolbar = false,
+            onLoad,
+            onAutoSave,
+            onExport,
+            onEditorAccess,
+        },
         ref,
     ) {
         const iframeRef = useRef<HTMLIFrameElement>(null)
+        const unifiedToolbarRef = useRef(unifiedToolbar)
+        unifiedToolbarRef.current = unifiedToolbar
+        useEffect(() => {
+            iframeRef.current?.contentDocument?.documentElement.classList.toggle(
+                "emc-unified-toolbar",
+                unifiedToolbar,
+            )
+        }, [unifiedToolbar])
         const editorUiRef = useRef<any>(null)
         const attachedRef = useRef(false)
         const cssRef = useRef(css)
@@ -204,8 +223,9 @@ export const DrawioFrame = forwardRef<DrawioFrameHandle, DrawioFrameProps>(
                             const ui = editorUiRef.current
                             if (!ui || !iframe.contentWindow) return false
                             attachEditor(ui, iframe.contentWindow)
-                            iframe.contentDocument?.documentElement.classList.add(
+                            iframe.contentDocument?.documentElement.classList.toggle(
                                 "emc-unified-toolbar",
+                                unifiedToolbarRef.current,
                             )
                             attachedRef.current = true
                             applyThemeCss()
