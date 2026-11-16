@@ -372,7 +372,9 @@ for (const withBrief of [true, false]) {
                 )
                 .toMatch(/Fixture module/)
         }
-        const originalFileTitle = await popup.getByTestId("editor-file-title").innerText()
+        const originalFileTitle = await popup
+            .getByTestId("editor-file-title")
+            .innerText()
         await popup.getByTestId("editor-save-as-button").click()
         const saveAs = popup.getByRole("dialog", {
             name: "Save As",

@@ -31,9 +31,7 @@ export async function mockOperationsStorage(
                         "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
                     },
                 })
-            expect(req.headers().authorization).toBe(
-                `Bearer ${options.token}`,
-            )
+            expect(req.headers().authorization).toBe(`Bearer ${options.token}`)
             if (path) {
                 if (req.method() === "POST") {
                     expect(req.headers()["x-upsert"]).toBe("false")
