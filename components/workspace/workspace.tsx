@@ -14,6 +14,7 @@ import {
 import { ChatPanel } from "@/components/chat/chat-panel"
 import { ChatVersionsProvider } from "@/components/chat/chat-versions"
 import { LobbyHero } from "@/components/chat/lobby-hero"
+import { SaveAsDialog } from "@/components/save-as-dialog"
 import { SaveDialog } from "@/components/save-dialog"
 import { SettingsDialog } from "@/components/settings-dialog"
 import { BrandMark } from "@/components/workspace/brand-mark"
@@ -167,6 +168,7 @@ function WorkspaceLayout() {
     } = useUiStore()
     const heroDismissed = useUiStore((s) => s.heroDismissed)
     const setHeroDismissed = useUiStore((s) => s.setHeroDismissed)
+    const [saveAsOpen, setSaveAsOpen] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
     useEffect(() => {
         if (new URLSearchParams(window.location.search).get("blank") === "1") {
@@ -179,6 +181,7 @@ function WorkspaceLayout() {
     // Start screen: nothing said and nothing drawn yet. A new chat brings
     // it back, an opened file or saved chat puts it away (the chat engine).
     const showHero =
+        !isOperationsMode() &&
         engine.isRestored &&
         engine.messages.length === 0 &&
         !isRealDiagram(chartXML) &&
@@ -211,10 +214,13 @@ function WorkspaceLayout() {
                 return true
             }
             if (event.key.toLowerCase() === "s") {
-                if (isOperationsMode() && !event.shiftKey) {
-                    void engine.saveDocument().then((saved) => {
-                        if (saved) toast.success("Saved to Operations")
-                    })
+                if (saveAsOpen) return true
+                if (isOperationsMode()) {
+                    if (event.shiftKey) setSaveAsOpen(true)
+                    else
+                        void engine.saveDocument().then((saved) => {
+                            if (saved) toast.success("Saved")
+                        })
                     return true
                 }
                 if (!useUiStore.getState().saveDialogOpen)
@@ -295,6 +301,7 @@ function WorkspaceLayout() {
         isDrawioReady,
         engine.isBusy,
         engine.currentTitle,
+        saveAsOpen,
         engine.langfuseSessionId,
         saveDiagramToFile,
         dict.save.savedSuccessfully,
@@ -349,16 +356,11 @@ function WorkspaceLayout() {
                 {!showHero && (
                     <EditorHeader
                         onOpen={() => fileInputRef.current?.click()}
-                        saveLabel={
-                            isOperationsMode()
-                                ? "Save to Operations"
-                                : undefined
-                        }
+                        saveLabel={isOperationsMode() ? "Save" : undefined}
                         onSave={() => {
                             if (isOperationsMode()) {
                                 void engine.saveDocument().then((saved) => {
-                                    if (saved)
-                                        toast.success("Saved to Operations")
+                                    if (saved) toast.success("Saved")
                                 })
                                 return
                             }
@@ -374,6 +376,7 @@ function WorkspaceLayout() {
                             })
                         }}
                         onExport={() => setSaveDialogOpen(true)}
+                        onSaveAs={() => setSaveAsOpen(true)}
                         onNew={() => {
                             void engine.newChat()
                         }}
@@ -402,21 +405,6 @@ function WorkspaceLayout() {
                             setMobileView("canvas")
                         }}
                     />
-                )}
-
-                {getOperationsContext()?.brief && (
-                    <details className="shrink-0 border-b border-border px-3 py-1 text-xs">
-                        <summary className="cursor-pointer text-primary">
-                            Technical Brief · concept context
-                        </summary>
-                        <p className="py-2 text-muted-foreground">
-                            This is reference information. Enter what to draw in
-                            the assistant separately.
-                        </p>
-                        <pre className="max-h-48 overflow-auto whitespace-pre-wrap pb-2 font-sans">
-                            {getOperationsContext()?.brief}
-                        </pre>
-                    </details>
                 )}
 
                 {getOperationsContext()?.readOnly && (
@@ -538,6 +526,12 @@ function WorkspaceLayout() {
 
             <SettingsDialog />
             <CompareDialog />
+            <SaveAsDialog
+                open={saveAsOpen}
+                onOpenChange={setSaveAsOpen}
+                defaultName={engine.currentTitle || "Drawing"}
+                onSave={engine.saveDocumentAs}
+            />
             <SaveDialog
                 open={saveDialogOpen}
                 onOpenChange={setSaveDialogOpen}

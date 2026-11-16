@@ -111,3 +111,36 @@ test("Save in the close dialog keeps the drawing and its chosen filename", async
         .poll(async () => (await stored(page))[0]?.title)
         .toBe("Retained drawing")
 })
+
+test("Save As names an unnamed drawing without opening an automatic name prompt or export", async ({
+    page,
+}) => {
+    await openApp(page, {
+        acceptDrawingNames: false,
+        acceptUnsavedChanges: false,
+    })
+    let prompts = 0
+    page.on("dialog", async (dialog) => {
+        prompts++
+        await dialog.dismiss()
+    })
+    await insertSquare(page)
+    await page.getByTestId("editor-save-as-button").click()
+    const dialog = page.getByRole("dialog", { name: "Save As", exact: true })
+    await dialog
+        .getByLabel("Drawing name", { exact: true })
+        .fill("Named through Save As")
+    await page.waitForTimeout(1500)
+    expect(prompts).toBe(0)
+    await dialog.getByRole("button", { name: "Save", exact: true }).click()
+    await expect(dialog).toHaveCount(0)
+    await expect(page.getByTestId("editor-file-title")).toHaveText(
+        "Named through Save As.drawio",
+    )
+    expect((await stored(page)).map((session) => session.title)).toEqual([
+        "Named through Save As",
+    ])
+    await expect(
+        page.getByRole("dialog", { name: "Export diagram", exact: true }),
+    ).toHaveCount(0)
+})

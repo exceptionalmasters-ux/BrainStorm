@@ -127,6 +127,76 @@ describe("saving the chat on screen", () => {
         expect(result.current.currentSessionId).toBe([...stored.keys()][0])
     })
 
+    it("Save As creates a new current document and keeps the original unchanged", async () => {
+        const { result } = await setup()
+        let first!: Promise<boolean>
+        act(() => {
+            first = result.current.saveCurrentSession({
+                ...data,
+                title: "Original",
+            })
+        })
+        await finishWrites()
+        expect(await first).toBe(true)
+        const originalId = result.current.getCurrentSessionId()!
+        const original = stored.get(originalId)
+        const generation = result.current.getChatGeneration()
+        let copy!: Promise<boolean>
+        act(() => {
+            copy = result.current.saveCurrentSession(
+                { ...data, title: "Copy" },
+                undefined,
+                true,
+            )
+        })
+        await finishWrites()
+        expect(await copy).toBe(true)
+        expect(stored.size).toBe(2)
+        expect(stored.get(originalId)).toBe(original)
+        expect(result.current.getCurrentSessionId()).not.toBe(originalId)
+        expect(result.current.currentSession?.title).toBe("Copy")
+        expect(result.current.getChatGeneration()).toBe(generation + 1)
+        let stale!: Promise<boolean>
+        act(() => {
+            stale = result.current.saveCurrentSession(
+                { ...data, title: "Stale original" },
+                { generation, seq: 99 },
+            )
+        })
+        await finishWrites()
+        expect(await stale).toBe(true)
+        expect(result.current.currentSession?.title).toBe("Copy")
+        expect(stored.size).toBe(2)
+    })
+
+    it("failed Save As retains the original current document", async () => {
+        const { result } = await setup()
+        let first!: Promise<boolean>
+        act(() => {
+            first = result.current.saveCurrentSession({
+                ...data,
+                title: "Original",
+            })
+        })
+        await finishWrites()
+        await first
+        const id = result.current.getCurrentSessionId()
+        vi.mocked(saveSession).mockResolvedValueOnce(false)
+        let copy!: Promise<boolean>
+        await act(async () => {
+            copy = result.current.saveCurrentSession(
+                { ...data, title: "Copy" },
+                undefined,
+                true,
+            )
+            await copy
+        })
+        expect(await copy).toBe(false)
+        expect(result.current.getCurrentSessionId()).toBe(id)
+        expect(result.current.currentSession?.title).toBe("Original")
+        expect(stored.size).toBe(1)
+    })
+
     it("names the chats the limit deleted to make room for a new one", async () => {
         deletedByLimit = ["Old flowchart", "New Chat"]
         const info = vi.spyOn(toast, "info")

@@ -3,6 +3,7 @@ import {
     PanelRightClose,
     PanelRightOpen,
     Save,
+    SaveAll,
     Settings,
 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
@@ -32,6 +33,7 @@ export function EditorHeader({
     onSave,
     saveLabel,
     onExport,
+    onSaveAs,
     onNew,
     onClose,
     onSettings,
@@ -43,6 +45,7 @@ export function EditorHeader({
     onSave: () => void
     saveLabel?: string
     onExport: () => void
+    onSaveAs: () => void
     onNew: () => void
     onClose: () => void
     onSettings: () => void
@@ -101,7 +104,12 @@ export function EditorHeader({
                     disabled: !ready || busy,
                     shortcut: "Ctrl/⌘ S",
                 },
-                { label: t.saveAs, run: onExport, disabled: !ready || busy },
+                {
+                    label: isOperationsMode() ? "Save As" : t.saveAs,
+                    run: onSaveAs,
+                    testId: "editor-save-as",
+                    disabled: !ready || busy,
+                },
                 {
                     label: dict.workspace.export,
                     run: onExport,
@@ -281,7 +289,7 @@ export function EditorHeader({
                     className="flex shrink-0 items-center gap-1.5 text-[11px]"
                     title={
                         isOperationsMode()
-                            ? "Save to Supabase Storage"
+                            ? "AutoSave"
                             : "Local browser storage — open from Operations for Supabase"
                     }
                 >
@@ -300,12 +308,12 @@ export function EditorHeader({
                     role="status"
                     title={
                         isOperationsMode()
-                            ? "Supabase Storage"
+                            ? "Drawing save status"
                             : "Local browser storage"
                     }
                 >
-                    {saving ? "Saving…" : dirty ? "Unsaved" : "Saved"} ·{" "}
-                    {isOperationsMode() ? "Cloud" : "Local"}
+                    {saving ? "Saving…" : dirty ? "Unsaved" : "Saved"}
+                    {!isOperationsMode() && " · Local"}
                 </span>
                 <div className="ml-auto flex items-center gap-1">
                     <IconButton
@@ -322,6 +330,14 @@ export function EditorHeader({
                         data-testid="editor-save"
                     >
                         <Save />
+                    </IconButton>
+                    <IconButton
+                        label="Save As"
+                        onClick={() => perform({ label: "", run: onSaveAs })}
+                        disabled={!ready || busy}
+                        data-testid="editor-save-as-button"
+                    >
+                        <SaveAll />
                     </IconButton>
                     <IconButton
                         label={dict.save.title}

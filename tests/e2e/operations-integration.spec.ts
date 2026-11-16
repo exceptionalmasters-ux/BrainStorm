@@ -3,39 +3,44 @@ import { expect, getIframeContent, test } from "./lib/fixtures"
 /** Real cross-origin popup and native editor; the authenticated parent's transport is mocked.
  * The real Operations RPC/Storage adapter and SQL policies are verified in the EMC suites.
  */
-test("Operations popup saves and reopens a cloud drawing without local persistence", async ({
-    page,
-    context,
-    baseURL,
-}) => {
-    const editor = new URL("/en?operations=1", baseURL).href
-    await context.addInitScript(() => {
-        const original = window.prompt.bind(window)
-        window.prompt = (message, suggested) =>
-            message === "Name this drawing before saving:"
-                ? "Integration drawing"
-                : original(message, suggested)
-    })
-    // Do not send fixture credentials or document contents to any real service.
-    await context.route("**/api/**", (route) =>
-        route.fulfill({
-            contentType: "application/json",
-            body: JSON.stringify({
-                accessCodeRequired: false,
-                models: [],
-                providers: [],
-            }),
-        }),
-    )
-    await context.route(
-        "https://exceptionalmasters.co.uk/__brainstorm-integration",
-        (route) =>
-            route.fulfill({
-                contentType: "text/html",
-                headers: {
-                    "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
-                },
-                body: `<button id="open">Open with brief</button><button id="skip">Skip brief</button><script>
+for (const withBrief of [true, false]) {
+    test(`Operations ${withBrief ? "brief" : "skip"} opens directly into the drawing and reopens cloud files`, async ({
+        page,
+        context,
+        baseURL,
+    }) => {
+        let modelRequests = 0
+        const editor = new URL("/en?operations=1", baseURL).href
+        await context.addInitScript(() => {
+            const original = window.prompt.bind(window)
+            window.prompt = (message, suggested) =>
+                message === "Name this drawing before saving:"
+                    ? "Integration drawing"
+                    : original(message, suggested)
+        })
+        // Do not send fixture credentials or document contents to any real service.
+        await context.route("**/api/**", (route) => {
+            if (new URL(route.request().url()).pathname === "/api/chat")
+                modelRequests++
+            return route.fulfill({
+                contentType: "application/json",
+                body: JSON.stringify({
+                    accessCodeRequired: false,
+                    models: [],
+                    providers: [],
+                }),
+            })
+        })
+        await context.route(
+            "https://exceptionalmasters.co.uk/__brainstorm-integration",
+            (route) =>
+                route.fulfill({
+                    contentType: "text/html",
+                    headers: {
+                        "Cross-Origin-Opener-Policy":
+                            "same-origin-allow-popups",
+                    },
+                    body: `<button id="open">Open with brief</button><button id="skip">Skip brief</button><script>
             const editor = ${JSON.stringify(editor)};
             const editorOrigin = new URL(editor).origin;
             window.records = new Map(); window.requests = []; let child = null; let brief = "";
@@ -63,42 +68,86 @@ test("Operations popup saves and reopens a cloud drawing without local persisten
                 child.postMessage({ protocol: d.protocol, kind: "response", requestId: d.requestId, result, error }, editorOrigin);
             });
         </script>`,
-            }),
-    )
-    await page.goto("https://exceptionalmasters.co.uk/__brainstorm-integration")
-    const opening = page.waitForEvent("popup")
-    await page.locator("#open").click()
-    const popup = await opening
-    await popup.waitForLoadState("networkidle")
-    await expect(popup.getByTestId("canvas-loading")).toHaveCount(0)
-    await popup.getByTestId("draw-manually").click()
-    await popup.getByTestId("drawing-create-rectangle").click()
-    await expect
-        .poll(() => page.evaluate(() => (window as any).records.size))
-        .toBe(1)
-    await expect(popup.getByTestId("document-save-status")).toHaveText(
-        "Saved · Cloud",
-    )
-    await popup.getByText("Technical Brief · concept context").click()
-    await expect(
-        popup.getByText("OBJECTIVE: Integration concept", { exact: true }),
-    ).toBeVisible()
-    const databases = await popup.evaluate(async () =>
-        (await indexedDB.databases()).map((db) => db.name),
-    )
-    expect(databases).not.toContain("next-ai-drawio")
-    await popup.close()
-    const reopening = page.waitForEvent("popup")
-    await page.locator("#skip").click()
-    const reopened = await reopening
-    await expect(reopened.getByTestId("editor-file-title")).toHaveText(
-        "Integration drawing.drawio",
-    )
-    await expect(
-        reopened.getByText("Technical Brief · concept context"),
-    ).toHaveCount(0)
-    await expect(
-        getIframeContent(reopened).locator(".geDiagramContainer"),
-    ).toBeVisible()
-    expect(await page.evaluate(() => (window as any).requests)).toContain("get")
-})
+                }),
+        )
+        await page.goto(
+            "https://exceptionalmasters.co.uk/__brainstorm-integration",
+        )
+        const opening = page.waitForEvent("popup")
+        await page.locator(withBrief ? "#open" : "#skip").click()
+        const popup = await opening
+        await popup.waitForLoadState("networkidle")
+        await expect(popup.getByTestId("canvas-loading")).toHaveCount(0)
+        await expect(popup.getByTestId("draw-manually")).toHaveCount(0)
+        await expect(popup.getByTestId("lobby-hero")).toHaveCount(0)
+        await expect(popup.getByTestId("drawing-toolbar")).toBeVisible()
+        const prompt = popup.getByTestId("chat-input")
+        if (withBrief) {
+            await expect(prompt).toHaveValue(/OBJECTIVE: Integration concept/)
+            await expect(popup.getByTestId("editor-file-title")).toHaveText(
+                "Drawing from brief.drawio",
+            )
+        } else {
+            await expect(popup.getByTestId("chat-panel")).toHaveCount(0)
+            await popup.getByTestId("show-panel").click()
+            await expect(prompt).toHaveValue("")
+        }
+        await expect(
+            popup.getByText("Technical Brief · concept context"),
+        ).toHaveCount(0)
+
+        expect(modelRequests).toBe(0)
+        await popup.getByTestId("drawing-create-rectangle").click()
+        await expect
+            .poll(() => page.evaluate(() => (window as any).records.size))
+            .toBe(1)
+        await expect(popup.getByTestId("document-save-status")).toHaveText(
+            "Saved",
+        )
+        const databases = await popup.evaluate(async () =>
+            (await indexedDB.databases()).map((db) => db.name),
+        )
+        expect(databases).not.toContain("next-ai-drawio")
+        await popup.getByTestId("editor-save-as-button").click()
+        const saveAs = popup.getByRole("dialog", {
+            name: "Save As",
+            exact: true,
+        })
+        await saveAs
+            .getByLabel("Drawing name", { exact: true })
+            .fill("Integration copy")
+        await saveAs.getByRole("button", { name: "Save", exact: true }).click()
+        await expect(saveAs).toHaveCount(0)
+        await expect(popup.getByTestId("editor-file-title")).toHaveText(
+            "Integration copy.drawio",
+        )
+        await expect
+            .poll(() => page.evaluate(() => (window as any).records.size))
+            .toBe(2)
+        await popup.getByTestId("editor-save").click()
+        expect(await page.evaluate(() => (window as any).records.size)).toBe(2)
+        await popup.getByTestId("manual-export-button").click()
+        await expect(
+            popup.getByRole("dialog", { name: "Export diagram", exact: true }),
+        ).toBeVisible()
+        await popup.keyboard.press("Escape")
+        await popup.close()
+        const reopening = page.waitForEvent("popup")
+        await page.locator("#skip").click()
+        const reopened = await reopening
+        await expect(reopened.getByTestId("editor-file-title")).toHaveText(
+            withBrief
+                ? "Drawing from brief.drawio"
+                : "Integration drawing.drawio",
+        )
+        await expect(
+            reopened.getByText("Technical Brief · concept context"),
+        ).toHaveCount(0)
+        await expect(
+            getIframeContent(reopened).locator(".geDiagramContainer"),
+        ).toBeVisible()
+        expect(await page.evaluate(() => (window as any).requests)).toContain(
+            "get",
+        )
+    })
+}

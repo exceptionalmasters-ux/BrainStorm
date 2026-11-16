@@ -328,6 +328,7 @@ export interface ChatEngine {
     /** Starts another drawing without changing this tab. */
     newChat: () => Promise<void>
     saveDocument: () => Promise<boolean>
+    saveDocumentAs: (title: string) => Promise<boolean>
     /** Saves and closes this drawing in the current tab. */
     closeDrawing: () => Promise<void>
     selectSession: (id: string) => Promise<void>
@@ -463,6 +464,7 @@ export function ChatEngineProvider({
     const [pendingTitle, setPendingTitleState] = useState<string | null>(null)
     const pendingTitleRef = useRef<string | null>(null)
     const autoSave = useDocumentSaveStore((state) => state.autoSave)
+    const naming = useDocumentSaveStore((state) => state.naming)
     const documentDirty = useDocumentSaveStore((state) => state.dirty)
     const declinedNameRef = useRef(false)
     const closePendingRef = useRef(false)
@@ -1441,6 +1443,37 @@ export function ChatEngineProvider({
         syncUIWithSession,
     ])
 
+    // An Operations launch is already a drawing intent, never a visit to the lobby.
+    // Prepare the existing "Drawing from brief" prompt without sending a message.
+    const operationsLaunchRef = useRef(false)
+    useEffect(() => {
+        if (!isRestored || operationsLaunchRef.current || !isOperationsMode())
+            return
+        operationsLaunchRef.current = true
+        const context = getOperationsContext()
+        const brief = context?.brief?.trim() || ""
+        const view = useUiStore.getState()
+        view.setHeroDismissed(true)
+        view.setPanelOpen(!!brief)
+        view.setMobileView(brief ? "chat" : "canvas")
+        if (brief && !context?.readOnly) {
+            if (!inputRef.current)
+                setInput(`${dict.lobby.briefPrompt}\n\n${brief}`)
+            if (!urlSessionId && !sessionManager.getCurrentSessionId()) {
+                setPendingTitle("Drawing from brief")
+                if (!chartXMLRef.current)
+                    onDisplayChart(EMPTY_DRAWIO_DOCUMENT, true)
+            }
+        }
+    }, [
+        isRestored,
+        dict.lobby.briefPrompt,
+        urlSessionId,
+        setInput,
+        onDisplayChart,
+        sessionManager.getCurrentSessionId,
+    ])
+
     const {
         isAvailable: sessionIsAvailable,
         currentSessionId,
@@ -1457,6 +1490,7 @@ export function ChatEngineProvider({
     const saveNow = async () => {
         if (
             !useDocumentSaveStore.getState().autoSave ||
+            useDocumentSaveStore.getState().naming ||
             getOperationsContext()?.readOnly ||
             !ensureDocumentName(true)
         )
@@ -1553,6 +1587,7 @@ export function ChatEngineProvider({
 
         if (
             !autoSave ||
+            naming ||
             getOperationsContext()?.readOnly ||
             !hasUnsavedChanges()
         )
@@ -1571,6 +1606,7 @@ export function ChatEngineProvider({
                     scheduledForChat !== getChatGeneration() ||
                     leavingRef.current ||
                     !useDocumentSaveStore.getState().autoSave ||
+                    useDocumentSaveStore.getState().naming ||
                     !ensureDocumentName(true)
                 )
                     return
@@ -1610,6 +1646,7 @@ export function ChatEngineProvider({
     }, [
         chartXML,
         autoSave,
+        naming,
         messages,
         versions,
         status,
@@ -2548,6 +2585,49 @@ export function ChatEngineProvider({
         }
     }
 
+    const saveDocumentAs = async (title: string) => {
+        const name = title
+            .trim()
+            .replace(/\.drawio$/i, "")
+            .trim()
+        if (
+            !name ||
+            name.length > 100 ||
+            !canStartTurn() ||
+            getOperationsContext()?.readOnly
+        )
+            return false
+        let copied = false
+        await whileLeaving(async () => {
+            if (saveDebounceRef.current) clearTimeout(saveDebounceRef.current)
+            const changes = changesRef.current
+            const ticket = sessionManager.getSaveTicket()
+            const data = await buildSessionData({ withThumbnail: true })
+            data.diagramXml ||= EMPTY_DRAWIO_DOCUMENT
+            data.title = name
+            const previousTitle = pendingTitleRef.current
+            setPendingTitle(name)
+            useDocumentSaveStore.setState({ saving: true })
+            try {
+                const saved = await sessionManager.saveCurrentSession(
+                    data,
+                    ticket,
+                    true,
+                )
+                if (saved) {
+                    markSaved(changes)
+                    setUrlSession(sessionManager.getCurrentSessionId())
+                } else setPendingTitle(previousTitle)
+                copied = saved
+            } catch {
+                setPendingTitle(previousTitle)
+            } finally {
+                useDocumentSaveStore.setState({ saving: false })
+            }
+        })
+        return copied
+    }
+
     const newChat = async () => {
         if (getOperationsContext()?.readOnly) {
             toast.info("This workspace is read-only.")
@@ -2789,6 +2869,7 @@ export function ChatEngineProvider({
         isRestored,
         newChat,
         saveDocument,
+        saveDocumentAs,
         closeDrawing,
         selectSession,
         deleteSession,
