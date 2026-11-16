@@ -13,6 +13,7 @@ import {
     getOperationsContext,
     isOperationsMode,
     OPERATIONS_PROTOCOL,
+    operationsAuthorization,
     operationsHost,
     operationsParentOrigin,
 } from "@/lib/operations-bridge"
@@ -346,6 +347,40 @@ function Workbench() {
                 try {
                     origin = operationsParentOrigin()
                 } catch {
+                    return
+                }
+                const context = getOperationsContext()
+                if (context && ["context", "authorize"].includes(data.method)) {
+                    const target = event.source as Window
+                    void operationsAuthorization()
+                        .then((authorization) => {
+                            target.postMessage(
+                                {
+                                    protocol: OPERATIONS_PROTOCOL,
+                                    kind: "response",
+                                    requestId: data.requestId,
+                                    result:
+                                        data.method === "context"
+                                            ? { ...context, authorization }
+                                            : authorization,
+                                },
+                                window.location.origin,
+                            )
+                        })
+                        .catch((error) => {
+                            target.postMessage(
+                                {
+                                    protocol: OPERATIONS_PROTOCOL,
+                                    kind: "response",
+                                    requestId: data.requestId,
+                                    error:
+                                        error instanceof Error
+                                            ? error.message
+                                            : "Operations access unavailable",
+                                },
+                                window.location.origin,
+                            )
+                        })
                     return
                 }
                 if (relay.current.size >= 100) return
