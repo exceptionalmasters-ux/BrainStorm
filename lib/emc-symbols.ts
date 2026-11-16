@@ -2,6 +2,9 @@ export interface EmcSymbol {
     name: string
     device: string
     package: string
+    incomplete?: boolean
+    warnings?: string[]
+    sourceUrl?: string
     pins: {
         number: string
         name: string
@@ -27,7 +30,7 @@ export function validateEmcSymbol(value: unknown): value is EmcSymbol {
         text(d.device, 160) &&
         text(d.package, 120) &&
         Array.isArray(d.pins) &&
-        d.pins.length > 0 &&
+        (d.pins.length > 0 || (d.incomplete === true && source(d.sourceUrl))) &&
         d.pins.length <= 128 &&
         new Set(d.pins.map((p) => p?.number)).size === d.pins.length &&
         d.pins.every(
@@ -102,7 +105,7 @@ export function insertEmcSymbolNative(ui: any, win: any, symbol: EmcSymbol) {
         root = graph.insertVertex(
             graph.getDefaultParent(),
             null,
-            `${symbol.name}\n${symbol.device}\n${symbol.package}`,
+            `${symbol.name}\n${symbol.device}\n${symbol.package}${symbol.incomplete ? "\nUNVERIFIED / INCOMPLETE PINOUT" : ""}`,
             point.x,
             point.y,
             layout.width,

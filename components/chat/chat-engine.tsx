@@ -71,7 +71,11 @@ import { getOperationsContext, isOperationsMode } from "@/lib/operations-bridge"
 import { isPdfFile, isTextFile } from "@/lib/pdf-utils"
 import { watchReplyDeadline } from "@/lib/reply-deadline"
 import type { SessionMetadata, StoredMessage } from "@/lib/session-storage"
-import { extractTitle, sanitizeMessages } from "@/lib/session-storage"
+import {
+    extractTitle,
+    sanitizeMessages,
+    sessionSaveFailureText,
+} from "@/lib/session-storage"
 import { STORAGE_KEYS } from "@/lib/storage"
 import { askUnsavedChanges } from "@/lib/unsaved-dialog"
 import type { UrlData } from "@/lib/url-utils"
@@ -2426,14 +2430,17 @@ export function ChatEngineProvider({
     const offerToContinueUnsaved = useCallback(
         (proceed: () => void) => {
             toast.dismiss("session-save-failed")
-            toast.error(dict.errors.sessionSaveFailedLeave, {
-                id: "session-save-leave",
-                duration: 15000,
-                action: {
-                    label: dict.errors.continueWithoutSaving,
-                    onClick: proceed,
+            toast.error(
+                sessionSaveFailureText(dict.errors.sessionSaveFailedLeave),
+                {
+                    id: "session-save-leave",
+                    duration: 15000,
+                    action: {
+                        label: dict.errors.continueWithoutSaving,
+                        onClick: proceed,
+                    },
                 },
-            })
+            )
         },
         [dict],
     )

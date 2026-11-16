@@ -33,6 +33,7 @@ vi.mock("@/lib/session-storage", async (importActual) => {
         extractTitle: actual.extractTitle,
         isIndexedDBAvailable: () => true,
         lastSaveError: () => storageError,
+        sessionSaveFailureText: (fallback: string) => fallback,
         readSessionCount: async () => stored.size,
         MAX_SESSIONS: actual.MAX_SESSIONS,
         enforceSessionLimit: async () => deletedByLimit,
@@ -228,6 +229,24 @@ describe("saving the chat on screen", () => {
             storageError,
             { id: "session-save-failed" },
         )
+    })
+
+    it("reuses the provisional document ID after the first save fails", async () => {
+        vi.mocked(saveSession).mockResolvedValueOnce(false)
+        const { result } = await setup()
+        let first!: Promise<boolean>
+        act(() => {
+            first = result.current.saveCurrentSession(data)
+        })
+        expect(await first).toBe(false)
+        const firstId = vi.mocked(saveSession).mock.calls.at(-1)?.[0].id
+        let retry!: Promise<boolean>
+        act(() => {
+            retry = result.current.saveCurrentSession(data)
+        })
+        await finishWrites()
+        expect(await retry).toBe(true)
+        expect(vi.mocked(saveSession).mock.calls.at(-1)?.[0].id).toBe(firstId)
     })
 
     it("drops a save scheduled before New Chat", async () => {

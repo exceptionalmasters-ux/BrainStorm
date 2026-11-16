@@ -179,6 +179,12 @@ jobs:
 
       # Check the native pointer/editor interaction before the long shard, so a
       # regression reports immediately rather than waiting for unrelated tests.
+      - name: Check mobile chat persistence
+        if: matrix.shard == 2
+        run: npx playwright test tests/e2e/mobile-chat.spec.ts
+        env:
+          CI: true
+
       - name: Check Operations popup integration
         if: matrix.shard == 2
         run: npm run test:e2e -- tests/e2e/operations-integration.spec.ts --retries=0

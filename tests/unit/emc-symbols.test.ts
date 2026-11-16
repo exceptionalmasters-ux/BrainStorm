@@ -11,6 +11,7 @@ import { loadFlattenedServerModels } from "@/lib/server-model-config"
 import {
     cancelDeviceResearch,
     disableDeviceWeb,
+    draftDevice,
     researchDevice,
     useDeviceResearch,
 } from "@/stores/device-research-store"
@@ -314,4 +315,39 @@ describe("Web consent and cancellation", () => {
         expect(useDeviceResearch.getState().result).toBeNull()
         expect(useDeviceResearch.getState().busy).toBe(false)
     })
+})
+
+it("offers an explicit incomplete retry without automatically saving or inventing ports", async () => {
+    useDeviceResearch.setState({
+        webEnabled: true,
+        result: { researchId: "research", questions: [], candidates: [] },
+    })
+    const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(
+            Response.json({ symbol: null, questions: ["Missing pinout"] }),
+        )
+        .mockResolvedValueOnce(
+            Response.json({
+                symbol: {
+                    ...symbol,
+                    pins: [],
+                    incomplete: true,
+                    sourceUrl: "https://example.com/data",
+                    warnings: ["Unknown pins omitted"],
+                },
+                questions: [],
+            }),
+        )
+    vi.stubGlobal("fetch", fetchMock)
+    await draftDevice("candidate")
+    expect(useDeviceResearch.getState().incompleteCandidateId).toBe("candidate")
+    expect(useDeviceResearch.getState().draft).toBeNull()
+    await draftDevice("candidate", "", true)
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body).allowIncomplete).toBe(
+        true,
+    )
+    expect(validateEmcSymbol(useDeviceResearch.getState().draft)).toBe(true)
+    expect(useDeviceResearch.getState().draft?.pins).toEqual([])
+    expect(fetchMock).toHaveBeenCalledTimes(2)
 })

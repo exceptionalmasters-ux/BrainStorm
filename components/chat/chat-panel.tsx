@@ -111,6 +111,7 @@ export function ChatPanel({
     const panelWidth = usePanelWidth()
     const openSettings = useUiStore((s) => s.openSettings)
     const setPanelOpen = useUiStore((s) => s.setPanelOpen)
+    const setMobileView = useUiStore((s) => s.setMobileView)
 
     // Versions with no card in the chat: saved by older app versions, from
     // a turn that was retried, or drawn by a call that then failed its
@@ -209,18 +210,18 @@ export function ChatPanel({
                     >
                         <Settings />
                     </IconButton>
-                    {!mobile && (
-                        <IconButton
-                            label={dict.nav.hidePanel}
-                            shortcut={`${modKey}B`}
-                            onClick={() => {
-                                noteAction("hide chat panel")
-                                setPanelOpen(false)
-                            }}
-                        >
-                            <PanelRightClose />
-                        </IconButton>
-                    )}
+                    <IconButton
+                        label={dict.nav.hidePanel}
+                        shortcut={mobile ? undefined : `${modKey}B`}
+                        data-testid="hide-chat-panel"
+                        onClick={() => {
+                            noteAction("hide chat panel")
+                            if (mobile) setMobileView("canvas")
+                            else setPanelOpen(false)
+                        }}
+                    >
+                        <PanelRightClose />
+                    </IconButton>
                 </div>
             </header>
             <DeviceResearchPanel />

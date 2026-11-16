@@ -134,8 +134,28 @@ export async function operationsDocumentRequest(request: Request, body: any) {
         throw new Error(
             "Drawing is too large to save (16 MB session / 8 MB XML).",
         )
-    const revisionId = crypto.randomUUID()
+    if (
+        payload.revisionId !== undefined &&
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+            payload.revisionId,
+        )
+    )
+        throw new Error("Invalid save request ID.")
+    const revisionId = payload.revisionId || crypto.randomUUID()
     const path = `${context.contextType}/${context.contextId}/${docId}/${revisionId}`
+    if (payload.revisionId) {
+        const existing = await get()
+        if (
+            existing?.state_path === `${path}.json` &&
+            existing?.xml_path === `${path}.drawio` &&
+            existing.revision === payload.expectedRevision + 1
+        )
+            return { revision: existing.revision }
+        if (existing && existing.revision !== payload.expectedRevision)
+            throw new Error(
+                "Drawing changed in another window. Use Save As to keep your current changes.",
+            )
+    }
     for (const [name, blob] of [
         [`${path}.drawio`, xml],
         [`${path}.json`, state],
@@ -154,10 +174,25 @@ export async function operationsDocumentRequest(request: Request, body: any) {
                 signal: request.signal,
             },
         )
-        if (!response.ok)
+        if (!response.ok) {
+            let detail: { statusCode?: string; error?: string } = {}
+            try {
+                detail = await response.json()
+            } catch {
+                /* Keep the transport error. */
+            }
+            // Only a logical retry may reuse its own immutable staged objects.
+            if (
+                payload.revisionId &&
+                (response.status === 409 ||
+                    String(detail.statusCode) === "409") &&
+                detail.error === "Duplicate"
+            )
+                continue
             throw new Error(
                 "Drawing upload failed. Keep the editor open and retry.",
             )
+        }
     }
     try {
         return await rpc("brainstorm_commit", {

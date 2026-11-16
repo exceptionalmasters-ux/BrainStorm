@@ -13,6 +13,7 @@ export const useDeviceResearch = create<{
     busy: boolean
     error: string
     result: DeviceResearch | null
+    incompleteCandidateId: string | null
     draft: EmcSymbol | null
     library: LibrarySymbol[]
     libraryOpen: boolean
@@ -27,6 +28,7 @@ function researchState() {
         busy: false,
         error: "",
         result: null as DeviceResearch | null,
+        incompleteCandidateId: null as string | null,
         draft: null as EmcSymbol | null,
         library: [] as LibrarySymbol[],
         libraryOpen: false,
@@ -71,7 +73,11 @@ export async function researchDevice(query: string): Promise<DeviceResearch> {
             controller.signal,
         )
         if (generation !== ticket) throw new Error("Search cancelled")
-        useDeviceResearch.setState({ result, draft: null })
+        useDeviceResearch.setState({
+            result,
+            draft: null,
+            incompleteCandidateId: null,
+        })
         return result
     } catch (error) {
         if (generation === ticket)
@@ -83,7 +89,11 @@ export async function researchDevice(query: string): Promise<DeviceResearch> {
         if (generation === ticket) useDeviceResearch.setState({ busy: false })
     }
 }
-export async function draftDevice(candidateId: string, edits = "") {
+export async function draftDevice(
+    candidateId: string,
+    edits = "",
+    allowIncomplete = false,
+) {
     const { webEnabled, result } = useDeviceResearch.getState()
     if (!webEnabled || !result)
         throw new Error("Enable Web and select a source-backed result.")
@@ -101,6 +111,7 @@ export async function draftDevice(candidateId: string, edits = "") {
                 researchId: result.researchId,
                 candidateId,
                 edits,
+                allowIncomplete,
                 webEnabled: true,
             },
             controller.signal,
@@ -108,6 +119,7 @@ export async function draftDevice(candidateId: string, edits = "") {
         if (generation !== ticket) return
         useDeviceResearch.setState({
             draft: response.symbol,
+            incompleteCandidateId: response.symbol ? null : candidateId,
             error: response.questions.join("\n"),
         })
     } catch (error) {
