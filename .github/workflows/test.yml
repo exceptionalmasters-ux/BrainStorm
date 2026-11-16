@@ -183,6 +183,12 @@ jobs:
         env:
           CI: true
 
+      - name: Check unified drawing tools
+        if: matrix.shard == 2
+        run: npm run test:e2e -- tests/e2e/drawing-toolbar.spec.ts --retries=0
+        env:
+          CI: true
+
       - name: Check native pointer tools
         if: matrix.shard == 2
         run: npm run test:e2e -- tests/e2e/drawing-toolbar.spec.ts --grep "selection pointer" --retries=0

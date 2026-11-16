@@ -82,6 +82,15 @@ export function openNativeEditorMenu(name: string, anchor: DOMRect) {
     })
 }
 
+/** Direct equivalents of the native toolbar's text and basic-shape buttons. */
+export function insertQuickDrawing(group: QuickInsertGroup, index: number) {
+    if (getOperationsContext()?.readOnly) return false
+    selectObjects(ui)
+    const inserted = insertQuickCell(ui, win, group, index)
+    syncAll()
+    return inserted
+}
+
 /** Use the iframe's native popup so menus are not clipped by the toolbar scroller. */
 export function openQuickInsertMenu(group: QuickInsertGroup, anchor: DOMRect) {
     if (getOperationsContext()?.readOnly || !ui?.editor?.graph?.isEnabled?.())

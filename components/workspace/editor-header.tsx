@@ -2,10 +2,8 @@ import {
     FileUp,
     PanelRightClose,
     PanelRightOpen,
-    Redo2,
     Save,
     Settings,
-    Undo2,
 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
@@ -406,26 +404,6 @@ export function EditorHeader({
                         </button>
                     ))}
                 </div>
-                <button
-                    type="button"
-                    aria-label={editorActionState("undo").label || "Undo"}
-                    onClick={() => perform(native("undo", "Undo"))}
-                    disabled={!ready || busy}
-                    className="px-1 text-muted-foreground disabled:opacity-30"
-                    data-testid="editor-undo"
-                >
-                    <Undo2 className="size-4" />
-                </button>
-                <button
-                    type="button"
-                    aria-label={editorActionState("redo").label || "Redo"}
-                    onClick={() => perform(native("redo", "Redo"))}
-                    disabled={!ready || busy}
-                    className="px-1 text-muted-foreground disabled:opacity-30"
-                    data-testid="editor-redo"
-                >
-                    <Redo2 className="size-4" />
-                </button>
             </div>
             {active !== null && (
                 <div

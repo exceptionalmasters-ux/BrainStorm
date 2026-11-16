@@ -14,6 +14,7 @@ export const quickInsertGroups = {
         ["Ellipse", "ellipse;whiteSpace=wrap;html=1;", 140, 80],
         ["Diamond", "rhombus;whiteSpace=wrap;html=1;"],
         ["Triangle", "triangle;whiteSpace=wrap;html=1;"],
+        ["Text", "text;html=1;whiteSpace=wrap;", 100, 30],
     ],
     arrows: [
         ["Right arrow", "shape=singleArrow;whiteSpace=wrap;html=1;", 140, 60],
@@ -80,7 +81,7 @@ export function insertQuickCell(
             cell = graph.insertVertex(
                 graph.getDefaultParent(),
                 null,
-                "",
+                style.startsWith("text;") ? "Text" : "",
                 point.x,
                 point.y,
                 width,
@@ -94,6 +95,7 @@ export function insertQuickCell(
     graph.setSelectionCell(cell)
     graph.scrollCellToVisible(cell)
     graph.container?.focus?.()
+    if (style.startsWith("text;")) graph.startEditingAtCell?.(cell)
     return true
 }
 
@@ -107,6 +109,7 @@ export function quickInsertIcon(group: QuickInsertGroup, index: number) {
         '<ellipse cx="20" cy="16" rx="16" ry="10"/>',
         '<path d="M20 3 37 16 20 29 3 16Z"/>',
         '<path d="M20 3 37 28H3Z"/>',
+        '<path d="M8 6h24M20 6v22M14 28h12"/>',
     ]
     let drawing: string
     if (group === "shapes") drawing = shapes[index] || shapes[0]

@@ -11,6 +11,17 @@ export { expect, test } from "@playwright/test"
 // Locator helpers
 // ============================================
 
+/** Legacy persistence tests accept the suggested filename; naming tests opt out. */
+export async function acceptFirstDrawingName(page: Page) {
+    await page.addInitScript(() => {
+        const original = window.prompt.bind(window)
+        window.prompt = (message, suggested) =>
+            message === "Name this drawing before saving:"
+                ? suggested || "Drawing"
+                : original(message, suggested)
+    })
+}
+
 /** Get the chat input textarea */
 export function getChatInput(page: Page) {
     return page.getByTestId("chat-input")
@@ -101,15 +112,7 @@ export async function openApp(
             })
         })
     }
-    if (acceptDrawingNames) {
-        await page.addInitScript(() => {
-            const original = window.prompt.bind(window)
-            window.prompt = (message, suggested) =>
-                message === "Name this drawing before saving:"
-                    ? suggested || "Drawing"
-                    : original(message, suggested)
-        })
-    }
+    if (acceptDrawingNames) await acceptFirstDrawingName(page)
     if (config) {
         await page.addInitScript(
             ([key, config]) => {

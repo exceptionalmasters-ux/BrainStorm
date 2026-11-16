@@ -1,18 +1,28 @@
 import {
     ArrowRight,
+    Circle,
+    FilePlus2,
     GitBranch,
     LayoutPanelTop,
+    MoreHorizontal,
     MousePointer2,
     MoveRight,
     PaintBucket,
+    PanelLeft,
+    PanelRight,
     Pencil,
     PenTool,
     Plus,
+    Redo2,
     Route,
     Scan,
     Shapes,
     SlidersHorizontal,
+    Spline,
+    Square,
+    Trash2,
     Type,
+    Undo2,
     ZoomIn,
     ZoomOut,
 } from "lucide-react"
@@ -21,6 +31,7 @@ import {
     editorActionState,
     editorLabel,
     editorMenuAvailable,
+    insertQuickDrawing,
     openEditorFormatTab,
     openNativeEditorMenu,
     openQuickInsertMenu,
@@ -50,7 +61,11 @@ export function DrawingToolbar() {
             key={name}
             type="button"
             className={base}
-            data-testid={`drawing-tool-${name}`}
+            data-testid={
+                name === "undo" || name === "redo"
+                    ? `editor-${name}`
+                    : `drawing-tool-${name}`
+            }
             title={editorLabel(key, fallback)}
             aria-label={editorLabel(key, fallback)}
             disabled={
@@ -71,6 +86,7 @@ export function DrawingToolbar() {
         fallback: string,
         Icon: typeof ZoomIn,
         needsSelection = false,
+        changes = true,
     ) => (
         <button
             key={name}
@@ -83,7 +99,7 @@ export function DrawingToolbar() {
             disabled={
                 !ready ||
                 busy ||
-                readOnly ||
+                (changes && readOnly) ||
                 (needsSelection && !selection.length) ||
                 !editorMenuAvailable(name)
             }
@@ -144,6 +160,18 @@ export function DrawingToolbar() {
                     aria-hidden
                     className="mx-1 h-5 shrink-0 border-l border-border"
                 />
+                {action("undo", "undo", "Undo", Undo2, true)}
+                {action("redo", "redo", "Redo", Redo2, true)}
+                {action("delete", "delete", "Delete selection", Trash2, true)}
+                {menu("view", "view", "View", PanelLeft, false, false)}
+                {menu("viewZoom", "zoom", "Zoom", Scan, false, false)}
+                {action(
+                    "insertPage",
+                    "insertPage",
+                    "New page",
+                    FilePlus2,
+                    true,
+                )}
                 {action("zoomOut", "zoomOut", "Zoom out", ZoomOut)}
                 {action("zoomIn", "zoomIn", "Zoom in", ZoomIn)}
                 {action("fitWindow", "fitWindow", "Fit drawing", Scan)}
@@ -178,7 +206,37 @@ export function DrawingToolbar() {
                         <span aria-hidden>▾</span>
                     </button>
                 ))}
+                {(
+                    [
+                        [1, "Rectangle", Square],
+                        [4, "Ellipse", Circle],
+                        [7, "Text", Type],
+                    ] as const
+                ).map(([index, label, Icon]) => (
+                    <button
+                        key={label}
+                        type="button"
+                        className={base}
+                        data-testid={`drawing-create-${label.toLowerCase()}`}
+                        title={label}
+                        aria-label={label}
+                        disabled={!ready || busy || readOnly}
+                        onClick={() => insertQuickDrawing("shapes", index)}
+                    >
+                        <Icon size={16} />
+                    </button>
+                ))}
+                {action("insertFreehand", "freehand", "Freehand", Spline, true)}
                 {menu("insert", "insert", "Insert", Plus)}
+                {action("format", "format", "Toggle format panel", PanelRight)}
+                {menu(
+                    "diagram",
+                    "diagram",
+                    "Diagram",
+                    MoreHorizontal,
+                    false,
+                    false,
+                )}
                 {menu("edgeShape", "connection", "Connection", GitBranch, true)}
                 {menu("edgeStyle", "waypoints", "Waypoints", Route, true)}
                 <span

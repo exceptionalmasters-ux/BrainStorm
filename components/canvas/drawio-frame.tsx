@@ -204,6 +204,9 @@ export const DrawioFrame = forwardRef<DrawioFrameHandle, DrawioFrameProps>(
                             const ui = editorUiRef.current
                             if (!ui || !iframe.contentWindow) return false
                             attachEditor(ui, iframe.contentWindow)
+                            iframe.contentDocument?.body.classList.add(
+                                "emc-unified-toolbar",
+                            )
                             attachedRef.current = true
                             applyThemeCss()
                             applyDarkMode()

@@ -1,5 +1,10 @@
 import { expect, type Page, test } from "@playwright/test"
-import { getIframe, sendMessage, waitForCompleteCount } from "./lib/fixtures"
+import {
+    acceptFirstDrawingName,
+    getIframe,
+    sendMessage,
+    waitForCompleteCount,
+} from "./lib/fixtures"
 
 /**
  * What a chat request tells the model about the canvas
@@ -32,6 +37,7 @@ const text = (t: string) =>
 
 /** Answers chat requests in order and records what each one sent */
 async function mockChat(p: Page, replies: string[]) {
+    await acceptFirstDrawingName(p)
     const sent: any[] = []
     await p.route("**/api/chat", async (route) => {
         const body = route.request().postDataJSON()

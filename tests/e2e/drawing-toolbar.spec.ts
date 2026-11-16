@@ -149,7 +149,7 @@ test("quick insert creates native shapes and arrow lines with undo", async ({
         page.getByTestId("drawing-insert-shapes"),
     ).toHaveAccessibleName("Shapes")
     await page.getByTestId("drawing-insert-shapes").click()
-    await expect(frame.locator(".emc-quick-insert-menu svg")).toHaveCount(7)
+    await expect(frame.locator(".emc-quick-insert-menu svg")).toHaveCount(8)
     await frame
         .locator(".mxPopupMenu:visible")
         .getByRole("menuitem", { name: "Circle", exact: true })
@@ -168,4 +168,24 @@ test("quick insert creates native shapes and arrow lines with undo", async ({
         .locator(".mxPopupMenu:visible")
         .getByRole("menuitem", { name: "Right arrow", exact: true })
         .click()
+})
+
+test("one unified tools row replaces the native strip and duplicate history controls", async ({
+    page,
+}) => {
+    await openApp(page)
+    await expect(
+        getIframeContent(page).locator(".geSimpleMainMenu"),
+    ).toBeHidden()
+    await expect(page.getByTestId("editor-undo")).toHaveCount(1)
+    await expect(page.getByTestId("editor-redo")).toHaveCount(1)
+    await expect(
+        page.getByTestId("drawing-toolbar").getByTestId("editor-undo"),
+    ).toBeVisible()
+    await page.getByTestId("drawing-create-rectangle").click()
+    await expect(page.getByTestId("editor-undo")).toBeEnabled()
+    await page.getByTestId("editor-undo").click()
+    await expect(page.getByTestId("editor-redo")).toBeEnabled()
+    await page.getByTestId("drawing-create-text").click()
+    await expect(getIframeContent(page).locator(".mxCellEditor")).toBeVisible()
 })

@@ -132,9 +132,9 @@ async function clickEmptyCanvas(page: Page, shape: Locator) {
     })
 }
 
-/** draw.io's own Undo button: draw.io sets "disabled" with nothing to undo */
+/** Unified Undo button uses the native action state. */
 function drawioUndo(page: Page) {
-    return getIframeContent(page).locator('.geSimpleMainMenu a[title="Undo"]')
+    return page.getByTestId("editor-undo")
 }
 
 /** draw.io's own page tabs */
@@ -577,7 +577,7 @@ test.describe("Workspace", () => {
         await openApp(page, { startScreen: true })
         await page.locator('[data-testid="draw-on-the-fly"]').click()
         const canvas = getIframeContent(page)
-        await canvas.locator('.geSimpleMainMenu a[title="Insert"]').click()
+        await page.getByTestId("drawing-tool-insert").click()
         const menus = canvas.locator(".mxPopupMenu")
         await expect(
             menus.first().getByText("Mermaid...", { exact: true }),
@@ -750,7 +750,7 @@ test.describe("Workspace", () => {
         await canvas.getByText("Process", { exact: true }).click()
         const ask = page.locator('[data-testid="selection-style"]')
         await expect(ask).toBeVisible()
-        await canvas.locator('.geSimpleMainMenu a[title="Insert"]').click()
+        await page.getByTestId("drawing-tool-insert").click()
         await expect(canvas.locator(".mxPopupMenu").first()).toBeVisible()
         await expect(ask).toBeHidden()
         // A click on the shape closes the menu and keeps it selected
@@ -811,10 +811,7 @@ test.describe("Workspace", () => {
         await expect.poll(formatWidth).toBeGreaterThan(0)
         await expect(style).toBeHidden()
         // Closed from draw.io's own toolbar: the button is back
-        await canvas
-            .locator('.geSimpleMainMenu a[title^="Format"]')
-            .first()
-            .click()
+        await page.getByTestId("drawing-tool-format").click()
         await expect.poll(formatWidth).toBe(0)
         await expect(style).toBeVisible()
     })
@@ -890,26 +887,18 @@ test.describe("Workspace", () => {
         await page.waitForTimeout(600)
         const canvas = getIframeContent(page)
         const chip = await boxOf(show.locator(".."))
-        for (const title of [
-            "Diagram",
-            "Format (⌘+⇧+P)",
-            "Format (Ctrl+Shift+P)",
-        ]) {
-            const button = canvas.locator(
-                `.geSimpleMainMenu a[title="${title}"]`,
-            )
-            if ((await button.count()) === 0) continue
+        for (const id of ["drawing-tool-diagram", "drawing-tool-format"]) {
+            const button = page.getByTestId(id)
+            await button.scrollIntoViewIfNeeded()
             const box = await boxOf(button)
             const overlaps =
                 box.x < chip.x + chip.width &&
                 chip.x < box.x + box.width &&
                 box.y < chip.y + chip.height &&
                 chip.y < box.y + box.height
-            expect(overlaps, title).toBe(false)
+            expect(overlaps, id).toBe(false)
         }
-        await canvas
-            .locator('.geSimpleMainMenu a[title="Diagram"]')
-            .click({ timeout: 3000 })
+        await page.getByTestId("drawing-tool-diagram").click({ timeout: 3000 })
         await expect(canvas.locator(".mxPopupMenu").first()).toBeVisible()
     })
 
@@ -1396,7 +1385,7 @@ test.describe("Workspace", () => {
         await page.setViewportSize({ width: 800, height: 800 })
         await openApp(page, { startScreen: true })
         await page.locator('[data-testid="draw-on-the-fly"]').click()
-        const toolbar = getIframeContent(page).locator(".geSimpleMainMenu")
+        const toolbar = page.getByTestId("drawing-toolbar")
         await expect(toolbar).toBeVisible()
         await page.waitForTimeout(600)
         const panel = await boxOf(page.locator('[data-testid="chat-panel"]'))
@@ -1405,7 +1394,8 @@ test.describe("Workspace", () => {
         expect(stage.width).toBeGreaterThanOrEqual(370)
         // draw.io's toolbar fits the canvas, its diagram menu (the last
         // button) included; the chat panel has the export button
-        const menu = await boxOf(toolbar.locator('a[title="Diagram"]'))
+        await page.getByTestId("drawing-tool-diagram").scrollIntoViewIfNeeded()
+        const menu = await boxOf(page.getByTestId("drawing-tool-diagram"))
         expect(menu.x).toBeGreaterThanOrEqual(stage.x)
         expect(menu.x + menu.width).toBeLessThanOrEqual(stage.x + stage.width)
         await expect(
