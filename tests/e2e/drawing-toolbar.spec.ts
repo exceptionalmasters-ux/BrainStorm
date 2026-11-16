@@ -145,16 +145,20 @@ test("quick insert creates native shapes and arrow lines with undo", async ({
 }) => {
     await openApp(page)
     const frame = getIframeContent(page)
+    await expect(
+        page.getByTestId("drawing-insert-shapes"),
+    ).toHaveAccessibleName("Shapes")
     await page.getByTestId("drawing-insert-shapes").click()
+    await expect(frame.locator(".emc-quick-insert-menu svg")).toHaveCount(7)
     await frame
         .locator(".mxPopupMenu:visible")
-        .getByText("Circle", { exact: true })
+        .getByRole("menuitem", { name: "Circle", exact: true })
         .click()
     await expect(page.getByTestId("drawing-format-text")).toBeEnabled()
     await page.getByTestId("drawing-insert-lines").click()
     await frame
         .locator(".mxPopupMenu:visible")
-        .getByText("Double arrow", { exact: true })
+        .getByRole("menuitem", { name: "Double arrow", exact: true })
         .click()
     await expect(page.getByTestId("editor-undo")).toBeEnabled()
     await page.getByTestId("editor-undo").click()
@@ -162,6 +166,6 @@ test("quick insert creates native shapes and arrow lines with undo", async ({
     await page.getByTestId("drawing-insert-arrows").click()
     await frame
         .locator(".mxPopupMenu:visible")
-        .getByText("Right arrow", { exact: true })
+        .getByRole("menuitem", { name: "Right arrow", exact: true })
         .click()
 })

@@ -164,6 +164,7 @@ export function DrawingToolbar() {
                         className={base}
                         data-testid={`drawing-insert-${group}`}
                         title={label}
+                        aria-label={label}
                         aria-haspopup="menu"
                         disabled={!ready || busy || readOnly}
                         onClick={(event) =>
@@ -174,7 +175,6 @@ export function DrawingToolbar() {
                         }
                     >
                         <Icon size={16} />
-                        {label}
                         <span aria-hidden>▾</span>
                     </button>
                 ))}

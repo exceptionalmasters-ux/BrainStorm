@@ -23,8 +23,8 @@ import {
 } from "@/lib/drawio/format-tools"
 import {
     insertQuickCell,
+    populateQuickInsertMenu,
     type QuickInsertGroup,
-    quickInsertGroups,
 } from "@/lib/drawio/quick-insert"
 import {
     createShapeToolbox,
@@ -93,16 +93,9 @@ export function openQuickInsertMenu(group: QuickInsertGroup, anchor: DOMRect) {
     editor.hideCurrentMenu?.()
     editor.showPopupMenu(
         (popup: any, parent: any) => {
-            quickInsertGroups[group].forEach(([label], index) => {
-                popup.addItem(
-                    label,
-                    null,
-                    () => {
-                        insertQuickCell(editor, frameWindow, group, index)
-                        syncAll()
-                    },
-                    parent,
-                )
+            populateQuickInsertMenu(popup, parent, group, (index) => {
+                insertQuickCell(editor, frameWindow, group, index)
+                syncAll()
             })
         },
         Math.max(0, Math.min(anchor.left - frame.left, frame.width - 180)),

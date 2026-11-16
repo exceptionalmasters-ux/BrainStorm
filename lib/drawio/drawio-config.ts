@@ -156,5 +156,13 @@ body.emc-shape-flyout .geSidebarContainer:not(.geFormatContainer) { border-right
 .emc-shape-header strong { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .emc-shape-header button { width: 28px; height: 30px; border: 1px solid transparent; border-radius: 5px; background: transparent; color: #edcb6d; cursor: pointer; font-size: 18px; }
 .emc-shape-header button:hover, .emc-shape-header button:focus-visible, .emc-shape-header button[aria-pressed="true"] { border-color: #cfad46; background: #263b2a; }
+/* Compact visual galleries use the native popup lifecycle and insertion actions. */
+div.emc-quick-insert-menu { max-width: calc(100vw - 12px); max-height: min(320px, calc(100vh - 12px)); overflow: auto; padding: 6px !important; }
+.emc-quick-insert-menu > table { width: auto !important; }
+.emc-quick-insert-menu > table > tbody { display: grid; grid-template-columns: repeat(4, 48px); gap: 3px; }
+.emc-quick-insert-menu [data-quick-insert] { display: flex; align-items: center; justify-content: center; width: 48px; height: 44px; border: 1px solid transparent; border-radius: 5px; cursor: pointer; }
+.emc-quick-insert-menu [data-quick-insert]:hover, .emc-quick-insert-menu [data-quick-insert]:focus-visible { border-color: #a48532; outline: none; background: #a4853226; }
+.emc-quick-insert-menu [data-quick-insert] > td:first-child { display: flex; align-items: center; justify-content: center; padding: 0 !important; width: 40px !important; background: transparent !important; }
+.emc-quick-insert-menu [data-quick-insert] > td:not(:first-child) { position: absolute; width: 1px; height: 1px; padding: 0 !important; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .emc-shape-empty { padding: 12px; font: 12px Arial, sans-serif; }
 `

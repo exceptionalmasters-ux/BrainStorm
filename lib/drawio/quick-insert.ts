@@ -96,3 +96,82 @@ export function insertQuickCell(
     graph.container?.focus?.()
     return true
 }
+
+/** Small, code-owned previews; the inserted cells still use the native styles above. */
+export function quickInsertIcon(group: QuickInsertGroup, index: number) {
+    const shapes = [
+        '<rect x="9" y="5" width="22" height="22"/>',
+        '<rect x="4" y="7" width="32" height="18"/>',
+        '<rect x="4" y="7" width="32" height="18" rx="5"/>',
+        '<circle cx="20" cy="16" r="11"/>',
+        '<ellipse cx="20" cy="16" rx="16" ry="10"/>',
+        '<path d="M20 3 37 16 20 29 3 16Z"/>',
+        '<path d="M20 3 37 28H3Z"/>',
+    ]
+    let drawing: string
+    if (group === "shapes") drawing = shapes[index] || shapes[0]
+    else if (group === "lines") {
+        drawing = '<path d="M4 16H36"/>'
+        if (index > 0)
+            drawing +=
+                index === 3
+                    ? '<path d="m28 9 8 7-8 7"/>'
+                    : '<path d="m28 11 8 5-8 5Z" fill="currentColor"/>'
+        if (index === 2)
+            drawing += '<path d="m12 11-8 5 8 5Z" fill="currentColor"/>'
+    } else if (index === 4) {
+        drawing = '<path d="m2 16 10-10v6h16V6l10 10-10 10v-6H12v6Z"/>'
+    } else {
+        const angle = [0, 180, -90, 90][index] || 0
+        drawing = `<path transform="rotate(${angle} 20 16)" d="M5 11h18V5l12 11-12 11v-6H5Z"/>`
+    }
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="32" viewBox="0 0 40 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">${drawing}</svg>`
+}
+
+export function populateQuickInsertMenu(
+    popup: any,
+    parent: any,
+    group: QuickInsertGroup,
+    insert: (index: number) => void,
+) {
+    popup.div.classList.add("emc-quick-insert-menu")
+    popup.div.setAttribute("role", "menu")
+    popup.div.setAttribute("aria-label", group)
+    quickInsertGroups[group].forEach(([label], index) => {
+        const row: HTMLTableRowElement = popup.addItem(
+            label,
+            null,
+            () => insert(index),
+            parent,
+        )
+        row.dataset.quickInsert = String(index)
+        row.setAttribute("role", "menuitem")
+        row.setAttribute("aria-label", label)
+        row.title = label
+        row.tabIndex = 0
+        row.cells[0].innerHTML = quickInsertIcon(group, index)
+        row.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault()
+                event.stopPropagation()
+                popup.hideMenu()
+                insert(index)
+            } else if (
+                ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(
+                    event.key,
+                )
+            ) {
+                event.preventDefault()
+                event.stopPropagation()
+                const rows = Array.from(
+                    popup.div.querySelectorAll("[data-quick-insert]"),
+                ) as HTMLElement[]
+                const step =
+                    { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -4, ArrowDown: 4 }[
+                        event.key
+                    ] || 0
+                rows[(index + step + rows.length) % rows.length]?.focus()
+            }
+        })
+    })
+}
