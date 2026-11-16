@@ -127,7 +127,7 @@ export const DRAWIO_CONFIG = {
 export const DRAWIO_CSS = `
 html, body { overflow: clip !important; }
 /* The web toolbar above the iframe replaces this duplicate native row. */
-body.emc-unified-toolbar .geEditor.geSimple > .geSimpleMainMenu { display: none !important; }
+html.emc-unified-toolbar .geSimpleMainMenu { display: none !important; }
 .geSketch > .geToolbarContainer:has(> .geStatus:empty):has(> .geButtonContainer:empty) { display: none !important; }
 body:not(.geDarkMode) {
     --workspace-color: #f4f5f7;
