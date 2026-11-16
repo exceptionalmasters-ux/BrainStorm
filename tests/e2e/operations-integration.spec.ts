@@ -372,6 +372,7 @@ for (const withBrief of [true, false]) {
                 )
                 .toMatch(/Fixture module/)
         }
+        const originalFileTitle = await popup.getByTestId("editor-file-title").innerText()
         await popup.getByTestId("editor-save-as-button").click()
         const saveAs = popup.getByRole("dialog", {
             name: "Save As",
@@ -400,9 +401,7 @@ for (const withBrief of [true, false]) {
         await page.locator("#skip").click()
         const reopened = await reopening
         await expect(reopened.getByTestId("editor-file-title")).toHaveText(
-            withBrief
-                ? "Drawing from brief.drawio"
-                : "Integration drawing.drawio",
+            originalFileTitle,
         )
         await expect(
             reopened.getByText("Technical Brief · concept context"),

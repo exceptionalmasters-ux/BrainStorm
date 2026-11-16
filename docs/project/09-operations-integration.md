@@ -151,3 +151,14 @@ the editor and retry is explicit. Other configured providers retain their existi
 settings. The Supabase SSE relay records failed/interrupted/cancelled responses,
 not only clean end-of-stream events; a missing final usage report is unknown cost,
 not a zero-token response.
+
+
+## Direct managed transport (2026-11-16)
+
+In an authenticated Operations workspace, the EMC OpenAI option processes the Responses API stream in the browser through the fixed Supabase brainstorm-ai gateway. It does not send drawing turns through the hosting Next.js Worker. The browser uses the existing prompt, Technical Brief/selection context, drawing tools and bundled library/guide lookups. Other model choices keep their original transport. Web still requires explicit consent and drawing tools are disabled while Web is on; Stop cancels the upstream request.
+
+The OpenAI key, actual managed model, authorization/MFA/session/context checks, rate/budget controls and usage audit remain in the existing gateway. Only the short-lived Operations access token is held in editor memory. No refresh credential or provider secret is copied into the browser, URL or document.
+
+Document list/get/save/archive also call the existing user-scoped Supabase REST/Storage adapter directly, without moving XML or session JSON through the hosting Worker. Immutable revision uploads, expected-revision CAS, retry reconciliation and private Storage policies are unchanged. A failed or non-JSON response is never a save acknowledgement, and does not replace the current canvas with HTML.
+
+The app remains hosted on Cloudflare; this bypass removes its Worker from the managed AI and document-data paths rather than increasing host resource limits. Supabase/upstream limits and explicit user cancellation still apply.
