@@ -531,7 +531,11 @@ export function DeviceResearchPanel() {
                             type="button"
                             className="underline"
                             onClick={() => {
-                                state.set({ result: null, error: "" })
+                                state.set({
+                                    result: null,
+                                    error: "",
+                                    incompleteCandidateId: null,
+                                })
                                 setExpanded(false)
                             }}
                         >
