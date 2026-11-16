@@ -1,7 +1,11 @@
 import { createOpenAI } from "@ai-sdk/openai"
-import { EMC_SUPABASE_PUBLIC_KEY, EMC_SUPABASE_URL } from "./emc-deployment"
+import {
+    EMC_MODEL_ID,
+    EMC_SUPABASE_PUBLIC_KEY,
+    EMC_SUPABASE_URL,
+} from "./emc-deployment"
 
-export const EMC_MODEL_ID = "server:emc-openai:default"
+export { EMC_MODEL_ID } from "./emc-deployment"
 export const EMC_SERVER_MODEL = {
     id: EMC_MODEL_ID,
     modelId: "EMC OpenAI",
@@ -30,7 +34,13 @@ export function emcModel(request: Request) {
             apiKey: "gateway-authorised-by-operations",
             headers,
             fetch: (url, init) =>
-                fetch(url, { ...init, signal: request.signal }),
+                fetch(url, {
+                    ...init,
+                    signal: AbortSignal.any([
+                        request.signal,
+                        ...(init?.signal ? [init.signal] : []),
+                    ]),
+                }),
         }).responses("emc-default"),
         providerOptions: { openai: { store: false } },
         modelId: "EMC OpenAI",
@@ -47,7 +57,7 @@ export async function callEmcGateway(
         method: "POST",
         headers: emcGatewayHeaders(request),
         body: JSON.stringify(body),
-        signal: request.signal,
+        signal: AbortSignal.any([request.signal, AbortSignal.timeout(125000)]),
         cache: "no-store",
     })
 }

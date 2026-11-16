@@ -64,10 +64,12 @@ import {
 } from "@/lib/document-workbench"
 import { EMPTY_DRAWIO_DOCUMENT } from "@/lib/drawio/drawio-config"
 import { clearHighlights } from "@/lib/drawio/editor-bridge"
+import { EMC_MODEL_ID } from "@/lib/emc-deployment"
 import { formatMessage } from "@/lib/i18n/utils"
 import { isLookupTool } from "@/lib/lookup-tools"
 import { getOperationsContext, isOperationsMode } from "@/lib/operations-bridge"
 import { isPdfFile, isTextFile } from "@/lib/pdf-utils"
+import { watchReplyDeadline } from "@/lib/reply-deadline"
 import type { SessionMetadata, StoredMessage } from "@/lib/session-storage"
 import { extractTitle, sanitizeMessages } from "@/lib/session-storage"
 import { STORAGE_KEYS } from "@/lib/storage"
@@ -88,6 +90,7 @@ import {
 } from "@/packages/mcp-server/src/style-classes.ts"
 import { type SelectedCell, useCanvasStore } from "@/stores/canvas-store"
 import {
+    cancelDeviceResearch,
     researchDevice,
     useDeviceResearch,
 } from "@/stores/device-research-store"
@@ -546,6 +549,7 @@ export function ChatEngineProvider({
     const processedToolCallsRef = useRef<Set<string>>(new Set())
     // Set by Stop until the user sends the next message
     const stoppedRef = useRef(false)
+    const deadlineExpiredRef = useRef(false)
     const preparingSendRef = useRef(false)
     // Set while the chat on screen is left (saved, then another one put on
     // screen): an answer started meanwhile would land in the next chat
@@ -736,6 +740,7 @@ export function ChatEngineProvider({
             if (
                 isAbort &&
                 stoppedRef.current &&
+                !deadlineExpiredRef.current &&
                 getChatGeneration() === turnChatRef.current
             ) {
                 setMessages((current) => {
@@ -763,6 +768,21 @@ export function ChatEngineProvider({
                               }),
                           ]
                 })
+            }
+            if (
+                isAbort &&
+                !isError &&
+                !stoppedRef.current &&
+                modelConfig.selectedModelId === EMC_MODEL_ID &&
+                mountedRef.current &&
+                getChatGeneration() === turnChatRef.current
+            ) {
+                setMessages((current) => [
+                    ...current,
+                    noticeMessage({
+                        text: "EMC OpenAI was interrupted or reached its time limit. Your drawing is kept. Please retry with a more specific instruction.",
+                    }),
+                ])
             }
             if (isAbort || isError) return
             noteAction(
@@ -1298,6 +1318,7 @@ export function ChatEngineProvider({
             editDiagramOriginalXmlRef.current.clear()
             continuationOriginalRef.current = null
             stoppedRef.current = false
+            deadlineExpiredRef.current = false
             // Nor are the named styles of the chat left this chat's: a name
             // would expand to the other diagram's definition
             resetStyleClasses()
@@ -1830,6 +1851,7 @@ export function ChatEngineProvider({
         rememberImages(xml)
         continuationOriginalRef.current = null
         stoppedRef.current = false
+        deadlineExpiredRef.current = false
         currentTurnRef.current = turnIndex
         turnPageIdRef.current = viewedPageId()
         turnChatRef.current = getChatGeneration()
@@ -2344,6 +2366,7 @@ export function ChatEngineProvider({
     }
 
     const handleStop = useCallback(() => {
+        cancelDeviceResearch()
         noteAction("stop")
         stoppedRef.current = true
         stopCountRef.current++
@@ -2371,6 +2394,19 @@ export function ChatEngineProvider({
     // has ended
     const handleStopRef = useRef(handleStop)
     handleStopRef.current = handleStop
+    useEffect(() => {
+        if (!isBusy || modelConfig.selectedModelId !== EMC_MODEL_ID) return
+        return watchReplyDeadline(() => {
+            deadlineExpiredRef.current = true
+            handleStopRef.current()
+            setMessages((current) => [
+                ...current,
+                noticeMessage({
+                    text: "EMC OpenAI did not finish within 3 minutes. The request was stopped. Your drawing is kept; retry with a more specific instruction.",
+                }),
+            ])
+        })
+    }, [isBusy, modelConfig.selectedModelId, setMessages])
     const restoreAfterStopRef = useRef<string | null>(null)
     useEffect(() => {
         const id = restoreAfterStopRef.current

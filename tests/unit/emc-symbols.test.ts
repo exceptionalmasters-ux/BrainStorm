@@ -9,6 +9,7 @@ import {
 } from "@/lib/emc-symbols"
 import { loadFlattenedServerModels } from "@/lib/server-model-config"
 import {
+    cancelDeviceResearch,
     disableDeviceWeb,
     researchDevice,
     useDeviceResearch,
@@ -216,12 +217,75 @@ describe("EMC shared model", () => {
         ).toThrow(/Operations/)
     })
 })
+describe("managed upstream cancellation", () => {
+    it("preserves the SDK cancellation signal when relaying to Supabase", async () => {
+        const controller = new AbortController()
+        vi.stubGlobal(
+            "fetch",
+            vi.fn(
+                (_url, init) =>
+                    new Promise((_resolve, reject) => {
+                        init.signal.addEventListener(
+                            "abort",
+                            () =>
+                                reject(
+                                    new DOMException("Aborted", "AbortError"),
+                                ),
+                            { once: true },
+                        )
+                    }),
+            ),
+        )
+        const request = new Request("https://editor.example/api/chat", {
+            headers: {
+                "x-emc-access-token": "fixture-jwt",
+                "x-emc-context-type": "project",
+                "x-emc-context-id": "fixture-context",
+            },
+        })
+        const pending = generateText({
+            model: emcModel(request).model,
+            prompt: "Hello",
+            abortSignal: controller.signal,
+            maxRetries: 0,
+        })
+        await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce())
+        controller.abort()
+        await expect(pending).rejects.toThrow(/Aborted/)
+    })
+})
 describe("Web consent and cancellation", () => {
     it("does not issue any request while Web is off", async () => {
         const fetchMock = vi.fn()
         vi.stubGlobal("fetch", fetchMock)
         await expect(researchDevice("Fixture")).rejects.toThrow(/Enable Web/)
         expect(fetchMock).not.toHaveBeenCalled()
+    })
+    it("Stop cancels research without switching Web off", async () => {
+        let resolve!: (value: Response) => void
+        let signal: AbortSignal | undefined
+        vi.stubGlobal(
+            "fetch",
+            vi.fn((_url, init) => {
+                signal = init.signal
+                return new Promise<Response>((r) => {
+                    resolve = r
+                })
+            }),
+        )
+        useDeviceResearch.setState({ webEnabled: true })
+        const pending = researchDevice("Fixture")
+        cancelDeviceResearch()
+        expect(signal?.aborted).toBe(true)
+        expect(useDeviceResearch.getState().webEnabled).toBe(true)
+        resolve(
+            Response.json({
+                researchId: "late",
+                questions: [],
+                candidates: [],
+            }),
+        )
+        await expect(pending).rejects.toThrow(/cancelled/)
     })
     it("aborts in-flight research and ignores a late result on disable", async () => {
         let resolve!: (value: Response) => void

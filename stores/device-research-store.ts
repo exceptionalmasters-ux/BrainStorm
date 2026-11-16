@@ -47,11 +47,15 @@ export async function emcAction<T>(
     if (!response.ok) throw new Error(data.error || "EMC request failed")
     return data
 }
-export function disableDeviceWeb() {
+export function cancelDeviceResearch() {
     generation++
     controller?.abort()
     controller = null
-    useDeviceResearch.setState({ webEnabled: false, busy: false, error: "" })
+    useDeviceResearch.setState({ busy: false, error: "" })
+}
+export function disableDeviceWeb() {
+    cancelDeviceResearch()
+    useDeviceResearch.setState({ webEnabled: false })
 }
 export async function researchDevice(query: string): Promise<DeviceResearch> {
     if (!useDeviceResearch.getState().webEnabled)
