@@ -25,6 +25,7 @@ import {
     readStyleClasses,
 } from "@/packages/mcp-server/src/style-classes.ts"
 import { autoFixXml } from "@/packages/mcp-server/src/xml-validation.ts"
+import { useDeviceResearch } from "@/stores/device-research-store"
 
 // Helper to extract complete operations from streaming input
 function getCompleteOperations(
@@ -160,6 +161,7 @@ export function useDiagramStreaming({
     )
 
     useEffect(() => {
+        if (useDeviceResearch.getState().webEnabled) return
         // Only the last message can still be streaming
         const message = messages[messages.length - 1]
         if (!message) return

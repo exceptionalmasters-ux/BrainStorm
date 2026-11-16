@@ -31,6 +31,7 @@ import {
     type ShapeGroup,
     type ToolboxLabels,
 } from "@/lib/drawio/shape-toolbox"
+import { type EmcSymbol, insertEmcSymbolNative } from "@/lib/emc-symbols"
 import { getOperationsContext } from "@/lib/operations-bridge"
 import { hasCells } from "@/packages/mcp-server/src/pages.ts"
 import type { SelectionAnswer } from "@/packages/mcp-server/src/selection.ts"
@@ -41,6 +42,14 @@ type FrameWindow = any
 
 let ui: EditorUi | null = null
 let win: FrameWindow | null = null
+
+export function insertEmcSymbol(symbol: EmcSymbol) {
+    if (getOperationsContext()?.readOnly || useCanvasStore.getState().isBusy)
+        return false
+    const inserted = insertEmcSymbolNative(ui, win, symbol)
+    syncAll()
+    return inserted
+}
 
 export function editorActionState(name: string) {
     return readEditorAction(ui, name)

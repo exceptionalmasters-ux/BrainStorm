@@ -3,6 +3,8 @@ import path from "path"
 import { z } from "zod"
 import { getEnvFallback } from "@/lib/admin/settings"
 import { PROVIDERS, type ProviderName } from "@/lib/providers"
+import { EMC_SERVER_MODEL } from "./emc-ai"
+import { operationsOnly } from "./emc-deployment"
 
 export const ProviderNameSchema: z.ZodType<ProviderName> = z
     .string()
@@ -217,7 +219,7 @@ export async function loadFlattenedServerModels(): Promise<
     FlattenedServerModel[]
 > {
     const cfg = await loadRawServerModelsConfig()
-    if (!cfg) return []
+    if (!cfg) return operationsOnly() ? [EMC_SERVER_MODEL] : []
 
     const defaultProvider = process.env.AI_PROVIDER as ProviderName | undefined
     // The first of several, as chat uses it when nothing is selected
@@ -270,7 +272,12 @@ export async function loadFlattenedServerModels(): Promise<
         }
     }
 
-    return flattened
+    return operationsOnly()
+        ? [
+              EMC_SERVER_MODEL,
+              ...flattened.map((m) => ({ ...m, isDefault: false })),
+          ]
+        : flattened
 }
 
 /**

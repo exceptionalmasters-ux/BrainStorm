@@ -10,6 +10,36 @@ for (const withBrief of [true, false]) {
         baseURL,
     }) => {
         let modelRequests = 0
+        let approvals = 0
+        const fixtureSymbol = {
+            name: "Fixture module",
+            device: "Fixture",
+            package: "DIP-2",
+            pins: [
+                {
+                    number: "1",
+                    name: "VCC",
+                    side: "left",
+                    sourceUrl: "https://manufacturer.example/fixture",
+                    evidence: "Datasheet pin 1: VCC",
+                },
+                {
+                    number: "2",
+                    name: "GND",
+                    side: "right",
+                    sourceUrl: "https://manufacturer.example/fixture",
+                    evidence: "Datasheet pin 2: GND",
+                },
+            ],
+        }
+        const libraryItem = {
+            id: "fixture-symbol",
+            name: fixtureSymbol.name,
+            device: fixtureSymbol.device,
+            package: fixtureSymbol.package,
+            version: 1,
+            sources: [fixtureSymbol.pins[0].sourceUrl],
+        }
         const editor = new URL("/en?operations=1", baseURL).href
         await context.addInitScript(() => {
             const original = window.prompt.bind(window)
@@ -19,16 +49,64 @@ for (const withBrief of [true, false]) {
                     : original(message, suggested)
         })
         // Do not send fixture credentials or document contents to any real service.
-        await context.route("**/api/**", (route) => {
-            if (new URL(route.request().url()).pathname === "/api/chat")
-                modelRequests++
+        await context.route("**/api/**", async (route) => {
+            const path = new URL(route.request().url()).pathname
+            if (path === "/api/chat") modelRequests++
+            let data: unknown = {
+                accessCodeRequired: false,
+                models: [
+                    {
+                        id: "server:emc-openai:default",
+                        modelId: "EMC OpenAI",
+                        provider: "openai",
+                        providerLabel: "EMC OpenAI",
+                        isDefault: true,
+                    },
+                ],
+                providers: [],
+            }
+            if (path.startsWith("/api/emc/")) {
+                const body = route.request().postDataJSON()
+                const action = path.split("/").pop()
+                if (action === "research")
+                    data =
+                        body.query === "ARM"
+                            ? {
+                                  researchId: "fixture-research",
+                                  questions: ["Which exact model and package?"],
+                                  candidates: [],
+                              }
+                            : {
+                                  researchId: "fixture-research",
+                                  questions: [],
+                                  candidates: Array.from(
+                                      { length: 5 },
+                                      (_, i) => ({
+                                          id: `candidate-${i}`,
+                                          title: `Fixture reference ${i + 1}`,
+                                          device: "Fixture",
+                                          package: "DIP-2",
+                                          description: "Pin 1 VCC; pin 2 GND",
+                                          sourceUrl:
+                                              "https://manufacturer.example/fixture",
+                                          imageUrl: null,
+                                      }),
+                                  ),
+                              }
+                if (action === "draft")
+                    data = { questions: [], symbol: fixtureSymbol }
+                if (action === "approve") {
+                    expect(body.approved).toBe(true)
+                    approvals++
+                    data = { id: libraryItem.id, symbol: body.symbol }
+                }
+                if (action === "library")
+                    data = { symbols: approvals ? [libraryItem] : [] }
+                if (action === "symbol") data = { symbol: fixtureSymbol }
+            }
             return route.fulfill({
                 contentType: "application/json",
-                body: JSON.stringify({
-                    accessCodeRequired: false,
-                    models: [],
-                    providers: [],
-                }),
+                body: JSON.stringify(data),
             })
         })
         await context.route(
@@ -108,6 +186,103 @@ for (const withBrief of [true, false]) {
             (await indexedDB.databases()).map((db) => db.name),
         )
         expect(databases).not.toContain("next-ai-drawio")
+        if (withBrief) {
+            await expect(popup.getByTestId("device-research")).toBeVisible()
+            await popup
+                .getByRole("switch", { name: "Web", exact: true })
+                .click()
+            const consent = popup.getByRole("dialog", {
+                name: "Enable Web research?",
+            })
+            await expect(consent).toBeVisible()
+            await consent
+                .getByRole("button", { name: "Cancel", exact: true })
+                .click()
+            await expect(
+                popup.getByRole("switch", { name: "Web", exact: true }),
+            ).not.toBeChecked()
+            await popup
+                .getByRole("switch", { name: "Web", exact: true })
+                .click()
+            await consent
+                .getByRole("button", { name: "Enable Web", exact: true })
+                .click()
+            await expect(
+                popup.getByRole("switch", { name: "WEB ACTIVE", exact: true }),
+            ).toBeChecked()
+            await expect(popup.getByTestId("chat-panel")).toHaveClass(
+                /ring-red-500/,
+            )
+            const search = popup.getByRole("textbox", { name: "Device search" })
+            await search.fill("ARM")
+            await popup
+                .getByRole("button", { name: "Search", exact: true })
+                .click()
+            await expect(
+                popup.getByText("Which exact model and package?", {
+                    exact: true,
+                }),
+            ).toBeVisible()
+            await search.fill("Fixture DIP-2")
+            await popup
+                .getByRole("button", { name: "Search", exact: true })
+                .click()
+            await expect(
+                popup.getByRole("button", {
+                    name: "Create symbol",
+                    exact: true,
+                }),
+            ).toHaveCount(5)
+            await popup
+                .getByRole("button", { name: "Create symbol", exact: true })
+                .first()
+                .click()
+            const approval = popup.getByRole("dialog", {
+                name: "Approve EMC symbol",
+            })
+            await expect(
+                approval.getByRole("img", { name: "Symbol approval preview" }),
+            ).toBeVisible()
+            expect(approvals).toBe(0)
+            await approval
+                .getByRole("button", { name: "Cancel", exact: true })
+                .click()
+            expect(approvals).toBe(0)
+            await popup
+                .getByRole("button", { name: "Create symbol", exact: true })
+                .first()
+                .click()
+            await approval
+                .getByRole("button", {
+                    name: "Approve, save & insert",
+                    exact: true,
+                })
+                .click()
+            await expect(approval).toHaveCount(0)
+            expect(approvals).toBe(1)
+            await expect(
+                getIframeContent(popup).locator(".geDiagramContainer"),
+            ).toContainText("Fixture module")
+            await popup
+                .getByRole("switch", { name: "WEB ACTIVE", exact: true })
+                .click()
+            await expect(popup.getByTestId("chat-panel")).not.toHaveClass(
+                /ring-red-500/,
+            )
+            await popup
+                .getByRole("button", { name: "EMC library", exact: true })
+                .click()
+            await popup
+                .getByRole("button", { name: "Insert", exact: true })
+                .click()
+            await expect
+                .poll(() =>
+                    getIframeContent(popup)
+                        .locator(".geDiagramContainer")
+                        .innerText(),
+                )
+                .toMatch(/Fixture module/)
+        }
         await popup.getByTestId("editor-save-as-button").click()
         const saveAs = popup.getByRole("dialog", {
             name: "Save As",

@@ -87,6 +87,10 @@ import {
     resetStyleClasses,
 } from "@/packages/mcp-server/src/style-classes.ts"
 import { type SelectedCell, useCanvasStore } from "@/stores/canvas-store"
+import {
+    researchDevice,
+    useDeviceResearch,
+} from "@/stores/device-research-store"
 import { useDocumentSaveStore } from "@/stores/document-save-store"
 import { useSettingsStore } from "@/stores/settings-store"
 import { useUiStore } from "@/stores/ui-store"
@@ -637,6 +641,7 @@ export function ChatEngineProvider({
                         id,
                         messages: withoutOldImagesAndThinking(messages),
                         conceptBrief: getOperationsContext()?.brief || "",
+                        webEnabled: useDeviceResearch.getState().webEnabled,
                         trigger,
                         messageId,
                     },
@@ -656,6 +661,50 @@ export function ChatEngineProvider({
     } = useChat<ChatUIMessage>({
         transport,
         onToolCall: async ({ toolCall }) => {
+            if (toolCall.toolName === "search_device") {
+                const searchGeneration = getChatGeneration()
+                const searchStops = stopCountRef.current
+                try {
+                    const result = await researchDevice(
+                        (toolCall.input as { query: string }).query,
+                    )
+                    if (
+                        getChatGeneration() !== searchGeneration ||
+                        stopCountRef.current !== searchStops
+                    )
+                        return
+                    await addToolOutputSafely({
+                        tool: "search_device",
+                        toolCallId: toolCall.toolCallId,
+                        output: JSON.stringify(result),
+                    })
+                } catch (error) {
+                    if (
+                        getChatGeneration() !== searchGeneration ||
+                        stopCountRef.current !== searchStops
+                    )
+                        return
+                    await addToolOutputSafely({
+                        tool: "search_device",
+                        toolCallId: toolCall.toolCallId,
+                        output: `Search unavailable: ${error instanceof Error ? error.message : "retry"}`,
+                    })
+                }
+                return
+            }
+            if (
+                useDeviceResearch.getState().webEnabled &&
+                ["display_diagram", "edit_diagram", "append_diagram"].includes(
+                    toolCall.toolName,
+                )
+            ) {
+                addToolOutputSafely({
+                    tool: toolCall.toolName as "display_diagram",
+                    toolCallId: toolCall.toolCallId,
+                    output: "Web research mode: switch Web off before AI drawing. A researched symbol must be approved in the preview.",
+                })
+                return
+            }
             await handleToolCall({ toolCall }, addToolOutputSafely)
         },
         onFinish: ({ message, isAbort, isError, finishReason }) => {
@@ -786,7 +835,8 @@ export function ChatEngineProvider({
             const lookupOnly =
                 finishReason === "tool-calls" &&
                 lastTool?.state === "output-available" &&
-                stepTools.every((part) => isLookupTool(getToolName(part)))
+                stepTools.every((part) => isLookupTool(getToolName(part))) &&
+                !stepTools.some((part) => getToolName(part) === "search_device")
             // The model answered with nothing: no words and no tool call
             // (some providers do when a filter drops the content)
             const empty =
