@@ -15,6 +15,9 @@ export interface OperationsContext {
     readOnly: boolean
     brief: string
 }
+let reconnecting: Promise<
+    OperationsContext & { authorization: OperationsAuthorization }
+> | null = null
 let currentContext: OperationsContext | null = null
 export const getOperationsContext = () => currentContext
 
@@ -31,6 +34,7 @@ export interface OperationsAuthorization {
 let authorization: OperationsAuthorization | null = null
 let authorizationUntil = 0
 let authorizationGeneration = 0
+let credentialGeneration = 0
 let authorizationPending: Promise<OperationsAuthorization> | null = null
 function rememberAuthorization(value: OperationsAuthorization | undefined) {
     if (
@@ -58,11 +62,15 @@ export async function operationsAuthorization(): Promise<OperationsAuthorization
     if (authorization && Date.now() < authorizationUntil) return authorization
     if (!authorizationPending) {
         const generation = authorizationGeneration
+        const credentialVersion = credentialGeneration
         authorizationPending = operationsRequest<OperationsAuthorization>(
             "authorize",
         )
             .then((value) => {
-                if (generation !== authorizationGeneration)
+                if (
+                    generation !== authorizationGeneration ||
+                    credentialVersion !== credentialGeneration
+                )
                     throw new Error(
                         "Operations workspace changed. Retry from the current drawing.",
                     )
@@ -70,11 +78,117 @@ export async function operationsAuthorization(): Promise<OperationsAuthorization
                 return value
             })
             .finally(() => {
-                if (generation === authorizationGeneration)
+                if (
+                    generation === authorizationGeneration &&
+                    credentialVersion === credentialGeneration
+                )
                     authorizationPending = null
             })
     }
     return authorizationPending
+}
+
+/** Explicit user gesture: renew with the existing EMC login, never copy refresh credentials. */
+export function reconnectOperations(): Promise<
+    OperationsContext & { authorization: OperationsAuthorization }
+> {
+    if (window.parent !== window)
+        return Promise.reject(
+            new Error("Use Reconnect EMC in the main editor window."),
+        )
+    if (reconnecting) return reconnecting
+    const params = new URLSearchParams(location.search)
+    const type = authorization?.contextType || params.get("contextType")
+    const id = authorization?.contextId || params.get("contextId")
+    if (!["request", "project"].includes(type || "") || !id)
+        return Promise.reject(
+            new Error("Open a workspace from Operations first."),
+        )
+    const requestId = crypto.randomUUID()
+    const url = new URL(
+        "/operations/brainstorm-session",
+        operationsParentOrigin(),
+    )
+    url.search = new URLSearchParams({
+        contextType: type!,
+        contextId: id,
+        requestId,
+    }).toString()
+    const popup = window.open(url.href, "_blank", "popup,width=620,height=600")
+    if (!popup)
+        return Promise.reject(new Error("Allow popups to reconnect to EMC."))
+    reconnecting = new Promise((resolve, reject) => {
+        const clean = () => {
+            clearTimeout(timer)
+            clearInterval(closedCheck)
+            window.removeEventListener("message", receive)
+            reconnecting = null
+        }
+        const receive = (event: MessageEvent) => {
+            if (
+                event.source !== popup ||
+                event.origin !== url.origin ||
+                event.data?.protocol !== "emc-brainstorm-session/v1" ||
+                event.data.requestId !== requestId
+            )
+                return
+            const value = event.data.result
+            if (
+                !value?.authorization?.accessToken ||
+                (currentContext && value.userId !== currentContext.userId)
+            ) {
+                clean()
+                popup.close()
+                reject(
+                    new Error(
+                        "EMC account changed. Open a new editor from Operations; your current changes remain here.",
+                    ),
+                )
+                return
+            }
+            if (
+                value.authorization.contextType !== type ||
+                value.authorization.contextId !== id
+            ) {
+                clean()
+                popup.close()
+                reject(new Error("Workspace mismatch."))
+                return
+            }
+            credentialGeneration++
+            authorizationPending = null
+            rememberAuthorization(value.authorization)
+            const { authorization: _authorization, ...safeContext } = value
+            currentContext = {
+                ...safeContext,
+                brief: currentContext?.brief || "",
+            }
+            clean()
+            popup.close()
+            window.dispatchEvent(new Event("emc-reconnected"))
+            resolve(value)
+        }
+        const closedCheck = setInterval(() => {
+            if (popup.closed) {
+                clean()
+                reject(
+                    new Error(
+                        "EMC connection window closed. Retry connection.",
+                    ),
+                )
+            }
+        }, 500)
+        const timer = setTimeout(() => {
+            clean()
+            reject(
+                new Error(
+                    "EMC connection timed out. Keep this drawing open and retry.",
+                ),
+            )
+        }, 120000)
+        window.addEventListener("message", receive)
+    })
+    return reconnecting
 }
 
 /** Bootstrap the short-lived access token once, in memory only. The API still checks
@@ -82,17 +196,29 @@ export async function operationsAuthorization(): Promise<OperationsAuthorization
 export async function connectOperations(
     isCancelled: () => boolean = () => false,
 ) {
+    const cached =
+        currentContext && authorization && Date.now() < authorizationUntil
+            ? { ...currentContext, authorization }
+            : null
     const generation = ++authorizationGeneration
     authorizationPending = null
     authorization = null
     authorizationUntil = 0
-    const bootstrap = await operationsRequest<
-        OperationsContext & { authorization?: OperationsAuthorization }
-    >("context")
+    const bootstrap =
+        cached ||
+        (await operationsRequest<
+            OperationsContext & { authorization?: OperationsAuthorization }
+        >("context"))
     if (isCancelled() || generation !== authorizationGeneration) return () => {}
     const { authorization: initialAuthorization, ...context } = bootstrap
     rememberAuthorization(initialAuthorization)
     currentContext = context
+    if (window.parent === window && initialAuthorization) {
+        const u = new URL(location.href)
+        u.searchParams.set("contextType", initialAuthorization.contextType)
+        u.searchParams.set("contextId", initialAuthorization.contextId)
+        history.replaceState(history.state, "", u)
+    }
     const original = window.fetch.bind(window)
     window.fetch = async (input, init) => {
         const url = new URL(
@@ -166,7 +292,7 @@ export function operationsRequest<T>(
     payload?: unknown,
 ): Promise<T> {
     const host = operationsHost()
-    if (!isOperationsMode() || !host || host.closed)
+    if (!isOperationsMode())
         return Promise.reject(new Error("Open this drawing from Operations."))
     let origin: string
     try {
@@ -199,6 +325,12 @@ export function operationsRequest<T>(
                 return result as T
             })
     }
+    if (!host || host.closed)
+        return Promise.reject(
+            new Error(
+                "Use Reconnect EMC in the main editor window to renew access.",
+            ),
+        )
     const requestId = crypto.randomUUID()
     return new Promise((resolve, reject) => {
         const cleanup = () => {
@@ -222,7 +354,7 @@ export function operationsRequest<T>(
             cleanup()
             reject(
                 new Error(
-                    "Operations did not respond. Keep this drawing open, switch to the Operations tab to renew access, then return and retry.",
+                    "Operations did not respond. Keep this drawing open and use Reconnect EMC in the main editor window, then retry.",
                 ),
             )
         }, 45000)

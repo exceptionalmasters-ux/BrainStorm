@@ -10,6 +10,7 @@ import {
 } from "@/lib/emc-symbols"
 import { loadFlattenedServerModels } from "@/lib/server-model-config"
 import {
+    analyseSource,
     cancelDeviceResearch,
     disableDeviceWeb,
     draftDevice,
@@ -399,4 +400,26 @@ it("keeps labelled unnumbered pads at documented positions and preserves the mod
     expect(
         validateEmcSymbol({ ...module, body: { width: 240, height: 99999 } }),
     ).toBe(false)
+})
+
+it("analyses and drafts a private attachment with Web off", async () => {
+    useDeviceResearch.setState({ webEnabled: true, result: null, draft: null })
+    const result = {
+        researchId: "local-research",
+        sourceId: "private-file",
+        questions: [],
+        candidates: [{ id: "candidate" }],
+    }
+    const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(Response.json(result))
+        .mockResolvedValueOnce(Response.json({ symbol, questions: [] }))
+    vi.stubGlobal("fetch", fetchMock)
+    await analyseSource("private-file", "Use the module on page 1")
+    expect(useDeviceResearch.getState().webEnabled).toBe(false)
+    await draftDevice("candidate")
+    expect(fetchMock.mock.calls[0][0]).toContain("/source-research")
+    expect(fetchMock.mock.calls[1][0]).toContain("/draft")
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body).webEnabled).toBe(false)
+    expect(useDeviceResearch.getState().draft).toEqual(symbol)
 })

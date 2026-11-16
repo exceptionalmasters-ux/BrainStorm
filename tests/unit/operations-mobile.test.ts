@@ -5,6 +5,7 @@ import {
     OPERATIONS_PROTOCOL,
     operationsAuthorization,
     operationsRequest,
+    reconnectOperations,
 } from "@/lib/operations-bridge"
 
 let disconnect: (() => void) | undefined
@@ -58,6 +59,73 @@ function bootstrap(expiresAt = Date.now() + 600000) {
     return { host, auth }
 }
 describe("mobile Operations authorisation", () => {
+    it("saves after the original Operations tab is closed", async () => {
+        const fetchMock = vi.fn(async () => Response.json({ revision: 1 }))
+        vi.stubGlobal("fetch", fetchMock)
+        const { host } = bootstrap()
+        disconnect = await connectOperations()
+        host.closed = true
+        Object.defineProperty(window, "opener", {
+            configurable: true,
+            value: null,
+        })
+        expect(
+            await operationsRequest("save", {
+                session: { id: "drawing" },
+                expectedRevision: 0,
+            }),
+        ).toEqual({ revision: 1 })
+        expect(fetchMock).toHaveBeenCalledTimes(1)
+    })
+    it("reconnects only through the exact EMC popup, nonce, account and context", async () => {
+        vi.stubGlobal("fetch", vi.fn())
+        const { auth } = bootstrap()
+        disconnect = await connectOperations()
+        const popup = { close: vi.fn() }
+        const open = vi
+            .spyOn(window, "open")
+            .mockReturnValue(popup as unknown as Window)
+        const pending = reconnectOperations()
+        const url = new URL(open.mock.calls[0][0] as string)
+        const requestId = url.searchParams.get("requestId")
+        const data = {
+            protocol: "emc-brainstorm-session/v1",
+            requestId,
+            result: {
+                label: "Project",
+                userId: "actor",
+                readOnly: false,
+                brief: "DO NOT REPLACE",
+                authorization: { ...auth, accessToken: "renewed" },
+            },
+        }
+        window.dispatchEvent(
+            new MessageEvent("message", {
+                source: window,
+                origin: url.origin,
+                data,
+            }),
+        )
+        window.dispatchEvent(
+            new MessageEvent("message", {
+                source: popup as unknown as Window,
+                origin: "https://evil.example",
+                data,
+            }),
+        )
+        expect(popup.close).not.toHaveBeenCalled()
+        window.dispatchEvent(
+            new MessageEvent("message", {
+                source: popup as unknown as Window,
+                origin: url.origin,
+                data,
+            }),
+        )
+        await pending
+        expect((await operationsAuthorization()).accessToken).toBe("renewed")
+        expect(getOperationsContext()?.brief).toBe("Approved concept")
+        expect(getOperationsContext()).not.toHaveProperty("authorization")
+    })
     it("can query APIs and save when the parent stops processing messages", async () => {
         const fetchMock = vi.fn(async (_input: any, _init: any) =>
             Response.json({ revision: 1 }),

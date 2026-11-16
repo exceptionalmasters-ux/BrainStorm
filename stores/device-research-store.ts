@@ -95,7 +95,7 @@ export async function draftDevice(
     allowIncomplete = false,
 ) {
     const { webEnabled, result } = useDeviceResearch.getState()
-    if (!webEnabled || !result)
+    if (!result || (!webEnabled && !result.sourceId))
         throw new Error("Enable Web and select a source-backed result.")
     controller?.abort()
     controller = new AbortController()
@@ -112,7 +112,7 @@ export async function draftDevice(
                 candidateId,
                 edits,
                 allowIncomplete,
-                webEnabled: true,
+                webEnabled,
             },
             controller.signal,
         )
@@ -126,6 +126,38 @@ export async function draftDevice(
         if (generation === ticket)
             useDeviceResearch.setState({
                 error: error instanceof Error ? error.message : "Draft failed",
+            })
+    } finally {
+        if (generation === ticket) useDeviceResearch.setState({ busy: false })
+    }
+}
+
+export async function analyseSource(sourceId: string, query: string) {
+    disableDeviceWeb()
+    controller = new AbortController()
+    const ticket = ++generation
+    useDeviceResearch.setState({
+        busy: true,
+        error: "",
+        result: null,
+        draft: null,
+        incompleteCandidateId: null,
+    })
+    try {
+        const result = await emcAction<DeviceResearch>(
+            "source-research",
+            { sourceId, query },
+            controller.signal,
+        )
+        if (generation !== ticket) return
+        useDeviceResearch.setState({ result })
+    } catch (error) {
+        if (generation === ticket)
+            useDeviceResearch.setState({
+                error:
+                    error instanceof Error
+                        ? error.message
+                        : "File analysis failed",
             })
     } finally {
         if (generation === ticket) useDeviceResearch.setState({ busy: false })
