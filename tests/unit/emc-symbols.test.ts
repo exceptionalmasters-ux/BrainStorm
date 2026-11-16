@@ -1,8 +1,8 @@
 import { generateText } from "ai"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import {
-    EMC_MODEL_ID,
     callEmcGateway,
+    EMC_MODEL_ID,
     emcGatewayHeaders,
     emcModel,
 } from "@/lib/emc-ai"
@@ -431,7 +431,10 @@ it("analyses and drafts a private attachment with Web off", async () => {
 
 it("limits Web lookup only, preserving unbounded drafting and user cancellation", async () => {
     const timeout = vi.spyOn(AbortSignal, "timeout")
-    vi.stubGlobal("fetch", vi.fn(async () => Response.json({})))
+    vi.stubGlobal(
+        "fetch",
+        vi.fn(async () => Response.json({})),
+    )
     const request = new Request("https://editor.example/api/chat", {
         headers: { "x-emc-access-token": "fixture" },
     })
