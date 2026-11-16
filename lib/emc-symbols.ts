@@ -6,7 +6,7 @@ export interface EmcSymbol {
     warnings?: string[]
     sourceUrl?: string
     body?: { width: number; height: number; antennaHeight?: number }
-    sourceKind?: "pdf" | "image" | "summary"
+    sourceKind?: "pdf" | "image" | "document" | "summary"
     pins: {
         number: string
         identifierKind?: "number" | "label"
@@ -76,6 +76,7 @@ export interface DeviceCandidate {
     sourceImageUrl?: string | null
 }
 export interface DeviceResearch {
+    sourceId?: string
     researchId: string
     questions: string[]
     candidates: DeviceCandidate[]

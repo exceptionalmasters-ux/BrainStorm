@@ -2,7 +2,24 @@ import { rejectCrossSite } from "@/lib/access-code"
 import { callEmcGateway } from "@/lib/emc-ai"
 import { verifyOperationsRequest } from "@/lib/operations-api-auth"
 
-const actions = new Set(["research", "draft", "approve", "library", "symbol"])
+const actions = new Set([
+    "research",
+    "draft",
+    "approve",
+    "library",
+    "symbol",
+    "source-create",
+    "source-complete",
+    "source-list",
+    "source-download",
+    "source-trash",
+    "source-restore",
+    "source-purge",
+    "source-research",
+    "drawing-trash",
+    "drawing-restore",
+    "drawing-purge",
+])
 export async function POST(
     request: Request,
     { params }: { params: Promise<{ action: string }> },

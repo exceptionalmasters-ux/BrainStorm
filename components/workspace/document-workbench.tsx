@@ -16,6 +16,7 @@ import {
     operationsAuthorization,
     operationsHost,
     operationsParentOrigin,
+    reconnectOperations,
 } from "@/lib/operations-bridge"
 
 type Tab = {
@@ -36,6 +37,7 @@ export function DocumentWorkbench({
 }) {
     const [child, setChild] = useState<boolean | null>(null)
     const [error, setError] = useState("")
+    const [connectionAttempt, setConnectionAttempt] = useState(0)
     useEffect(() => {
         let cancelled = false
         let cleanup: (() => void) | undefined
@@ -70,7 +72,7 @@ export function DocumentWorkbench({
             cancelled = true
             cleanup?.()
         }
-    }, [requireOperations])
+    }, [requireOperations, connectionAttempt])
     if (error)
         return (
             <div
@@ -79,8 +81,18 @@ export function DocumentWorkbench({
             >
                 <h1>BrainStorm · Operations</h1>
                 <p>{error}</p>
-                <button type="button" onClick={() => window.location.reload()}>
-                    Retry connection
+                <button
+                    type="button"
+                    onClick={() =>
+                        void reconnectOperations()
+                            .then(() => {
+                                setError("")
+                                setConnectionAttempt((x) => x + 1)
+                            })
+                            .catch((e) => setError(e.message))
+                    }
+                >
+                    Connect to EMC
                 </button>
             </div>
         )
@@ -445,6 +457,19 @@ function Workbench() {
             {contextLabel && (
                 <div className="shrink-0 border-b border-border px-3 py-1 text-xs text-muted-foreground">
                     Operations · {contextLabel}
+                    <button
+                        className="ml-3 rounded border px-2 py-1"
+                        type="button"
+                        onClick={() =>
+                            void reconnectOperations()
+                                .then(() =>
+                                    toast.success("EMC session connected"),
+                                )
+                                .catch((e) => toast.error(e.message))
+                        }
+                    >
+                        Reconnect EMC
+                    </button>
                 </div>
             )}
             <div className="relative min-h-0 flex-1">

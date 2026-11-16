@@ -58,15 +58,11 @@ describe("Operations separate window bridge", () => {
     })
     it("fails immediately when Operations is missing or closed", async () => {
         window.history.replaceState(null, "", "/?operations=1")
-        await expect(operationsRequest("save")).rejects.toThrow(
-            "Open this drawing from Operations",
-        )
+        await expect(operationsRequest("save")).rejects.toThrow("Reconnect EMC")
         Object.defineProperty(window, "opener", {
             configurable: true,
             value: { closed: true },
         })
-        await expect(operationsRequest("save")).rejects.toThrow(
-            "Open this drawing from Operations",
-        )
+        await expect(operationsRequest("save")).rejects.toThrow("Reconnect EMC")
     })
 })

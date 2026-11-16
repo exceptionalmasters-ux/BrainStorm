@@ -30,6 +30,7 @@ import {
     useDeviceResearch,
 } from "@/stores/device-research-store"
 import { useChatEngine } from "./chat-engine"
+import { openSourceAttachment, SourceFiles } from "./source-files"
 
 function SymbolPreview({ symbol }: { symbol: EmcSymbol }) {
     const layout = symbolLayout(symbol)
@@ -224,7 +225,9 @@ function ApprovalDialog() {
                                         ? "PDF text and page images"
                                         : draft.sourceKind === "image"
                                           ? "source image"
-                                          : "research summary only"}
+                                          : draft.sourceKind === "document"
+                                            ? "attached document text"
+                                            : "research summary only"}
                                 </span>
                             )}
                         </p>
@@ -271,6 +274,16 @@ function ApprovalDialog() {
                                     </select>
                                     <a
                                         href={pin.sourceUrl}
+                                        onClick={(e) => {
+                                            if (result?.sourceId) {
+                                                e.preventDefault()
+                                                void openSourceAttachment(
+                                                    result.sourceId,
+                                                ).catch((e) =>
+                                                    setError(e.message),
+                                                )
+                                            }
+                                        }}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="col-span-3 text-amber-400 underline"
@@ -348,6 +361,7 @@ function ApprovalDialog() {
 export function DeviceResearchPanel() {
     const state = useDeviceResearch()
     const engine = useChatEngine()
+    const [fileMode, setFileMode] = useState(false)
     const [warning, setWarning] = useState(false)
     const [expanded, setExpanded] = useState(false)
     const [query, setQuery] = useState("")
@@ -359,7 +373,7 @@ export function DeviceResearchPanel() {
     if (!isOperationsMode()) return null
     return (
         <div
-            className="shrink-0 border-b px-3 py-2 text-xs"
+            className="max-h-[45vh] shrink-0 overflow-y-auto border-b px-3 py-2 text-xs"
             data-testid="device-research"
         >
             <div className="flex items-center gap-2">
@@ -420,42 +434,58 @@ export function DeviceResearchPanel() {
                     EMC library
                 </button>
             </div>
+            <button
+                type="button"
+                className="mt-2 rounded border px-2 py-1"
+                onClick={() => {
+                    setFileMode(!fileMode)
+                    if (!fileMode) {
+                        disableDeviceWeb()
+                        setExpanded(false)
+                    }
+                }}
+            >
+                From file · attachments
+            </button>
+            {fileMode && <SourceFiles readonly={!!readonly} />}
             {(expanded || state.busy || state.result || state.error) && (
                 <div className="mt-2 max-h-[35vh] space-y-2 overflow-y-auto">
-                    <form
-                        className="flex gap-1"
-                        onSubmit={(e) => {
-                            e.preventDefault()
-                            if (query.trim())
-                                void researchDevice(query.trim()).catch(
-                                    () => {},
-                                )
-                        }}
-                    >
-                        <Input
-                            aria-label="Device search"
-                            placeholder="Exact model, type, package…"
-                            maxLength={1000}
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            disabled={
-                                !state.webEnabled || state.busy || readonly
-                            }
-                        />
-                        <Button
-                            type="submit"
-                            variant="outline"
-                            size="sm"
-                            disabled={
-                                !state.webEnabled ||
-                                state.busy ||
-                                !query.trim() ||
-                                readonly
-                            }
+                    {!fileMode && (
+                        <form
+                            className="flex gap-1"
+                            onSubmit={(e) => {
+                                e.preventDefault()
+                                if (query.trim())
+                                    void researchDevice(query.trim()).catch(
+                                        () => {},
+                                    )
+                            }}
                         >
-                            Search
-                        </Button>
-                    </form>
+                            <Input
+                                aria-label="Device search"
+                                placeholder="Exact model, type, package…"
+                                maxLength={1000}
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                disabled={
+                                    !state.webEnabled || state.busy || readonly
+                                }
+                            />
+                            <Button
+                                type="submit"
+                                variant="outline"
+                                size="sm"
+                                disabled={
+                                    !state.webEnabled ||
+                                    state.busy ||
+                                    !query.trim() ||
+                                    readonly
+                                }
+                            >
+                                Search
+                            </Button>
+                        </form>
+                    )}
                     {state.busy && (
                         <p role="status" className="flex items-center gap-2">
                             <Loader2 className="size-3 animate-spin" />
@@ -475,7 +505,10 @@ export function DeviceResearchPanel() {
                             <Button
                                 variant="outline"
                                 disabled={
-                                    state.busy || !state.webEnabled || readonly
+                                    state.busy ||
+                                    (!state.webEnabled &&
+                                        !state.result?.sourceId) ||
+                                    readonly
                                 }
                                 onClick={() =>
                                     void draftDevice(
@@ -517,6 +550,16 @@ export function DeviceResearchPanel() {
                             {candidate.imageUrl && (
                                 <a
                                     href={candidate.sourceUrl}
+                                    onClick={(e) => {
+                                        if (state.result?.sourceId) {
+                                            e.preventDefault()
+                                            void openSourceAttachment(
+                                                state.result.sourceId,
+                                            ).catch((e) =>
+                                                state.set({ error: e.message }),
+                                            )
+                                        }
+                                    }}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                 >
@@ -532,6 +575,16 @@ export function DeviceResearchPanel() {
                             )}
                             <a
                                 href={candidate.sourceUrl}
+                                onClick={(e) => {
+                                    if (state.result?.sourceId) {
+                                        e.preventDefault()
+                                        void openSourceAttachment(
+                                            state.result.sourceId,
+                                        ).catch((e) =>
+                                            state.set({ error: e.message }),
+                                        )
+                                    }
+                                }}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="font-medium text-amber-400 underline"
@@ -548,7 +601,10 @@ export function DeviceResearchPanel() {
                                 variant="outline"
                                 size="sm"
                                 disabled={
-                                    !state.webEnabled || state.busy || readonly
+                                    (!state.webEnabled &&
+                                        !state.result?.sourceId) ||
+                                    state.busy ||
+                                    readonly
                                 }
                                 onClick={() => void draftDevice(candidate.id)}
                             >
