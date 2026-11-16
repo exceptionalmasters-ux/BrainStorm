@@ -11,6 +11,7 @@ for (const withBrief of [true, false]) {
     }) => {
         let modelRequests = 0
         let approvals = 0
+        const documentRequests: string[] = []
         const fixtureSymbol = {
             name: "Fixture module",
             device: "Fixture",
@@ -64,6 +65,36 @@ for (const withBrief of [true, false]) {
                     },
                 ],
                 providers: [],
+            }
+            if (path === "/api/operations-documents") {
+                const body = route.request().postDataJSON()
+                documentRequests.push(body.method)
+                data = await page.evaluate(({ method, payload, brief }) => {
+                    const records = (window as any).records as Map<string, any>
+                    if (method === "list")
+                        return [...records.values()].map(
+                            ({ session, revision }) => ({
+                                ...session,
+                                revision,
+                                messageCount: session.messages.length,
+                                hasDiagram: true,
+                            }),
+                        )
+                    if (method === "get") return records.get(payload.id) || null
+                    if (method === "save") {
+                        const revision =
+                            (records.get(payload.session.id)?.revision || 0) + 1
+                        records.set(payload.session.id, {
+                            session: {
+                                ...payload.session,
+                                conceptBrief: brief,
+                            },
+                            revision,
+                        })
+                        return { revision }
+                    }
+                    throw new Error("Unexpected document method")
+                }, body)
             }
             if (path.startsWith("/api/emc/")) {
                 const body = route.request().postDataJSON()
@@ -134,7 +165,8 @@ for (const withBrief of [true, false]) {
                 const d = event.data;
                 if (event.origin !== editorOrigin || event.source !== child || d?.protocol !== "emc-brainstorm/v1" || d.kind !== "request") return;
                 requests.push(d.method); let result; let error;
-                if (d.method === "context") result = { userId: "test-operations-user", label: "Project integration", readOnly: false, brief };
+                if ((window.suspendBridge && d.method !== "context")) return;
+                if (d.method === "context") result = { userId: "test-operations-user", label: "Project integration", readOnly: false, brief, ...(${withBrief} ? {authorization:{accessToken:"mock-token-not-real",contextType:"project",contextId:"00000000-0000-4000-8000-000000000001",expiresAt:Date.now()+600000}} : {}) };
                 else if (d.method === "authorize") result = { accessToken: "mock-token-not-real", contextType: "project", contextId: "00000000-0000-4000-8000-000000000001" };
                 else if (d.method === "list") result = [...records.values()].map(({session, revision}) => ({ ...session, revision, messageCount: session.messages.length, hasDiagram: true }));
                 else if (d.method === "get") result = records.get(d.payload.id) || null;
@@ -175,6 +207,10 @@ for (const withBrief of [true, false]) {
         ).toHaveCount(0)
 
         expect(modelRequests).toBe(0)
+        if (withBrief)
+            await page.evaluate(() => {
+                ;(window as any).suspendBridge = true
+            })
         await popup.getByTestId("drawing-create-rectangle").click()
         await expect
             .poll(() => page.evaluate(() => (window as any).records.size))
@@ -321,8 +357,14 @@ for (const withBrief of [true, false]) {
         await expect(
             getIframeContent(reopened).locator(".geDiagramContainer"),
         ).toBeVisible()
-        expect(await page.evaluate(() => (window as any).requests)).toContain(
-            "get",
+        const bridgeRequests = await page.evaluate(
+            () => (window as any).requests,
         )
+        expect(withBrief ? documentRequests : bridgeRequests).toContain("get")
+        if (withBrief) {
+            expect(bridgeRequests).not.toContain("authorize")
+            expect(bridgeRequests).not.toContain("save")
+            expect(documentRequests).toContain("save")
+        }
     })
 }

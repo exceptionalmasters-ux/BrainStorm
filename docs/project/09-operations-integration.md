@@ -114,3 +114,27 @@ The Operations popup browser test exercises consent/cancel, clarification, five
 references, rejected/approved previews and repeated library insertion using mocked
 API boundaries and the real native draw.io editor. No real user data or paid model
 requests are used by these tests.
+
+### Mobile/background Operations tabs
+
+The context handshake now includes the current access token and expiry, pinned to
+its canonical workspace. Only that access token is retained in module memory;
+refresh tokens stay in Operations. It is stripped from the public chat context
+and is never saved in a document, browser storage or URL. A valid in-memory lease
+avoids a postMessage authorisation round trip before each API call. API middleware
+and the Supabase gateway still verify current Operations permissions on every
+request. A 401 clears the lease; expiry requires renewal from Operations.
+
+Document list/get/save/archive requests use `/api/operations-documents` while a
+valid lease exists. This user-JWT-only adapter preserves the existing private
+Storage policies, canonical context, read-only checks, immutable uploads, CAS
+revision checks and exact-revision reconciliation. No service key is used. The
+legacy parent bridge remains available for older Operations pages. Known child
+frames can bootstrap their context/lease through the active workspace instead of
+waking the external Operations tab. After access expires the message explicitly
+asks the user to activate Operations and retry, keeping the drawing open.
+
+Regression coverage freezes the parent bridge after bootstrap, then exercises the
+actual popup, API-backed saves, Web research, symbol approval and library reuse.
+Unit tests verify memory-only credentials, invalidation on 401, user-scoped Storage,
+canonical paths, read-only refusal, upload failure and lost-commit reconciliation.
