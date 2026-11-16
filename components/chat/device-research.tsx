@@ -16,6 +16,7 @@ import { Switch } from "@/components/ui/switch"
 import { insertEmcSymbol } from "@/lib/drawio/editor-bridge"
 import {
     type EmcSymbol,
+    emcPinLabel,
     symbolLayout,
     validateEmcSymbol,
 } from "@/lib/emc-symbols"
@@ -46,6 +47,25 @@ function SymbolPreview({ symbol }: { symbol: EmcSymbol }) {
                 fill="white"
                 stroke="black"
             />
+            {!!symbol.body?.antennaHeight && (
+                <>
+                    <line
+                        x1="0"
+                        x2={layout.width}
+                        y1={layout.height * symbol.body.antennaHeight}
+                        y2={layout.height * symbol.body.antennaHeight}
+                        stroke="black"
+                    />
+                    <text
+                        x={layout.width / 2}
+                        y={(layout.height * symbol.body.antennaHeight) / 2}
+                        textAnchor="middle"
+                        fontSize="12"
+                    >
+                        ANTENNA
+                    </text>
+                </>
+            )}
             <text
                 x={layout.width / 2}
                 y={layout.height / 2 - 12}
@@ -105,7 +125,7 @@ function SymbolPreview({ symbol }: { symbol: EmcSymbol }) {
                         }
                         fontSize="11"
                     >
-                        {pin.number} {pin.name}
+                        {emcPinLabel(pin)}
                     </text>
                 </g>
             ))}
@@ -197,6 +217,16 @@ function ApprovalDialog() {
                         </label>
                         <p className="text-sm">
                             {draft.device} · {draft.package}
+                            {draft.sourceKind && (
+                                <span className="block">
+                                    Source analysed:{" "}
+                                    {draft.sourceKind === "pdf"
+                                        ? "PDF text and page images"
+                                        : draft.sourceKind === "image"
+                                          ? "source image"
+                                          : "research summary only"}
+                                </span>
+                            )}
                         </p>
                         <SymbolPreview symbol={draft} />
                         <div className="max-h-64 space-y-2 overflow-auto">

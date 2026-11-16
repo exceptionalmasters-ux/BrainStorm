@@ -17,3 +17,7 @@ If research cannot provide a full pin map, Create symbol shows missing-informati
 Operations writes serialize per document with a stable logical revision UUID and retained immutable retry payload. A lost acknowledgement is reconciled before saving newer edits. Other-window conflicts remain protected and report Save As recovery instead of advising browser-history deletion. First-save retries retain the provisional document ID.
 
 On mobile, AI requests leave chat visible. Use the hide control to return to the canvas and the assistant control to reopen it.
+
+### Visual datasheet analysis
+
+Symbol drafts attach the cited direct PDF to Responses as an `input_file` with high image detail, or the retrieved full-size source image as `input_image`. The source remains public research data; no brief or Operations credentials are forwarded with it. A source-kind indicator distinguishes actual PDF/image input from a summary-only result. The model inspects the mechanical/pin drawing, pad labels, side, order and orientation. Numeric numbering is optional: a documented signal label can be the stable pad identifier without fabricated sequential numbers. Optional bounded body dimensions, antenna region and normalized edge positions survive approval, library storage, preview and native insertion. Previously confirmed partial maps are retained through an incomplete retry.
