@@ -179,6 +179,7 @@ function WorkspaceLayout() {
     // Start screen: nothing said and nothing drawn yet. A new chat brings
     // it back, an opened file or saved chat puts it away (the chat engine).
     const showHero =
+        !isOperationsMode() &&
         engine.isRestored &&
         engine.messages.length === 0 &&
         !isRealDiagram(chartXML) &&
@@ -402,21 +403,6 @@ function WorkspaceLayout() {
                             setMobileView("canvas")
                         }}
                     />
-                )}
-
-                {getOperationsContext()?.brief && (
-                    <details className="shrink-0 border-b border-border px-3 py-1 text-xs">
-                        <summary className="cursor-pointer text-primary">
-                            Technical Brief · concept context
-                        </summary>
-                        <p className="py-2 text-muted-foreground">
-                            This is reference information. Enter what to draw in
-                            the assistant separately.
-                        </p>
-                        <pre className="max-h-48 overflow-auto whitespace-pre-wrap pb-2 font-sans">
-                            {getOperationsContext()?.brief}
-                        </pre>
-                    </details>
                 )}
 
                 {getOperationsContext()?.readOnly && (

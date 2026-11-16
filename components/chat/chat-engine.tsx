@@ -1441,6 +1441,37 @@ export function ChatEngineProvider({
         syncUIWithSession,
     ])
 
+    // An Operations launch is already a drawing intent, never a visit to the lobby.
+    // Prepare the existing "Drawing from brief" prompt without sending a message.
+    const operationsLaunchRef = useRef(false)
+    useEffect(() => {
+        if (!isRestored || operationsLaunchRef.current || !isOperationsMode())
+            return
+        operationsLaunchRef.current = true
+        const context = getOperationsContext()
+        const brief = context?.brief?.trim() || ""
+        const view = useUiStore.getState()
+        view.setHeroDismissed(true)
+        view.setPanelOpen(!!brief)
+        view.setMobileView(brief ? "chat" : "canvas")
+        if (brief && !context?.readOnly) {
+            if (!inputRef.current)
+                setInput(`${dict.lobby.briefPrompt}\n\n${brief}`)
+            if (!urlSessionId && !sessionManager.getCurrentSessionId()) {
+                setPendingTitle("Drawing from brief")
+                if (!chartXMLRef.current)
+                    onDisplayChart(EMPTY_DRAWIO_DOCUMENT, true)
+            }
+        }
+    }, [
+        isRestored,
+        dict.lobby.briefPrompt,
+        urlSessionId,
+        setInput,
+        onDisplayChart,
+        sessionManager.getCurrentSessionId,
+    ])
+
     const {
         isAvailable: sessionIsAvailable,
         currentSessionId,
