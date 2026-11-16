@@ -10,6 +10,7 @@ export default defineConfig({
     webServer: {
         command: process.env.CI ? "npm run start" : "npm run dev",
         port: process.env.CI ? 6001 : 6002,
+        env: { EMC_OPERATIONS_ONLY: process.env.EMC_OPERATIONS_ONLY ?? "0" },
         reuseExistingServer: !process.env.CI,
         timeout: 120 * 1000,
     },

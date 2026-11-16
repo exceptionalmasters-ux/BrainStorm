@@ -1,3 +1,4 @@
+import { EMC_OPERATIONS_ORIGIN } from "@/lib/emc-deployment"
 /** Operations owns authentication and Storage. Tokens never appear in URLs or persistent editor storage. */
 export const OPERATIONS_PROTOCOL = "emc-brainstorm/v1"
 export type OperationsMethod =
@@ -72,7 +73,8 @@ export function operationsParentOrigin() {
         new URLSearchParams(window.location.search).get("documentFrame") === "1"
     )
         return window.location.origin
-    const configured = process.env.NEXT_PUBLIC_EMC_OPERATIONS_ORIGIN
+    const configured =
+        process.env.NEXT_PUBLIC_EMC_OPERATIONS_ORIGIN || EMC_OPERATIONS_ORIGIN
     if (!configured)
         throw new Error("Operations origin is not configured for BrainStorm.")
     const url = new URL(configured)

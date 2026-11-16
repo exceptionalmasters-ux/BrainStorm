@@ -6,7 +6,7 @@ BrainStorm is the drawing module of EMC Operations. Collaborative editing is def
 
 The web workbench has a bottom strip of open documents (maximum eight). New diagram creates an internal document tab, not a browser popup. Recent diagrams focuses an already open document or opens another tab. A local file opens into an empty starter or a separate document tab when work already exists. Each additional document keeps its own same-origin workspace iframe, React state, native draw.io undo stack, conversation and draft. Switching tabs hides rather than reloads those workspaces. Native draw.io page tabs still represent pages within one file.
 
-The phone Canvas/Chat footer is removed. The header's assistant toggle switches between drawing and conversation. Closing a document saves its changed diagram/conversation before disposing it. Closing the whole Operations editor requests a save acknowledgement from every open document; failure keeps it open unless the user explicitly chooses to discard. Unsent text is retained across tab switches in sessionStorage, scoped by user in Operations, but is not a server-saved conversation message. Reload restores the selected saved document; the full set of open tabs is not restored.
+The phone Canvas/Chat footer is removed. The header's assistant toggle switches between drawing and conversation. Closing a changed document offers Save, Discard and Cancel before disposing it. Closing the whole Operations editor requests a save acknowledgement from every open document; failure keeps it open unless the user explicitly chooses to discard. Unsent text is retained across tab switches in sessionStorage, scoped by user in Operations, but is not a server-saved conversation message. Reload restores the selected saved document; the full set of open tabs is not restored.
 
 The initial document lives in the shell, and additional documents use `?documentFrame=1&workbenchId=...`. This also provides a single-document surface for editor regression tests; dedicated workbench tests exercise the real shell. Each document uses one draw.io instance. Eight documents may use substantially more memory than one; inactive frames remain mounted to preserve undo.
 
@@ -25,12 +25,7 @@ Request-to-Project conversion is resolved by the database. Project lists include
 ## Deployment
 
 1. EMC schema migration was applied on 15 November 2026 as `20261115172205_brainstorm_operations_documents` in project `fzwiphplhspsoktugoqo`. Its source is archived in emc-website `supabase/applied`; do not reapply it.
-2. Deploy this BrainStorm branch with these build/runtime variables:
-   - `NEXT_PUBLIC_EMC_OPERATIONS_ORIGIN=https://exceptionalmasters.co.uk` (exact Operations origin; configure preview origins separately).
-   - `EMC_OPERATIONS_ONLY=1` (needed during build as well as at runtime).
-   - `EMC_SUPABASE_URL=https://fzwiphplhspsoktugoqo.supabase.co`.
-   - `EMC_SUPABASE_PUBLISHABLE_KEY` = the existing project's publishable key, never service_role.
-   - Existing server model variables, including the server-only provider key.
+2. Deploy this BrainStorm branch. Production defaults to Operations-only; the Worker also declares `EMC_OPERATIONS_ONLY=1`. `lib/emc-deployment.ts` supplies the exact EMC origin, Supabase URL and enabled publishable (public, RLS-bound) key. Deployment variables may override them for another environment. No service-role or user tokens are stored in source. CI explicitly builds/runs with `EMC_OPERATIONS_ONLY=0` for standalone regressions. OpenAI credentials remain a separate later step.
 3. Set EMC's build-time `NEXT_PUBLIC_BRAINSTORM_URL` to the actual deployed HTTPS editor URL including `/en`, and rebuild EMC. Its header-generation script allows exactly this frame origin on normal pages while preserving private-chat isolation.
 4. BrainStorm sets frame-ancestors to self plus the configured Operations origin. No broad Cloudflare wildcard is needed.
 
@@ -52,7 +47,7 @@ The popup bridge validates the exact opener window and configured Operations ori
 
 The web workspace adds a horizontally scrollable toolbar below its menu: zoom, fit, native insertion and connector menus, fill/line colour, and direct Style/Text/Arrange shortcuts. Controls call the pinned draw.io actions and menus; the native model transactions own undo/redo and autosave. On small screens the tools scroll inside their row rather than widening the workspace. The MCP canvas shell is unchanged.
 
-The right-hand native panel is contextual: no selection shows Diagram/Style, selecting a shape or connector exposes Style/Text/Arrange, and in-place text editing shows Text. Text/Arrange shortcuts are disabled without a selection, with a visible selection hint. The adapter selects translated native tabs by their resource title rather than hard-coded tab indices. Operations read-only and busy states disable mutation tools.
+The right-hand native panel is contextual: no selection shows Diagram/Style, selecting a shape or connector exposes Style/Text/Arrange, and in-place text editing shows Text. Text/Arrange shortcuts are disabled without a selection, with icon tooltips. The adapter selects translated native tabs by their resource title rather than hard-coded tab indices. Operations read-only and busy states disable mutation tools.
 
 ## Pointer tools
 
@@ -66,3 +61,10 @@ Each open document has an independent AutoSave switch next to its filename. Auto
 Before a new unnamed drawing is first saved, the editor asks for a filename. Cancelling keeps its changes in memory and pauses repeated automatic name prompts until AutoSave is re-enabled or the user saves manually. AutoSave Off suppresses automatic writes, including visibility-change saving. Save remains available. The header keeps Unsaved until a successful write acknowledges the current changes; failures retain the drawing. Native format/tool menus are compact icon controls with accessible names.
 
 Close drawing and document-tab X offer Save, Discard and Cancel when there are pending changes. A failed or cancelled save retains the document. Closing/reloading the browser tab or window uses the browser's standard beforeunload confirmation, including unsaved background workbench documents. Browsers control its text and may suppress it without prior user interaction; a tab-close event cannot reliably await a network upload.
+
+
+## Production rollout
+
+The Operations popup test drives the real draw.io workspace through a cross-origin opener, saves/reopens a named file through a mocked authenticated parent, checks the Cloud status and verifies that no diagram IndexedDB database is created. It also verifies that reopening with Skip Brief supplies no old concept context. EMC tests separately exercise its actual Storage adapter, origin/source validation, latest-brief preparation and the deployed SQL permission model in isolated fixtures. These do not replace a signed-in live acceptance save in a real Request/Project.
+
+The web drawing controls are consolidated in one row above the canvas. After a successful same-origin connection, the redundant native simple toolbar is hidden. Undo/redo, delete, view/zoom/page controls, basic shapes, text, freehand and native menus remain reachable; fallback editors retain their original toolbar.

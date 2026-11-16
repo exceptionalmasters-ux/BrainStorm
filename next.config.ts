@@ -1,4 +1,5 @@
 import type { NextConfig } from "next"
+import { EMC_OPERATIONS_ORIGIN } from "./lib/emc-deployment"
 import packageJson from "./package.json"
 
 const nextConfig: NextConfig = {
@@ -42,7 +43,9 @@ const nextConfig: NextConfig = {
     // version, so a release with a newer draw.io reaches a returning
     // browser only after this time: 4 hours keeps that short.
     async headers() {
-        const configured = process.env.NEXT_PUBLIC_EMC_OPERATIONS_ORIGIN
+        const configured =
+            process.env.NEXT_PUBLIC_EMC_OPERATIONS_ORIGIN ||
+            EMC_OPERATIONS_ORIGIN
         const parentOrigin = configured ? new URL(configured).origin : ""
         if (
             parentOrigin &&

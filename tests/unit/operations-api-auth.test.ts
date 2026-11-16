@@ -87,3 +87,21 @@ describe("Operations API authorization (all requests mocked)", () => {
         expect((await verifyOperationsRequest(request()))?.status).toBe(401)
     })
 })
+
+it("requires Operations by default in production and permits an explicit standalone test build", async () => {
+    vi.stubEnv("NODE_ENV", "production")
+    vi.stubEnv("EMC_OPERATIONS_ONLY", undefined)
+    expect(
+        (
+            await verifyOperationsRequest(
+                new Request("https://editor.example/api/chat"),
+            )
+        )?.status,
+    ).toBe(401)
+    vi.stubEnv("EMC_OPERATIONS_ONLY", "0")
+    expect(
+        await verifyOperationsRequest(
+            new Request("https://editor.example/api/chat"),
+        ),
+    ).toBeNull()
+})

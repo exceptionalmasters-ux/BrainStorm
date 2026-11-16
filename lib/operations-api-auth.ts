@@ -1,11 +1,17 @@
+import {
+    EMC_SUPABASE_PUBLIC_KEY,
+    EMC_SUPABASE_URL,
+    operationsOnly,
+} from "@/lib/emc-deployment"
 /** Verify Operations authorization against the same database/MFA guards as EMC. */
 export async function verifyOperationsRequest(
     request: Request,
 ): Promise<Response | null> {
     const token = request.headers.get("x-emc-access-token")
-    if (!token && process.env.EMC_OPERATIONS_ONLY !== "1") return null
-    const url = process.env.EMC_SUPABASE_URL
-    const key = process.env.EMC_SUPABASE_PUBLISHABLE_KEY
+    if (!token && !operationsOnly()) return null
+    const url = process.env.EMC_SUPABASE_URL ?? EMC_SUPABASE_URL
+    const key =
+        process.env.EMC_SUPABASE_PUBLISHABLE_KEY ?? EMC_SUPABASE_PUBLIC_KEY
     const type = request.headers.get("x-emc-context-type")
     const id = request.headers.get("x-emc-context-id")
     if (

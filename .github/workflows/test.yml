@@ -137,6 +137,8 @@ jobs:
           retention-days: 7
 
   e2e:
+    env:
+      EMC_OPERATIONS_ONLY: "0"
     # Six jobs at once, each with a sixth of the tests and one worker: the
     # same conditions per test, a fraction of the time
     name: E2E Tests (${{ matrix.shard }}/6)
@@ -177,6 +179,12 @@ jobs:
 
       # Check the native pointer/editor interaction before the long shard, so a
       # regression reports immediately rather than waiting for unrelated tests.
+      - name: Check Operations popup integration
+        if: matrix.shard == 2
+        run: npm run test:e2e -- tests/e2e/operations-integration.spec.ts --retries=0
+        env:
+          CI: true
+
       - name: Check document saving controls
         if: matrix.shard == 2
         run: npm run test:e2e -- tests/e2e/document-saving.spec.ts --retries=0

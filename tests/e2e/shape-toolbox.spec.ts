@@ -62,7 +62,7 @@ test("EMC groups keep native shape dragging, recent shapes, pinning and the full
     await expect(pin).toHaveAttribute("aria-pressed", "true")
     await frame
         .locator(".geDiagramContainer")
-        .click({ position: { x: 20, y: 20 } })
+        .click({ position: { x: 300, y: 80 } })
     await expect(pin).toBeVisible()
     await testInfo.attach("emc-toolbox-desktop", {
         body: await page.screenshot(),
