@@ -114,7 +114,9 @@ export function ShapeToolboxRail() {
                         data-testid="toolbox-emc-library"
                         onClick={() => {
                             controller.current?.close()
-                            useDeviceResearch.setState({ libraryOpen: !libraryOpen })
+                            useDeviceResearch.setState({
+                                libraryOpen: !libraryOpen,
+                            })
                         }}
                         className={`flex size-10 shrink-0 items-center justify-center rounded-lg border hover:border-primary hover:text-primary ${libraryOpen ? "border-primary bg-primary/10 text-primary" : "border-transparent"}`}
                     >
@@ -130,7 +132,8 @@ export function ShapeToolboxRail() {
                     data-testid="toolbox-all-libraries"
                     onClick={() => {
                         useDeviceResearch.setState({ libraryOpen: false })
-                        if (!active) controller.current?.open("search", t.search)
+                        if (!active)
+                            controller.current?.open("search", t.search)
                         controller.current?.catalog()
                     }}
                     className="flex size-10 shrink-0 items-center justify-center rounded-lg hover:bg-primary/10 hover:text-primary disabled:opacity-40"

@@ -46,14 +46,14 @@ export function EmcLibraryPanel() {
     }, [state.libraryOpen])
     useEffect(() => {
         const close = () => useDeviceResearch.setState({ libraryOpen: false })
-        const escape = (event: KeyboardEvent) => {
+        const handleEscape = (event: KeyboardEvent) => {
             if (event.key === "Escape") close()
         }
         window.addEventListener("emc-close-toolbox", close)
-        document.addEventListener("keydown", escape)
+        document.addEventListener("keydown", handleEscape)
         return () => {
             window.removeEventListener("emc-close-toolbox", close)
-            document.removeEventListener("keydown", escape)
+            document.removeEventListener("keydown", handleEscape)
         }
     }, [])
     if (!state.libraryOpen || !isOperationsMode()) return null
@@ -113,9 +113,7 @@ export function EmcLibraryPanel() {
                             <Button
                                 size="sm"
                                 variant="outline"
-                                disabled={
-                                    !canInsert || readonly || libraryBusy
-                                }
+                                disabled={!canInsert || readonly || libraryBusy}
                                 onClick={async () => {
                                     setLibraryBusy(true)
                                     setLibraryError("")
