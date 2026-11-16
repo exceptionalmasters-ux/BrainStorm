@@ -1,10 +1,10 @@
 import { type InferUITools, tool } from "ai"
 import { z } from "zod"
+import { getBundledShapeLibrary } from "@/packages/mcp-server/src/bundled-shape-library.ts"
 import {
     DIAGRAM_TYPE_LIST,
     getDiagramGuide,
 } from "@/packages/mcp-server/src/diagram-types/index.ts"
-import { getBundledShapeLibrary } from "@/packages/mcp-server/src/bundled-shape-library.ts"
 import { SHAPE_LIBRARY_LIST } from "@/packages/mcp-server/src/shape-library-catalog.ts"
 import {
     STYLE_CLASS_EXAMPLE,

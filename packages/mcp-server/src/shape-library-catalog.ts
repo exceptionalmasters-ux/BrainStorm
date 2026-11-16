@@ -22,4 +22,3 @@ export const SHAPE_LIBRARY_LIST = Object.entries(SHAPE_LIBRARY_GROUPS)
     .join("\n")
 
 export const LIBRARIES = new Set(Object.values(SHAPE_LIBRARY_GROUPS).flat())
-

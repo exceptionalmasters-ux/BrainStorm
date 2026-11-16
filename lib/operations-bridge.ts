@@ -244,10 +244,16 @@ export async function connectOperations(
         if (
             url.pathname.endsWith("/api/chat") &&
             headers.get("x-selected-model-id") === EMC_MODEL_ID &&
-            (init?.method || (input instanceof Request ? input.method : "GET")).toUpperCase() === "POST"
+            (
+                init?.method ||
+                (input instanceof Request ? input.method : "GET")
+            ).toUpperCase() === "POST"
         ) {
             if (currentContext?.readOnly)
-                return Response.json({ error: "This workspace is read-only." }, { status: 403 })
+                return Response.json(
+                    { error: "This workspace is read-only." },
+                    { status: 403 },
+                )
             const { emcClientChat } = await import("./emc-client-chat")
             response = await emcClientChat(
                 new Request(input instanceof Request ? input : url.href, {
@@ -323,26 +329,37 @@ export function operationsRequest<T>(
         Date.now() < authorizationUntil
     ) {
         const auth = authorization
-        return import("./operations-documents").then(async ({ operationsDocumentRequest }) => {
-            try {
-                return await operationsDocumentRequest(
-                    new Request(new URL(getApiEndpoint("/api/operations-documents"), location.href), {
-                        headers: {
-                            "x-emc-access-token": auth.accessToken,
-                            "x-emc-context-type": auth.contextType,
-                            "x-emc-context-id": auth.contextId,
-                        },
-                    }),
-                    { method, payload, brief: currentContext?.brief || "" },
-                ) as T
-            } catch (error) {
-                if ((error as { status?: number }).status === 401 && authorization === auth) {
-                    authorization = null
-                    authorizationUntil = 0
+        return import("./operations-documents").then(
+            async ({ operationsDocumentRequest }) => {
+                try {
+                    return (await operationsDocumentRequest(
+                        new Request(
+                            new URL(
+                                getApiEndpoint("/api/operations-documents"),
+                                location.href,
+                            ),
+                            {
+                                headers: {
+                                    "x-emc-access-token": auth.accessToken,
+                                    "x-emc-context-type": auth.contextType,
+                                    "x-emc-context-id": auth.contextId,
+                                },
+                            },
+                        ),
+                        { method, payload, brief: currentContext?.brief || "" },
+                    )) as T
+                } catch (error) {
+                    if (
+                        (error as { status?: number }).status === 401 &&
+                        authorization === auth
+                    ) {
+                        authorization = null
+                        authorizationUntil = 0
+                    }
+                    throw error
                 }
-                throw error
-            }
-        })
+            },
+        )
     }
     if (!host || host.closed)
         return Promise.reject(

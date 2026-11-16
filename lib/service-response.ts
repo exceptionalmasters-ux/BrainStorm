@@ -1,6 +1,9 @@
 /** A proxy may return HTML even for a JSON API. Never parse it as a saved document. */
 export class ServiceResponseError extends Error {
-    constructor(message: string, public readonly status: number) {
+    constructor(
+        message: string,
+        public readonly status: number,
+    ) {
         super(message)
         this.name = "ServiceResponseError"
     }

@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { emcClientChat } from "@/lib/emc-client-chat"
-import { operationsDocumentRequest } from "@/lib/operations-documents"
 import {
     connectOperations,
     getOperationsContext,
@@ -9,6 +8,7 @@ import {
     operationsRequest,
     reconnectOperations,
 } from "@/lib/operations-bridge"
+import { operationsDocumentRequest } from "@/lib/operations-documents"
 
 vi.mock("@/lib/operations-documents", () => ({
     operationsDocumentRequest: vi.fn(async () => ({ revision: 1 })),
@@ -156,10 +156,18 @@ describe("mobile Operations authorisation", () => {
             "context",
         ])
         expect(fetchMock).toHaveBeenCalledTimes(1)
-        expect(new Headers(fetchMock.mock.calls[0][1].headers).get("x-emc-access-token")).toBe(auth.accessToken)
-        const [request, body] = vi.mocked(operationsDocumentRequest).mock.calls[0]
+        expect(
+            new Headers(fetchMock.mock.calls[0][1].headers).get(
+                "x-emc-access-token",
+            ),
+        ).toBe(auth.accessToken)
+        const [request, body] = vi.mocked(operationsDocumentRequest).mock
+            .calls[0]
         expect(request.headers.get("x-emc-access-token")).toBe(auth.accessToken)
-        expect(body).toMatchObject({ method: "save", brief: "Approved concept" })
+        expect(body).toMatchObject({
+            method: "save",
+            brief: "Approved concept",
+        })
         expect(persist).not.toHaveBeenCalled()
     })
     it("discards a rejected lease and asks Operations again instead of reusing it", async () => {

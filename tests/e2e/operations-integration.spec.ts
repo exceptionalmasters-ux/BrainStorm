@@ -192,26 +192,73 @@ for (const withBrief of [true, false]) {
         expect(modelRequests).toBe(0)
         if (withBrief) {
             let gatewayCalls = 0
-            await context.route("https://fzwiphplhspsoktugoqo.supabase.co/functions/v1/brainstorm-ai/responses", async (route) => {
-                expect(route.request().headers().authorization).toBe("Bearer mock-token-not-real")
-                const body = route.request().postDataJSON()
-                expect(body.store).toBe(false)
-                expect(body.tools.every((tool: any) => tool.type === "function")).toBe(true)
-                const turn = gatewayCalls++
-                const response = turn === 0
-                    ? emcToolResponse("get_shape_library", { library: "electrical" }, turn)
-                    : turn === 1
-                      ? emcToolResponse("display_diagram", { xml: '<mxCell id="fixture-battery" value="Battery fixture" x="80" y="80" w="140" h="60"/>' }, turn)
-                      : emcToolResponse("edit_diagram", { operations: [{ operation: "update", cell_id: "fixture-battery", new_xml: '<mxCell id="fixture-battery" value="Battery revised" x="80" y="80" w="140" h="60"/>' }] }, turn)
-                await route.fulfill({ contentType: "text/event-stream", body: response })
-            })
-            await sendMessage(popup, "Draw the fixture battery using the electrical library")
-            await expect(getIframeContent(popup).locator(".geDiagramContainer")).toContainText("Battery fixture")
+            await context.route(
+                "https://fzwiphplhspsoktugoqo.supabase.co/functions/v1/brainstorm-ai/responses",
+                async (route) => {
+                    expect(route.request().headers().authorization).toBe(
+                        "Bearer mock-token-not-real",
+                    )
+                    const body = route.request().postDataJSON()
+                    expect(body.store).toBe(false)
+                    expect(
+                        body.tools.every(
+                            (tool: any) => tool.type === "function",
+                        ),
+                    ).toBe(true)
+                    const turn = gatewayCalls++
+                    const response =
+                        turn === 0
+                            ? emcToolResponse(
+                                  "get_shape_library",
+                                  { library: "electrical" },
+                                  turn,
+                              )
+                            : turn === 1
+                              ? emcToolResponse(
+                                    "display_diagram",
+                                    {
+                                        xml: '<mxCell id="fixture-battery" value="Battery fixture" x="80" y="80" w="140" h="60"/>',
+                                    },
+                                    turn,
+                                )
+                              : emcToolResponse(
+                                    "edit_diagram",
+                                    {
+                                        operations: [
+                                            {
+                                                operation: "update",
+                                                cell_id: "fixture-battery",
+                                                new_xml:
+                                                    '<mxCell id="fixture-battery" value="Battery revised" x="80" y="80" w="140" h="60"/>',
+                                            },
+                                        ],
+                                    },
+                                    turn,
+                                )
+                    await route.fulfill({
+                        contentType: "text/event-stream",
+                        body: response,
+                    })
+                },
+            )
+            await sendMessage(
+                popup,
+                "Draw the fixture battery using the electrical library",
+            )
+            await expect(
+                getIframeContent(popup).locator(".geDiagramContainer"),
+            ).toContainText("Battery fixture")
             await sendMessage(popup, "Update the battery label")
-            await expect(getIframeContent(popup).locator(".geDiagramContainer")).toContainText("Battery revised")
+            await expect(
+                getIframeContent(popup).locator(".geDiagramContainer"),
+            ).toContainText("Battery revised")
             expect(gatewayCalls).toBe(3)
             expect(modelRequests).toBe(0)
-            await expect(popup.getByText("The model returned an empty answer", { exact: false })).toHaveCount(0)
+            await expect(
+                popup.getByText("The model returned an empty answer", {
+                    exact: false,
+                }),
+            ).toHaveCount(0)
         }
         if (withBrief)
             await page.evaluate(() => {

@@ -50,4 +50,3 @@ export async function getShapeLibrary(
         error: `Library "${library}" is missing from this installation.`,
     }
 }
-

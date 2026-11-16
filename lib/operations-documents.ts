@@ -32,8 +32,7 @@ export async function operationsDocumentRequest(request: Request, body: any) {
     const headers = {
         apikey:
             process.env.EMC_SUPABASE_PUBLISHABLE_KEY || EMC_SUPABASE_PUBLIC_KEY,
-        Authorization: `Bearer ${token}`,
-    }
+        Authorization: `***    }
     const rpc = async (name: string, args: object): Promise<any> => {
         const response = await fetch(`${base}/rest/v1/rpc/${name}`, {
             method: "POST",
