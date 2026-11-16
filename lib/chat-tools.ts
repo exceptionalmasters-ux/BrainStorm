@@ -1,5 +1,4 @@
 import { type InferUITools, tool } from "ai"
-import path from "path"
 import { z } from "zod"
 import {
     DIAGRAM_TYPE_LIST,
