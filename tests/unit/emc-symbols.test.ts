@@ -9,6 +9,7 @@ import {
 } from "@/lib/emc-symbols"
 import { loadFlattenedServerModels } from "@/lib/server-model-config"
 import {
+    cancelDeviceResearch,
     disableDeviceWeb,
     researchDevice,
     useDeviceResearch,
@@ -259,6 +260,32 @@ describe("Web consent and cancellation", () => {
         vi.stubGlobal("fetch", fetchMock)
         await expect(researchDevice("Fixture")).rejects.toThrow(/Enable Web/)
         expect(fetchMock).not.toHaveBeenCalled()
+    })
+    it("Stop cancels research without switching Web off", async () => {
+        let resolve!: (value: Response) => void
+        let signal: AbortSignal | undefined
+        vi.stubGlobal(
+            "fetch",
+            vi.fn((_url, init) => {
+                signal = init.signal
+                return new Promise<Response>((r) => {
+                    resolve = r
+                })
+            }),
+        )
+        useDeviceResearch.setState({ webEnabled: true })
+        const pending = researchDevice("Fixture")
+        cancelDeviceResearch()
+        expect(signal?.aborted).toBe(true)
+        expect(useDeviceResearch.getState().webEnabled).toBe(true)
+        resolve(
+            Response.json({
+                researchId: "late",
+                questions: [],
+                candidates: [],
+            }),
+        )
+        await expect(pending).rejects.toThrow(/cancelled/)
     })
     it("aborts in-flight research and ignores a late result on disable", async () => {
         let resolve!: (value: Response) => void

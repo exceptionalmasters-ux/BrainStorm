@@ -90,6 +90,7 @@ import {
 } from "@/packages/mcp-server/src/style-classes.ts"
 import { type SelectedCell, useCanvasStore } from "@/stores/canvas-store"
 import {
+    cancelDeviceResearch,
     researchDevice,
     useDeviceResearch,
 } from "@/stores/device-research-store"
@@ -2365,6 +2366,7 @@ export function ChatEngineProvider({
     }
 
     const handleStop = useCallback(() => {
+        cancelDeviceResearch()
         noteAction("stop")
         stoppedRef.current = true
         stopCountRef.current++
