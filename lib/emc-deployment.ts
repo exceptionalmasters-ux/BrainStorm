@@ -12,3 +12,5 @@ export function operationsOnly() {
             process.env.EMC_OPERATIONS_ONLY !== "0")
     )
 }
+
+export const EMC_MODEL_ID = "server:emc-openai:default"

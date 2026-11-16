@@ -589,6 +589,10 @@ async function handleChatRequest(req: Request): Promise<Response> {
         // (the client's own system messages were dropped above)
         allowSystemInMessages: true,
         abortSignal: req.signal,
+        ...(selectedModelId === EMC_MODEL_ID && {
+            timeout: { totalMs: 125000 },
+            maxRetries: 0,
+        }),
         // Must be sent: unset means the provider's own default, and Bedrock's is
         // 4096, enough for a small diagram, so larger ones were cut off mid-attribute.
         maxOutputTokens,

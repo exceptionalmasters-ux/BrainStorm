@@ -138,3 +138,16 @@ Regression coverage freezes the parent bridge after bootstrap, then exercises th
 actual popup, API-backed saves, Web research, symbol approval and library reuse.
 Unit tests verify memory-only credentials, invalidation on 401, user-scoped Storage,
 canonical paths, read-only refusal, upload failure and lost-commit reconciliation.
+
+### Managed reply deadlines
+
+EMC OpenAI now has a 125-second server request deadline and no automatic transport
+retries. The gateway fetch preserves both the SDK cancellation signal and the
+client disconnect signal. Device research/draft relay requests also have a
+125-second deadline. The client independently stops a managed reply after three
+minutes of wall-clock time, including when a suspended mobile tab resumes. SSE
+keep-alives and reasoning chunks do not reset this limit. The drawing remains in
+the editor and retry is explicit. Other configured providers retain their existing
+settings. The Supabase SSE relay records failed/interrupted/cancelled responses,
+not only clean end-of-stream events; a missing final usage report is unknown cost,
+not a zero-token response.

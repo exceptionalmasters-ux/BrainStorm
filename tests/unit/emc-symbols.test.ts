@@ -216,6 +216,43 @@ describe("EMC shared model", () => {
         ).toThrow(/Operations/)
     })
 })
+describe("managed upstream cancellation", () => {
+    it("preserves the SDK cancellation signal when relaying to Supabase", async () => {
+        const controller = new AbortController()
+        vi.stubGlobal(
+            "fetch",
+            vi.fn(
+                (_url, init) =>
+                    new Promise((_resolve, reject) => {
+                        init.signal.addEventListener(
+                            "abort",
+                            () =>
+                                reject(
+                                    new DOMException("Aborted", "AbortError"),
+                                ),
+                            { once: true },
+                        )
+                    }),
+            ),
+        )
+        const request = new Request("https://editor.example/api/chat", {
+            headers: {
+                "x-emc-access-token": "fixture-jwt",
+                "x-emc-context-type": "project",
+                "x-emc-context-id": "fixture-context",
+            },
+        })
+        const pending = generateText({
+            model: emcModel(request).model,
+            prompt: "Hello",
+            abortSignal: controller.signal,
+            maxRetries: 0,
+        })
+        await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce())
+        controller.abort()
+        await expect(pending).rejects.toThrow(/Aborted/)
+    })
+})
 describe("Web consent and cancellation", () => {
     it("does not issue any request while Web is off", async () => {
         const fetchMock = vi.fn()
