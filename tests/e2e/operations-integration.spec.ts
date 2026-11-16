@@ -39,14 +39,14 @@ test("Operations popup saves and reopens a cloud drawing without local persisten
             const editor = ${JSON.stringify(editor)};
             const editorOrigin = new URL(editor).origin;
             window.records = new Map(); window.requests = []; let child = null; let brief = "";
-            function open(selected) {
+            function launchEditor(selected) {
                 brief = selected ? "OBJECTIVE: Integration concept" : "";
                 const url = new URL(editor); const first = [...records.values()][0];
                 if (first) url.searchParams.set("session", first.session.id);
                 child = window.open(url, "_blank", "popup,width=1440,height=960");
             }
-            document.getElementById("open").onclick = () => open(true);
-            document.getElementById("skip").onclick = () => open(false);
+            document.getElementById("open").onclick = () => launchEditor(true);
+            document.getElementById("skip").onclick = () => launchEditor(false);
             window.addEventListener("message", event => {
                 const d = event.data;
                 if (event.origin !== editorOrigin || event.source !== child || d?.protocol !== "emc-brainstorm/v1" || d.kind !== "request") return;
