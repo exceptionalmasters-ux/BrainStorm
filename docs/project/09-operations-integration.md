@@ -57,3 +57,12 @@ The right-hand native panel is contextual: no selection shows Diagram/Style, sel
 ## Pointer tools
 
 The toolbar begins with Select and Edit Polygon. Select stops native freehand, hides its window, commits in-place text and calls the graph's native escape/reset without broadcasting the application Escape shortcut or clearing selected objects. Edit Polygon delegates to draw.io's native vertex editor and is enabled only for a supported `mxgraph.basic.polygon` selection. Draw.io does not expose a universal vertex-edit mode for all stencil shapes. Edit > Edit connection points is separate and edits attachment constraints rather than the polygon outline. These operations retain native undo/autosave and graph permission checks.
+
+
+## AutoSave and closing documents
+
+Each open document has an independent AutoSave switch next to its filename. AutoSave uses the same storage adapter as manual session saving: Supabase Storage through the authenticated Operations opener in Operations mode, IndexedDB in the standalone editor. The header explicitly labels Cloud versus Local; opening a standalone preview does not authenticate it to Operations or Supabase.
+
+Before a new unnamed drawing is first saved, the editor asks for a filename. Cancelling keeps its changes in memory and pauses repeated automatic name prompts until AutoSave is re-enabled or the user saves manually. AutoSave Off suppresses automatic writes, including visibility-change saving. Save remains available. The header keeps Unsaved until a successful write acknowledges the current changes; failures retain the drawing. Native format/tool menus are compact icon controls with accessible names.
+
+Close drawing and document-tab X offer Save, Discard and Cancel when there are pending changes. A failed or cancelled save retains the document. Closing/reloading the browser tab or window uses the browser's standard beforeunload confirmation, including unsaved background workbench documents. Browsers control its text and may suppress it without prior user interaction; a tab-close event cannot reliably await a network upload.

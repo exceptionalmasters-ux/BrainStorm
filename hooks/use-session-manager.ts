@@ -437,10 +437,11 @@ export function useSessionManager(
                     updatedAt: Date.now(),
                     // Update title if it's still default and we have messages
                     title:
-                        currentSession.title === "New Chat" &&
+                        data.title ||
+                        (currentSession.title === "New Chat" &&
                         data.messages.length > 0
                             ? extractTitle(data.messages)
-                            : currentSession.title,
+                            : currentSession.title),
                 }
 
                 if (!(await saveSession(updatedSession))) {

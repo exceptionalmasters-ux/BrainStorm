@@ -22,6 +22,7 @@ type Tab = {
     title: string
     sessionId: string | null
     busy: boolean
+    dirty?: boolean
     file?: File
 }
 const MAX_OPEN_DOCUMENTS = 8
@@ -95,6 +96,16 @@ function Workbench() {
     tabsRef.current = tabs
     const activeRef = useRef(active)
     activeRef.current = active
+    useEffect(() => {
+        const warn = (event: BeforeUnloadEvent) => {
+            if (tabsRef.current.some((tab) => tab.dirty)) {
+                event.preventDefault()
+                event.returnValue = ""
+            }
+        }
+        window.addEventListener("beforeunload", warn)
+        return () => window.removeEventListener("beforeunload", warn)
+    }, [])
     const frames = useRef(new Map<string, HTMLIFrameElement>())
     const relay = useRef(
         new Map<string, { source: Window; originalId: string }>(),
@@ -484,6 +495,7 @@ function Workbench() {
                                 className={`max-w-52 truncate px-3 py-2 text-xs ${active === tab.id ? "bg-accent font-medium text-foreground" : "text-muted-foreground"}`}
                             >
                                 {tab.title}
+                                {tab.dirty ? " •" : ""}
                                 {tab.busy ? " · …" : ""}
                             </button>
                             <button

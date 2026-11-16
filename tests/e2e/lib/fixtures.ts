@@ -70,13 +70,46 @@ export async function openApp(
         config,
         startScreen = false,
         singleDocument = true,
+        acceptDrawingNames = true,
+        acceptUnsavedChanges = true,
     }: {
         path?: string
         config?: object
         startScreen?: boolean
         singleDocument?: boolean
+        acceptDrawingNames?: boolean
+        acceptUnsavedChanges?: boolean
     } = {},
 ) {
+    // Existing session-switch regressions choose Save in the new close dialog.
+    // Tests of the dialog itself opt out and exercise all three choices.
+    if (acceptUnsavedChanges) {
+        await page.addInitScript(() => {
+            new MutationObserver(() => {
+                const dialog = document.querySelector(
+                    'dialog[aria-label="Unsaved changes"]',
+                )
+                const save = Array.from(
+                    dialog?.querySelectorAll("button") || [],
+                ).find((button) => button.textContent === "Save")
+                if (dialog?.hasAttribute("open")) save?.click()
+            }).observe(document, {
+                childList: true,
+                subtree: true,
+                attributes: true,
+                attributeFilter: ["open"],
+            })
+        })
+    }
+    if (acceptDrawingNames) {
+        await page.addInitScript(() => {
+            const original = window.prompt.bind(window)
+            window.prompt = (message, suggested) =>
+                message === "Name this drawing before saving:"
+                    ? suggested || "Drawing"
+                    : original(message, suggested)
+        })
+    }
     if (config) {
         await page.addInitScript(
             ([key, config]) => {

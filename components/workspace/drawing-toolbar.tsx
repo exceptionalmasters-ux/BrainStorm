@@ -78,6 +78,7 @@ export function DrawingToolbar() {
             className={base}
             data-testid={`drawing-tool-${name}`}
             title={editorLabel(key, fallback)}
+            aria-label={editorLabel(key, fallback)}
             aria-haspopup="menu"
             disabled={
                 !ready ||
@@ -94,7 +95,6 @@ export function DrawingToolbar() {
             }
         >
             <Icon size={16} />
-            {editorLabel(key, fallback)}
             <span aria-hidden>▾</span>
         </button>
     )
@@ -216,6 +216,7 @@ export function DrawingToolbar() {
                         className={base}
                         data-testid={`drawing-format-${tab}`}
                         title={editorLabel(tab, tab)}
+                        aria-label={editorLabel(tab, tab)}
                         disabled={
                             !ready ||
                             busy ||
@@ -224,15 +225,8 @@ export function DrawingToolbar() {
                         onClick={() => openEditorFormatTab(tab)}
                     >
                         <Icon size={16} />
-                        {editorLabel(tab, tab)}
                     </button>
                 ))}
-                {!selection.length && ready && (
-                    <span className="shrink-0 px-2 text-[11px] text-muted-foreground">
-                        Select a shape or connector to edit its text, style and
-                        arrangement.
-                    </span>
-                )}
             </div>
         </div>
     )

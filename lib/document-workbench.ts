@@ -4,7 +4,13 @@ export type WorkbenchEvent =
     | { type: "open"; sessionId: string }
     | { type: "import"; file: File }
     | { type: "close" }
-    | { type: "state"; sessionId: string | null; title: string; busy: boolean }
+    | {
+          type: "state"
+          sessionId: string | null
+          title: string
+          busy: boolean
+          dirty?: boolean
+      }
 
 export interface FlushDocumentEvent extends Event {
     detail: { resolve: (ok: boolean) => void }

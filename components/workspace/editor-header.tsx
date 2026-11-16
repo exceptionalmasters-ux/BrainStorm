@@ -10,12 +10,15 @@ import {
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import { SessionMenu, useSessionTitle } from "@/components/chat/session-menu"
+import { Switch } from "@/components/ui/switch"
 import { BrandMark } from "@/components/workspace/brand-mark"
 import { IconButton } from "@/components/workspace/icon-button"
 import { useDictionary } from "@/hooks/use-dictionary"
 import { usePathLocale } from "@/hooks/use-path-locale"
 import { editorActionState, runEditorAction } from "@/lib/drawio/editor-bridge"
+import { getOperationsContext, isOperationsMode } from "@/lib/operations-bridge"
 import { useCanvasStore } from "@/stores/canvas-store"
+import { useDocumentSaveStore } from "@/stores/document-save-store"
 
 type Item = {
     label: string
@@ -53,6 +56,7 @@ export function EditorHeader({
         t = dict.editor,
         lang = usePathLocale()
     const title = useSessionTitle()
+    const { autoSave, dirty, saving, setAutoSave } = useDocumentSaveStore()
     const ready = useCanvasStore((s) => s.hasEditor),
         busy = useCanvasStore((s) => s.isBusy)
     useCanvasStore((s) => s.selection)
@@ -275,8 +279,35 @@ export function EditorHeader({
                         {title}.drawio
                     </button>
                 </SessionMenu>
-                <span className="hidden text-xs text-muted-foreground lg:block">
-                    {t.localWorkspace}
+                <label
+                    className="flex shrink-0 items-center gap-1.5 text-[11px]"
+                    title={
+                        isOperationsMode()
+                            ? "Save to Supabase Storage"
+                            : "Local browser storage — open from Operations for Supabase"
+                    }
+                >
+                    <Switch
+                        checked={autoSave}
+                        onCheckedChange={setAutoSave}
+                        disabled={!!getOperationsContext()?.readOnly}
+                        aria-label="AutoSave"
+                        data-testid="document-autosave"
+                    />
+                    <span>AutoSave {autoSave ? "On" : "Off"}</span>
+                </label>
+                <span
+                    className="min-w-0 truncate text-[11px] text-muted-foreground"
+                    data-testid="document-save-status"
+                    role="status"
+                    title={
+                        isOperationsMode()
+                            ? "Supabase Storage"
+                            : "Local browser storage"
+                    }
+                >
+                    {saving ? "Saving…" : dirty ? "Unsaved" : "Saved"} ·{" "}
+                    {isOperationsMode() ? "Cloud" : "Local"}
                 </span>
                 <div className="ml-auto flex items-center gap-1">
                     <IconButton

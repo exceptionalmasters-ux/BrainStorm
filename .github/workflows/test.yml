@@ -177,6 +177,12 @@ jobs:
 
       # Check the native pointer/editor interaction before the long shard, so a
       # regression reports immediately rather than waiting for unrelated tests.
+      - name: Check document saving controls
+        if: matrix.shard == 2
+        run: npm run test:e2e -- tests/e2e/document-saving.spec.ts --retries=0
+        env:
+          CI: true
+
       - name: Check native pointer tools
         if: matrix.shard == 2
         run: npm run test:e2e -- tests/e2e/drawing-toolbar.spec.ts --grep "selection pointer" --retries=0

@@ -362,13 +362,16 @@ function WorkspaceLayout() {
                                 })
                                 return
                             }
-                            saveDiagramToFile(
-                                exportFilename(engine.currentTitle),
-                                "drawio",
-                                engine.langfuseSessionId,
-                                dict.save.savedSuccessfully,
-                                dict.save.exportFailed,
-                            )
+                            void engine.saveDocument().then((saved) => {
+                                if (saved)
+                                    saveDiagramToFile(
+                                        exportFilename(engine.currentTitle),
+                                        "drawio",
+                                        engine.langfuseSessionId,
+                                        dict.save.savedSuccessfully,
+                                        dict.save.exportFailed,
+                                    )
+                            })
                         }}
                         onExport={() => setSaveDialogOpen(true)}
                         onNew={() => {
