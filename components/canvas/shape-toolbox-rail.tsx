@@ -3,7 +3,6 @@ import {
     Blocks,
     CircuitBoard,
     Clock3,
-    Library,
     LibraryBig,
     Network,
     Pin,
@@ -12,17 +11,23 @@ import {
     Workflow,
     X,
 } from "lucide-react"
-import { useEffect, useRef, useState } from "react"
-import { EmcLibraryPanel } from "@/components/canvas/emc-library-panel"
+import { type ReactNode, useEffect, useRef, useState } from "react"
 import { useDictionary } from "@/hooks/use-dictionary"
 import { connectShapeToolbox } from "@/lib/drawio/editor-bridge"
 import type { ShapeGroup, ShapeToolbox } from "@/lib/drawio/shape-toolbox"
-import { isOperationsMode } from "@/lib/operations-bridge"
-import { useDeviceResearch } from "@/stores/device-research-store"
 
-export function ShapeToolboxRail() {
+export interface ShapeToolboxExtension {
+    button: (closeNative: () => void) => ReactNode
+    panel: ReactNode
+    close: () => void
+}
+
+export function ShapeToolboxRail({
+    extension,
+}: {
+    extension?: ShapeToolboxExtension
+}) {
     const t = useDictionary().toolbox
-    const libraryOpen = useDeviceResearch((s) => s.libraryOpen)
     const controller = useRef<ShapeToolbox | null>(null)
     const rail = useRef<HTMLElement>(null)
     const [active, setActive] = useState<ShapeGroup | null>(null)
@@ -89,7 +94,7 @@ export function ShapeToolboxRail() {
                         disabled={!available}
                         data-testid={`toolbox-${group}`}
                         onClick={() => {
-                            useDeviceResearch.setState({ libraryOpen: false })
+                            extension?.close()
                             if (active === group) controller.current?.close()
                             else controller.current?.open(group, t[group])
                         }}
@@ -104,25 +109,7 @@ export function ShapeToolboxRail() {
                         </span>
                     </button>
                 ))}
-                {isOperationsMode() && (
-                    <button
-                        type="button"
-                        title="EMC library"
-                        aria-label="EMC library"
-                        aria-expanded={libraryOpen}
-                        aria-controls="emc-library-panel"
-                        data-testid="toolbox-emc-library"
-                        onClick={() => {
-                            controller.current?.close()
-                            useDeviceResearch.setState({
-                                libraryOpen: !libraryOpen,
-                            })
-                        }}
-                        className={`flex size-10 shrink-0 items-center justify-center rounded-lg border hover:border-primary hover:text-primary ${libraryOpen ? "border-primary bg-primary/10 text-primary" : "border-transparent"}`}
-                    >
-                        <Library aria-hidden="true" className="size-5" />
-                    </button>
-                )}
+                {extension?.button(() => controller.current?.close())}
                 <div className="my-1 h-px w-7 shrink-0 bg-border" />
                 <button
                     type="button"
@@ -131,7 +118,7 @@ export function ShapeToolboxRail() {
                     disabled={!available}
                     data-testid="toolbox-all-libraries"
                     onClick={() => {
-                        useDeviceResearch.setState({ libraryOpen: false })
+                        extension?.close()
                         if (!active)
                             controller.current?.open("search", t.search)
                         controller.current?.catalog()
@@ -158,7 +145,7 @@ export function ShapeToolboxRail() {
                     </>
                 )}
             </aside>
-            <EmcLibraryPanel />
+            {extension?.panel}
         </>
     )
 }

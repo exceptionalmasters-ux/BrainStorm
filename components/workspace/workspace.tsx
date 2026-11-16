@@ -20,6 +20,10 @@ import { SettingsDialog } from "@/components/settings-dialog"
 import { BrandMark } from "@/components/workspace/brand-mark"
 import { DocsButton } from "@/components/workspace/docs-button"
 import { DrawingToolbar } from "@/components/workspace/drawing-toolbar"
+import {
+    EmcLibraryButton,
+    EmcLibraryPanel,
+} from "@/components/workspace/emc-library-panel"
 import { EditorHeader } from "@/components/workspace/editor-header"
 import { IconButton } from "@/components/workspace/icon-button"
 import { useDiagram } from "@/contexts/diagram-context"
@@ -41,6 +45,7 @@ import { STORAGE_KEYS } from "@/lib/storage"
 import { startUsageLog } from "@/lib/usage-log"
 import { noteAction } from "@/lib/user-actions"
 import { cn, isRealDiagram } from "@/lib/utils"
+import { useDeviceResearch } from "@/stores/device-research-store"
 import { useSettingsStore } from "@/stores/settings-store"
 import { useUiStore } from "@/stores/ui-store"
 
@@ -454,6 +459,16 @@ function WorkspaceLayout() {
                             )}
                             waitForSavedLocale
                             toolbox
+                            toolboxExtension={{
+                                button: (closeNative) => (
+                                    <EmcLibraryButton onOpen={closeNative} />
+                                ),
+                                panel: <EmcLibraryPanel />,
+                                close: () =>
+                                    useDeviceResearch.setState({
+                                        libraryOpen: false,
+                                    }),
+                            }}
                         />
                     </div>
                     {isMobile ? (

@@ -144,3 +144,26 @@ export function EmcLibraryPanel() {
         </section>
     )
 }
+
+/** The icon lives in the shared rail; its EMC dependencies stay in the web app. */
+export function EmcLibraryButton({ onOpen }: { onOpen: () => void }) {
+    const libraryOpen = useDeviceResearch((s) => s.libraryOpen)
+    if (!isOperationsMode()) return null
+    return (
+        <button
+            type="button"
+            title="EMC library"
+            aria-label="EMC library"
+            aria-expanded={libraryOpen}
+            aria-controls="emc-library-panel"
+            data-testid="toolbox-emc-library"
+            onClick={() => {
+                onOpen()
+                useDeviceResearch.setState({ libraryOpen: !libraryOpen })
+            }}
+            className={`flex size-10 shrink-0 items-center justify-center rounded-lg border hover:border-primary hover:text-primary ${libraryOpen ? "border-primary bg-primary/10 text-primary" : "border-transparent"}`}
+        >
+            <Library aria-hidden="true" className="size-5" />
+        </button>
+    )
+}
