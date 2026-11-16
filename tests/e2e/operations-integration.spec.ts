@@ -102,12 +102,35 @@ for (const withBrief of [true, false]) {
             .poll(() => page.evaluate(() => (window as any).records.size))
             .toBe(1)
         await expect(popup.getByTestId("document-save-status")).toHaveText(
-            "Saved · Cloud",
+            "Saved",
         )
         const databases = await popup.evaluate(async () =>
             (await indexedDB.databases()).map((db) => db.name),
         )
         expect(databases).not.toContain("next-ai-drawio")
+        await popup.getByTestId("editor-save-as-button").click()
+        const saveAs = popup.getByRole("dialog", {
+            name: "Save As",
+            exact: true,
+        })
+        await saveAs
+            .getByLabel("Drawing name", { exact: true })
+            .fill("Integration copy")
+        await saveAs.getByRole("button", { name: "Save", exact: true }).click()
+        await expect(saveAs).toHaveCount(0)
+        await expect(popup.getByTestId("editor-file-title")).toHaveText(
+            "Integration copy.drawio",
+        )
+        await expect
+            .poll(() => page.evaluate(() => (window as any).records.size))
+            .toBe(2)
+        await popup.getByTestId("editor-save").click()
+        expect(await page.evaluate(() => (window as any).records.size)).toBe(2)
+        await popup.getByTestId("manual-export-button").click()
+        await expect(
+            popup.getByRole("dialog", { name: "Export diagram", exact: true }),
+        ).toBeVisible()
+        await popup.keyboard.press("Escape")
         await popup.close()
         const reopening = page.waitForEvent("popup")
         await page.locator("#skip").click()

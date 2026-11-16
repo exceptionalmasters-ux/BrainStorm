@@ -56,7 +56,7 @@ The toolbar begins with Select and Edit Polygon. Select stops native freehand, h
 
 ## AutoSave and closing documents
 
-Each open document has an independent AutoSave switch next to its filename. AutoSave uses the same storage adapter as manual session saving: Supabase Storage through the authenticated Operations opener in Operations mode, IndexedDB in the standalone editor. The header explicitly labels Cloud versus Local; opening a standalone preview does not authenticate it to Operations or Supabase.
+Each open document has an independent AutoSave switch next to its filename. AutoSave uses the same storage adapter as manual session saving: Supabase Storage through the authenticated Operations opener in Operations mode, IndexedDB in the standalone editor. Operations uses its default save target without a Browser/Cloud selector; standalone mode is labelled Local; opening a standalone preview does not authenticate it to Operations or Supabase.
 
 Before a new unnamed drawing is first saved, the editor asks for a filename. Cancelling keeps its changes in memory and pauses repeated automatic name prompts until AutoSave is re-enabled or the user saves manually. AutoSave Off suppresses automatic writes, including visibility-change saving. Save remains available. The header keeps Unsaved until a successful write acknowledges the current changes; failures retain the drawing. Native format/tool menus are compact icon controls with accessible names.
 
@@ -68,3 +68,8 @@ Close drawing and document-tab X offer Save, Discard and Cancel when there are p
 The Operations popup test drives the real draw.io workspace through a cross-origin opener, saves/reopens a named file through a mocked authenticated parent, checks the Cloud status and verifies that no diagram IndexedDB database is created. It also verifies that reopening with Skip Brief supplies no old concept context. EMC tests separately exercise its actual Storage adapter, origin/source validation, latest-brief preparation and the deployed SQL permission model in isolated fixtures. These do not replace a signed-in live acceptance save in a real Request/Project.
 
 The web drawing controls are consolidated in one row above the canvas. After a successful same-origin connection, the redundant native simple toolbar is hidden. Undo/redo, delete, view/zoom/page controls, basic shapes, text, freehand and native menus remain reachable; fallback editors retain their original toolbar.
+
+
+## Save commands
+
+In Operations, Save commits the current document through the authenticated parent. Save As opens a dedicated filename dialog and creates a new document with the current drawing and conversation, leaving the original unchanged. Successful Save As adopts the new document ID and invalidates writes queued for the original generation. Failure retains the original document and keeps the dialog open. Export opens the separate file-format/download dialog. Ctrl/Cmd+S saves; Ctrl/Cmd+Shift+S opens Save As in Operations.

@@ -5,10 +5,12 @@ export const useDocumentSaveStore = create<{
     autoSave: boolean
     dirty: boolean
     saving: boolean
+    naming: boolean
     setAutoSave: (enabled: boolean) => void
 }>((set) => ({
     autoSave: true,
     dirty: false,
     saving: false,
+    naming: false,
     setAutoSave: (autoSave) => set({ autoSave }),
 }))

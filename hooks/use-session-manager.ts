@@ -61,6 +61,7 @@ export interface UseSessionManagerReturn {
     saveCurrentSession: (
         data: SessionData,
         ticket?: SaveTicket,
+        asNew?: boolean,
     ) => Promise<boolean>
     refreshSessions: () => Promise<void>
     clearCurrentSession: () => void
@@ -362,7 +363,11 @@ export function useSessionManager(
 
     // Save current session data (debounced externally by caller)
     const saveCurrentSession = useCallback(
-        (data: SessionData, ticket?: SaveTicket): Promise<boolean> => {
+        (
+            data: SessionData,
+            ticket?: SaveTicket,
+            asNew = false,
+        ): Promise<boolean> => {
             // The data is of the chat on screen when it was read
             const { generation, seq } = ticket ?? {
                 generation: chatGenerationRef.current,
@@ -370,15 +375,15 @@ export function useSessionManager(
             }
             const run = async (): Promise<boolean> => {
                 // That chat is no longer on screen (leaving it saved it)
-                if (generation !== chatGenerationRef.current) return true
+                if (generation !== chatGenerationRef.current) return !asNew
                 // A copy read later was saved already (one that waited for
                 // its thumbnail must not undo it)
-                if (seq < savedSeqRef.current) return true
+                if (seq < savedSeqRef.current) return !asNew
                 // The user may put another chat on screen while this one is
                 // written; the stored copy is still right, the state is not
                 const stillOnScreen = () =>
                     chatGenerationRef.current === generation
-                const currentSession = currentSessionRef.current
+                const currentSession = asNew ? null : currentSessionRef.current
 
                 if (!currentSession) {
                     // Create a new session if none exists
@@ -416,6 +421,8 @@ export function useSessionManager(
                         )
                     }
                     if (stillOnScreen()) {
+                        // Saves already queued for the original must not write into this copy.
+                        if (asNew) chatGenerationRef.current++
                         currentSessionRef.current = newSession
                         setCurrentSession(newSession)
                         setCurrentSessionId(newSession.id)
