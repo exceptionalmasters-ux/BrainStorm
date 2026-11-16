@@ -335,7 +335,7 @@ export function DeviceResearchPanel() {
                 <Switch
                     id="device-web-switch"
                     checked={state.webEnabled}
-                    disabled={readonly}
+                    disabled={readonly || (engine.isBusy && !state.webEnabled)}
                     onCheckedChange={(enabled) => {
                         if (enabled) setWarning(true)
                         else {
@@ -589,6 +589,7 @@ export function DeviceResearchPanel() {
                         </Button>
                         <Button
                             onClick={() => {
+                                engine.stop()
                                 state.set({ webEnabled: true })
                                 setWarning(false)
                                 setExpanded(true)
