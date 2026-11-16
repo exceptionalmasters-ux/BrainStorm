@@ -70,7 +70,7 @@ export async function operationsDocumentRequest(request: Request, body: any) {
         const row = await get()
         if (!row) return null
         const response = await fetch(
-            `${base}/storage/v1/object/authenticated/brainstorm-files/${row.state_path}`,
+            `${base}/storage/v1/object/brainstorm-files/${row.state_path}`,
             { headers, signal: request.signal, cache: "no-store" },
         )
         if (!response.ok)

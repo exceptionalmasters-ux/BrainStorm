@@ -73,6 +73,46 @@ describe("mobile direct Operations document transport", () => {
             p_document_id: "drawing",
         })
     })
+    it("downloads through the same authenticated object endpoint as the Supabase SDK", async () => {
+        const path = `project/${contextId}/drawing/revision.json`
+        const fetchMock = vi.fn(async (url, init) => {
+            if (String(url).endsWith("brainstorm_context"))
+                return Response.json({
+                    contextType: "project",
+                    contextId,
+                    readOnly: false,
+                })
+            if (String(url).endsWith("brainstorm_get"))
+                return Response.json({
+                    state_path: path,
+                    title: "Canonical title",
+                    revision: 3,
+                    created_at: "2026-11-16T12:00:00Z",
+                    updated_at: "2026-11-16T12:01:00Z",
+                })
+            expect(String(url)).toBe(
+                `https://fzwiphplhspsoktugoqo.supabase.co/storage/v1/object/brainstorm-files/${path}`,
+            )
+            expect(new Headers(init?.headers).get("Authorization")).toBe(
+                "Bearer fixture-user-token",
+            )
+            return Response.json(session)
+        })
+        vi.stubGlobal("fetch", fetchMock)
+        expect(
+            await operationsDocumentRequest(request(), {
+                method: "get",
+                payload: { id: session.id },
+            }),
+        ).toMatchObject({
+            revision: 3,
+            session: {
+                title: "Canonical title",
+                diagramXml: session.diagramXml,
+            },
+        })
+        expect(fetchMock).toHaveBeenCalledTimes(3)
+    })
     it("rejects closed workspaces and failed uploads without committing", async () => {
         let readonly = true
         const fetchMock = vi.fn(async (url) =>
