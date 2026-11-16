@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { EMC_MODEL_ID, emcGatewayHeaders, emcModel } from "@/lib/emc-ai"
 import {
     type EmcSymbol,
+    emcPinLabel,
     insertEmcSymbolNative,
     symbolLayout,
     validateEmcSymbol,
@@ -350,4 +351,52 @@ it("offers an explicit incomplete retry without automatically saving or inventin
     expect(validateEmcSymbol(useDeviceResearch.getState().draft)).toBe(true)
     expect(useDeviceResearch.getState().draft?.pins).toEqual([])
     expect(fetchMock).toHaveBeenCalledTimes(2)
+})
+
+it("keeps labelled unnumbered pads at documented positions and preserves the module outline", () => {
+    const module: EmcSymbol = {
+        name: "ESP-12E",
+        device: "ESP-12E",
+        package: "SMD",
+        body: { width: 240, height: 360, antennaHeight: 0.25 },
+        pins: [
+            {
+                number: "RST",
+                identifierKind: "label",
+                name: "RST",
+                side: "left",
+                position: 0.35,
+                sourceUrl: "https://example.com/module.pdf",
+                evidence: "page 1 left RST pad",
+            },
+            {
+                number: "TXD",
+                identifierKind: "label",
+                name: "TXD",
+                side: "right",
+                position: 0.35,
+                sourceUrl: "https://example.com/module.pdf",
+                evidence: "page 1 right TXD pad",
+            },
+        ],
+    }
+    expect(validateEmcSymbol(module)).toBe(true)
+    expect(symbolLayout(module)).toMatchObject({
+        width: 240,
+        height: 360,
+        pins: [
+            { x: 0, y: 0.35 },
+            { x: 1, y: 0.35 },
+        ],
+    })
+    expect(emcPinLabel(module.pins[0])).toBe("RST")
+    expect(
+        validateEmcSymbol({
+            ...module,
+            pins: [{ ...module.pins[0], position: 1.5 }],
+        }),
+    ).toBe(false)
+    expect(
+        validateEmcSymbol({ ...module, body: { width: 240, height: 99999 } }),
+    ).toBe(false)
 })
