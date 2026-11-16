@@ -189,3 +189,29 @@ test("one unified tools row replaces the native strip and duplicate history cont
     await page.getByTestId("drawing-create-text").click()
     await expect(getIframeContent(page).locator(".mxCellEditor")).toBeVisible()
 })
+
+test("persisted rulers stay against the canvas top after replacing the native toolbar", async ({
+    page,
+}) => {
+    await openApp(page)
+    await page.getByTestId("editor-menu-view").click()
+    await page.getByTestId("editor-action-ruler").click()
+    const checkRulers = async () => {
+        const rulers = getIframeContent(page).locator(".geRuler")
+        await expect(rulers).toHaveCount(2)
+        await expect
+            .poll(() =>
+                rulers.evaluateAll((elements) =>
+                    elements.every(
+                        (element) =>
+                            Math.abs(element.getBoundingClientRect().top) <= 1,
+                    ),
+                ),
+            )
+            .toBe(true)
+    }
+    await checkRulers()
+    await page.reload({ waitUntil: "networkidle" })
+    await expect(page.getByTestId("canvas-loading")).toHaveCount(0)
+    await checkRulers()
+})

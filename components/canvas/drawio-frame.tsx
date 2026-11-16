@@ -75,6 +75,7 @@ export const DrawioFrame = forwardRef<DrawioFrameHandle, DrawioFrameProps>(
                 "emc-unified-toolbar",
                 unifiedToolbar,
             )
+            if (unifiedToolbar) editorUiRef.current?.refresh?.()
         }, [unifiedToolbar])
         const editorUiRef = useRef<any>(null)
         const attachedRef = useRef(false)
@@ -229,6 +230,9 @@ export const DrawioFrame = forwardRef<DrawioFrameHandle, DrawioFrameProps>(
                             )
                             attachedRef.current = true
                             applyThemeCss()
+                            // Rulers use fixed coordinates calculated before the native strip was hidden.
+                            // Let draw.io recompute them against the final CSS grid layout.
+                            if (unifiedToolbarRef.current) ui.refresh?.()
                             applyDarkMode()
                             report(true)
                             return true
