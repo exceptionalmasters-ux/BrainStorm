@@ -1,4 +1,5 @@
 import { expect, getIframeContent, test } from "./lib/fixtures"
+import { mockOperationsStorage } from "./lib/mock-operations-storage"
 
 test("private PDF upload, no-Web symbol, trash/restore/purge and reconnect without the original tab", async ({
     page,
@@ -50,26 +51,8 @@ test("private PDF upload, no-Web symbol, trash/restore/purge and reconnect witho
             body = route.request().postDataJSON(),
             action = url.pathname.split("/").pop()
         let data: any = { accessCodeRequired: false, models: [], providers: [] }
-        if (url.pathname === "/api/operations-documents") {
-            if (body.method === "list")
-                data = [...records.values()].map((v) => ({
-                    ...v.session,
-                    revision: v.revision,
-                }))
-            else if (body.method === "get")
-                data = records.get(body.payload.id) || null
-            else if (body.method === "save") {
-                data = {
-                    revision:
-                        (records.get(body.payload.session.id)?.revision || 0) +
-                        1,
-                }
-                records.set(body.payload.session.id, {
-                    session: body.payload.session,
-                    ...data,
-                })
-            }
-        }
+        if (url.pathname === "/api/operations-documents")
+            throw Error("Drawing save must bypass the Worker")
         if (url.pathname.startsWith("/api/emc/")) {
             actions.push(action!)
             if (action === "research") webCalls++
@@ -137,6 +120,7 @@ test("private PDF upload, no-Web symbol, trash/restore/purge and reconnect witho
             throw Error("No chat API call expected for file analysis")
         await route.fulfill({ json: data })
     })
+    await mockOperationsStorage(context, { token: auth.accessToken, records })
     await context.route(
         "https://fzwiphplhspsoktugoqo.supabase.co/storage/v1/object/brainstorm-sources/**",
         async (route) => {
