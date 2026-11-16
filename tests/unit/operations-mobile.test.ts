@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
+import { emcClientChat } from "@/lib/emc-client-chat"
+import { operationsDocumentRequest } from "@/lib/operations-documents"
 import {
     connectOperations,
     getOperationsContext,
@@ -8,10 +10,18 @@ import {
     reconnectOperations,
 } from "@/lib/operations-bridge"
 
+vi.mock("@/lib/operations-documents", () => ({
+    operationsDocumentRequest: vi.fn(async () => ({ revision: 1 })),
+}))
+vi.mock("@/lib/emc-client-chat", () => ({
+    emcClientChat: vi.fn(async () => Response.json({ localStream: true })),
+}))
+
 let disconnect: (() => void) | undefined
 afterEach(() => {
     disconnect?.()
     disconnect = undefined
+    vi.clearAllMocks()
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
     vi.unstubAllEnvs()
@@ -75,7 +85,8 @@ describe("mobile Operations authorisation", () => {
                 expectedRevision: 0,
             }),
         ).toEqual({ revision: 1 })
-        expect(fetchMock).toHaveBeenCalledTimes(1)
+        expect(fetchMock).not.toHaveBeenCalled()
+        expect(operationsDocumentRequest).toHaveBeenCalledOnce()
     })
     it("reconnects only through the exact EMC popup, nonce, account and context", async () => {
         vi.stubGlobal("fetch", vi.fn())
@@ -144,18 +155,11 @@ describe("mobile Operations authorisation", () => {
         expect(host.postMessage.mock.calls.map((c) => c[0].method)).toEqual([
             "context",
         ])
-        expect(fetchMock).toHaveBeenCalledTimes(2)
-        for (const call of fetchMock.mock.calls)
-            expect(new Headers(call[1].headers).get("x-emc-access-token")).toBe(
-                auth.accessToken,
-            )
-        expect(String(fetchMock.mock.calls[1][0])).toContain(
-            "/api/operations-documents",
-        )
-        expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toMatchObject({
-            method: "save",
-            brief: "Approved concept",
-        })
+        expect(fetchMock).toHaveBeenCalledTimes(1)
+        expect(new Headers(fetchMock.mock.calls[0][1].headers).get("x-emc-access-token")).toBe(auth.accessToken)
+        const [request, body] = vi.mocked(operationsDocumentRequest).mock.calls[0]
+        expect(request.headers.get("x-emc-access-token")).toBe(auth.accessToken)
+        expect(body).toMatchObject({ method: "save", brief: "Approved concept" })
         expect(persist).not.toHaveBeenCalled()
     })
     it("discards a rejected lease and asks Operations again instead of reusing it", async () => {
@@ -185,4 +189,26 @@ describe("mobile Operations authorisation", () => {
         )
         await expect(pending).rejects.toThrow("Session expired")
     })
+})
+
+it("streams EMC through the gateway transport and keeps other models on their chosen route", async () => {
+    const original = vi.fn(async () => Response.json({ alternate: true }))
+    vi.stubGlobal("fetch", original)
+    const { auth } = bootstrap()
+    disconnect = await connectOperations()
+    await window.fetch("/api/chat", {
+        method: "POST",
+        headers: { "x-selected-model-id": "server:emc-openai:default" },
+        body: "{}",
+    })
+    expect(emcClientChat).toHaveBeenCalledOnce()
+    expect(original).not.toHaveBeenCalled()
+    const request = vi.mocked(emcClientChat).mock.calls[0][0]
+    expect(request.headers.get("x-emc-access-token")).toBe(auth.accessToken)
+    await window.fetch("/api/chat", {
+        method: "POST",
+        headers: { "x-selected-model-id": "user:other-model" },
+        body: "{}",
+    })
+    expect(original).toHaveBeenCalledOnce()
 })

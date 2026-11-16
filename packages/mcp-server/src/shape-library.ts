@@ -6,32 +6,10 @@
 import { readFile } from "node:fs/promises"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
-import { SHAPE_LIBRARY_DOCS } from "./shape-library-docs.ts"
+import { LIBRARIES } from "./shape-library-catalog.ts"
 
-const SHAPE_LIBRARY_GROUPS: Record<string, string[]> = {
-    Cloud: [
-        "aws4",
-        "azure2",
-        "gcp2",
-        "alibaba_cloud",
-        "openstack",
-        "salesforce",
-    ],
-    Networking: ["cisco19", "network", "kubernetes", "vvd", "rack"],
-    Business: ["bpmn", "lean_mapping"],
-    General: ["flowchart", "basic", "arrows2", "infographic", "sitemap"],
-    "UI/Mockups": ["android", "material_design"],
-    Enterprise: ["citrix", "sap", "mscae", "atlassian"],
-    Engineering: ["fluidpower", "electrical", "pid", "cabinets", "floorplan"],
-    Icons: ["webicons"],
-}
-
-/** The libraries by group, one "- Group: a, b" line each, for tool descriptions */
-export const SHAPE_LIBRARY_LIST = Object.entries(SHAPE_LIBRARY_GROUPS)
-    .map(([group, names]) => `- ${group}: ${names.join(", ")}`)
-    .join("\n")
-
-const LIBRARIES = new Set(Object.values(SHAPE_LIBRARY_GROUPS).flat())
+export { getBundledShapeLibrary } from "./bundled-shape-library.ts"
+export { SHAPE_LIBRARY_LIST } from "./shape-library-catalog.ts"
 
 /**
  * The build copies the docs to dist/shape-libraries; running from src (tsx)
@@ -73,16 +51,3 @@ export async function getShapeLibrary(
     }
 }
 
-/** The Workers chat route must not depend on traced files or process.cwd(). */
-export function getBundledShapeLibrary(
-    name: string,
-): { ok: true; text: string } | { ok: false; error: string } {
-    const library = name.trim().toLowerCase()
-    if (LIBRARIES.has(library) && SHAPE_LIBRARY_DOCS[library]) {
-        return { ok: true, text: SHAPE_LIBRARY_DOCS[library] }
-    }
-    return {
-        ok: false,
-        error: `Library "${name}" not found. Available: ${Array.from(LIBRARIES).join(", ")}`,
-    }
-}

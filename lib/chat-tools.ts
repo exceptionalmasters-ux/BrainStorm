@@ -4,10 +4,8 @@ import {
     DIAGRAM_TYPE_LIST,
     getDiagramGuide,
 } from "@/packages/mcp-server/src/diagram-types/index.ts"
-import {
-    getBundledShapeLibrary,
-    SHAPE_LIBRARY_LIST,
-} from "@/packages/mcp-server/src/shape-library.ts"
+import { getBundledShapeLibrary } from "@/packages/mcp-server/src/bundled-shape-library.ts"
+import { SHAPE_LIBRARY_LIST } from "@/packages/mcp-server/src/shape-library-catalog.ts"
 import {
     STYLE_CLASS_EXAMPLE,
     SWIMLANE_EXAMPLE,
@@ -17,7 +15,8 @@ import {
  * The chat's tools. display_diagram, edit_diagram and append_diagram run in
  * the browser: the chat engine's tool handler puts their result on the
  * canvas and reports it back as text, so they have an output schema and no
- * execute. get_shape_library and get_diagram_guide run on the server.
+ * execute. Library/guide lookups execute beside the model stream (browser for
+ * EMC, server for other providers).
  */
 export const chatTools = {
     search_device: tool({

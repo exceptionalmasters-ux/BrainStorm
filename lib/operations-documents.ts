@@ -1,4 +1,5 @@
 import { EMC_SUPABASE_PUBLIC_KEY, EMC_SUPABASE_URL } from "./emc-deployment"
+import { readServiceJson } from "./service-response"
 
 const documentId = /^[A-Za-z0-9_-]{1,128}$/
 const sessionLimit = 16 * 1024 * 1024
@@ -41,12 +42,7 @@ export async function operationsDocumentRequest(request: Request, body: any) {
             signal: request.signal,
             cache: "no-store",
         })
-        const result = await response.json()
-        if (!response.ok)
-            throw new Error(
-                result.message || "Operations access could not be verified.",
-            )
-        return result
+        return readServiceJson(response, "Operations")
     }
     const context = await rpc("brainstorm_context", {
         p_context_type: type,

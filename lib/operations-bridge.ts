@@ -1,4 +1,4 @@
-import { EMC_OPERATIONS_ORIGIN } from "@/lib/emc-deployment"
+import { EMC_MODEL_ID, EMC_OPERATIONS_ORIGIN } from "@/lib/emc-deployment"
 import { getApiEndpoint } from "./base-path"
 /** Operations owns authentication and Storage. Tokens never appear in URLs or persistent editor storage. */
 export const OPERATIONS_PROTOCOL = "emc-brainstorm/v1"
@@ -240,7 +240,24 @@ export async function connectOperations(
         headers.set("x-emc-access-token", auth.accessToken)
         headers.set("x-emc-context-type", auth.contextType)
         headers.set("x-emc-context-id", auth.contextId)
-        const response = await original(input, { ...init, headers })
+        let response: Response
+        if (
+            url.pathname.endsWith("/api/chat") &&
+            headers.get("x-selected-model-id") === EMC_MODEL_ID &&
+            (init?.method || (input instanceof Request ? input.method : "GET")).toUpperCase() === "POST"
+        ) {
+            if (currentContext?.readOnly)
+                return Response.json({ error: "This workspace is read-only." }, { status: 403 })
+            const { emcClientChat } = await import("./emc-client-chat")
+            response = await emcClientChat(
+                new Request(input instanceof Request ? input : url.href, {
+                    ...init,
+                    headers,
+                }),
+            )
+        } else {
+            response = await original(input, { ...init, headers })
+        }
         if (
             response.status === 401 &&
             authorization?.accessToken === auth.accessToken
@@ -305,25 +322,27 @@ export function operationsRequest<T>(
         authorization &&
         Date.now() < authorizationUntil
     ) {
-        return window
-            .fetch(getApiEndpoint("/api/operations-documents"), {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    method,
-                    payload,
-                    brief: currentContext?.brief || "",
-                }),
-            })
-            .then(async (response) => {
-                const result = await response.json()
-                if (!response.ok)
-                    throw new Error(
-                        result.error ||
-                            "Operations document request failed. Retry without closing this drawing.",
-                    )
-                return result as T
-            })
+        const auth = authorization
+        return import("./operations-documents").then(async ({ operationsDocumentRequest }) => {
+            try {
+                return await operationsDocumentRequest(
+                    new Request(new URL(getApiEndpoint("/api/operations-documents"), location.href), {
+                        headers: {
+                            "x-emc-access-token": auth.accessToken,
+                            "x-emc-context-type": auth.contextType,
+                            "x-emc-context-id": auth.contextId,
+                        },
+                    }),
+                    { method, payload, brief: currentContext?.brief || "" },
+                ) as T
+            } catch (error) {
+                if ((error as { status?: number }).status === 401 && authorization === auth) {
+                    authorization = null
+                    authorizationUntil = 0
+                }
+                throw error
+            }
+        })
     }
     if (!host || host.closed)
         return Promise.reject(
