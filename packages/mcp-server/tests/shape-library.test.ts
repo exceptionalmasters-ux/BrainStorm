@@ -30,11 +30,14 @@ describe("shape library docs", () => {
 })
 
 describe("Worker-bundled shape library docs", () => {
-    it.each(libraries)("%s works without a deployed filesystem", async (name) => {
-        const bundled = getBundledShapeLibrary(name)
-        const source = await getShapeLibrary(name)
-        expect(bundled).toEqual(source)
-    })
+    it.each(libraries)(
+        "%s works without a deployed filesystem",
+        async (name) => {
+            const bundled = getBundledShapeLibrary(name)
+            const source = await getShapeLibrary(name)
+            expect(bundled).toEqual(source)
+        },
+    )
     it("rejects unknown names instead of interpreting them as paths", () => {
         expect(getBundledShapeLibrary("../secret").ok).toBe(false)
     })
