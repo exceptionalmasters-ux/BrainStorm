@@ -47,7 +47,8 @@ import { useUiStore } from "@/stores/ui-store"
 /** File types the "Open .drawio file" picker accepts */
 const DIAGRAM_FILE_ACCEPT = ".drawio,.xml,.svg,application/xml,image/svg+xml"
 
-const MOBILE_BREAKPOINT = 768
+// Tablets keep the canvas beside the assistant; only narrow phones switch views.
+const MOBILE_BREAKPOINT = 600
 // Gap between the floating panel and the window edge
 const PANEL_GAP = 12
 

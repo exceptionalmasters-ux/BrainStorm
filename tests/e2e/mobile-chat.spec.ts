@@ -40,3 +40,30 @@ test("phone chat stays open after successive drawing replies and hides only on r
     await page.getByTestId("show-panel").click()
     await expect(page.getByTestId("chat-panel")).toBeVisible()
 })
+
+for (const width of [600, 768, 1024]) {
+    test(
+        `tablet at ${width}px keeps chat on the right with a reachable hide button`,
+        async ({ page }) => {
+            await page.setViewportSize({ width, height: 1024 })
+            await openApp(page)
+            const panel = page.getByTestId("chat-panel")
+            await expect(panel).toBeVisible()
+            const bounds = await panel.boundingBox()
+            expect(bounds).not.toBeNull()
+            expect(bounds!.width).toBeLessThan(width * 0.7)
+            expect(bounds!.x).toBeGreaterThan(150)
+            const hide = page.getByTestId("hide-chat-panel")
+            await expect(hide).toBeInViewport()
+            const closeBounds = await hide.boundingBox()
+            expect(closeBounds!.x + closeBounds!.width).toBeLessThanOrEqual(width)
+            await hide.click()
+            await expect(panel).not.toBeVisible()
+            await page.getByTestId("show-panel").click()
+            await expect(panel).toBeVisible()
+            await page.setViewportSize({ width: 1100, height: 768 })
+            await expect(panel).toBeVisible()
+            await expect(page.getByTestId("hide-chat-panel")).toBeInViewport()
+        },
+    )
+}

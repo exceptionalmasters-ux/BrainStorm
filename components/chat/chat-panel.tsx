@@ -145,7 +145,7 @@ export function ChatPanel({
             aria-label={dict.nav.aiChat}
             data-testid="chat-panel"
         >
-            <header className="@container flex h-[52px] shrink-0 items-center gap-1 pr-2 pl-3">
+            <header className="@container flex h-[52px] shrink-0 items-center gap-1 pr-12 pl-3">
                 <BrandMark />
                 {/* The title, framed with a grid icon so it reads as the way
                     to the saved diagrams (its menu) */}
@@ -211,6 +211,7 @@ export function ChatPanel({
                         <Settings />
                     </IconButton>
                     <IconButton
+                        className="absolute top-1 right-1 size-10"
                         label={dict.nav.hidePanel}
                         shortcut={mobile ? undefined : `${modKey}B`}
                         data-testid="hide-chat-panel"

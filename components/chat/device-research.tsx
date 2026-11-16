@@ -1,6 +1,6 @@
 "use client"
 
-import { Globe, Library, Loader2 } from "lucide-react"
+import { Globe, Loader2 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -365,10 +365,6 @@ export function DeviceResearchPanel() {
     const [warning, setWarning] = useState(false)
     const [expanded, setExpanded] = useState(false)
     const [query, setQuery] = useState("")
-    const [libraryBusy, setLibraryBusy] = useState(false)
-    const [libraryError, setLibraryError] = useState("")
-    const [filter, setFilter] = useState("")
-    const canInsert = useCanvasStore((s) => s.hasEditor && !s.isBusy)
     const readonly = getOperationsContext()?.readOnly
     if (!isOperationsMode()) return null
     return (
@@ -405,33 +401,6 @@ export function DeviceResearchPanel() {
                     aria-expanded={expanded}
                 >
                     Research
-                </button>
-                <button
-                    type="button"
-                    className="ml-auto inline-flex items-center gap-1 rounded border px-2 py-1 hover:bg-accent"
-                    onClick={async () => {
-                        state.set({ libraryOpen: !state.libraryOpen })
-                        if (state.libraryOpen) return
-                        setLibraryBusy(true)
-                        setLibraryError("")
-                        try {
-                            const data = await emcAction<{
-                                symbols: typeof state.library
-                            }>("library", {})
-                            state.set({ library: data.symbols })
-                        } catch (e) {
-                            setLibraryError(
-                                e instanceof Error
-                                    ? e.message
-                                    : "Could not load library",
-                            )
-                        } finally {
-                            setLibraryBusy(false)
-                        }
-                    }}
-                >
-                    <Library className="size-3" />
-                    EMC library
                 </button>
             </div>
             <button
@@ -628,73 +597,6 @@ export function DeviceResearchPanel() {
                             Dismiss results
                         </button>
                     )}
-                </div>
-            )}
-            {state.libraryOpen && (
-                <div className="mt-2 max-h-64 space-y-2 overflow-y-auto">
-                    <Input
-                        aria-label="Filter EMC symbols"
-                        placeholder="Find a saved symbol…"
-                        value={filter}
-                        onChange={(e) => setFilter(e.target.value)}
-                    />
-                    {libraryBusy && <p>Loading EMC library…</p>}
-                    {libraryError && (
-                        <p role="alert" className="text-red-500">
-                            {libraryError}
-                        </p>
-                    )}
-                    {!libraryBusy && !state.library.length && (
-                        <p>No approved symbols yet.</p>
-                    )}
-                    {state.library
-                        .filter((s) =>
-                            `${s.name} ${s.device} ${s.package}`
-                                .toLowerCase()
-                                .includes(filter.toLowerCase()),
-                        )
-                        .map((symbol) => (
-                            <div
-                                key={symbol.id}
-                                className="flex items-center gap-2 rounded border p-2"
-                            >
-                                <span className="min-w-0 flex-1">
-                                    {symbol.name}
-                                    <br />
-                                    {symbol.device} · {symbol.package}
-                                </span>
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    disabled={
-                                        !canInsert || readonly || libraryBusy
-                                    }
-                                    onClick={async () => {
-                                        setLibraryBusy(true)
-                                        setLibraryError("")
-                                        try {
-                                            const data = await emcAction<{
-                                                symbol: EmcSymbol
-                                            }>("symbol", { id: symbol.id })
-                                            if (!insertEmcSymbol(data.symbol))
-                                                throw new Error(
-                                                    "The canvas is not ready. Please retry.",
-                                                )
-                                        } catch (e) {
-                                            setLibraryError(
-                                                e instanceof Error
-                                                    ? e.message
-                                                    : "Could not insert symbol",
-                                            )
-                                        } finally {
-                                            setLibraryBusy(false)
-                                        }
-                                    }}
-                                >
-                                    Insert
-                                </Button>
-                            </div>
-                        ))}
                 </div>
             )}
             <Dialog open={warning} onOpenChange={setWarning}>
