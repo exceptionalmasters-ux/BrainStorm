@@ -20,11 +20,11 @@ import { SettingsDialog } from "@/components/settings-dialog"
 import { BrandMark } from "@/components/workspace/brand-mark"
 import { DocsButton } from "@/components/workspace/docs-button"
 import { DrawingToolbar } from "@/components/workspace/drawing-toolbar"
+import { EditorHeader } from "@/components/workspace/editor-header"
 import {
     EmcLibraryButton,
     EmcLibraryPanel,
 } from "@/components/workspace/emc-library-panel"
-import { EditorHeader } from "@/components/workspace/editor-header"
 import { IconButton } from "@/components/workspace/icon-button"
 import { useDiagram } from "@/contexts/diagram-context"
 import { useDictionary } from "@/hooks/use-dictionary"
