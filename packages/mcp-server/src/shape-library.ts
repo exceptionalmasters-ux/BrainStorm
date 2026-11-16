@@ -6,6 +6,7 @@
 import { readFile } from "node:fs/promises"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
+import { SHAPE_LIBRARY_DOCS } from "./shape-library-docs.ts"
 
 const SHAPE_LIBRARY_GROUPS: Record<string, string[]> = {
     Cloud: [
@@ -69,5 +70,19 @@ export async function getShapeLibrary(
     return {
         ok: false,
         error: `Library "${library}" is missing from this installation.`,
+    }
+}
+
+/** The Workers chat route must not depend on traced files or process.cwd(). */
+export function getBundledShapeLibrary(
+    name: string,
+): { ok: true; text: string } | { ok: false; error: string } {
+    const library = name.trim().toLowerCase()
+    if (LIBRARIES.has(library) && SHAPE_LIBRARY_DOCS[library]) {
+        return { ok: true, text: SHAPE_LIBRARY_DOCS[library] }
+    }
+    return {
+        ok: false,
+        error: `Library "${name}" not found. Available: ${Array.from(LIBRARIES).join(", ")}`,
     }
 }

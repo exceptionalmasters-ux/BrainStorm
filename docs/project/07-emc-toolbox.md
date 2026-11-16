@@ -29,3 +29,9 @@ Use **From file · attachments** to upload PDF, PNG/JPEG/WebP, TXT/MD or DOCX (1
 The file panel has active/trash views, restore and explicit permanent-delete confirmation. Trashed files cannot be analysed or downloaded. Permanent deletion serializes against upload/restore, removes the Storage object and then its record; failed purges remain retryable. Already approved symbols/drawings are separate derived artifacts.
 
 The editor no longer needs the source Operations tab after bootstrap. Navigating away does not close it. Cached in-memory access supports independent saves and API calls. **Reconnect EMC** opens a narrow platform session-handoff page, verifies the existing EMC login/MFA and pinned workspace and returns only a short-lived JWT to the exact configured editor origin/window/nonce. Refresh credentials never leave EMC or enter editor persistence/URLs. The context ID/type in the URL are nonsecret routing data and permit reconnect after reload; a workspace still starts from Client Requests/Projects. Account changes require a new editor to avoid cross-account writes. Server-side context checks verify the originating Auth session still exists, so sign-out/revocation does not depend on the source tab.
+
+### Drawing duration and Worker library docs
+
+Drawing/chat and local-file analysis/drafting have no application wall-clock deadline. Stop, disconnect and account/session checks still cancel requests. Web lookup alone retains its upstream/network deadline and the Web-mode UI watchdog. This does not remove provider or host CPU, memory, request or token limits: Cloudflare 1102 is a resource failure, not a drawing timeout.
+
+The Workers get_shape_library tool reads a bundled snapshot of all 30 library documents, including electrical, instead of process.cwd()/filesystem paths. MCP filesystem lookup remains compatible. Regression tests compare the bundled docs with the source documents; update the snapshot with doc changes.

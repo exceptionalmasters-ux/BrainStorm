@@ -590,7 +590,6 @@ async function handleChatRequest(req: Request): Promise<Response> {
         allowSystemInMessages: true,
         abortSignal: req.signal,
         ...(selectedModelId === EMC_MODEL_ID && {
-            timeout: { totalMs: 125000 },
             maxRetries: 0,
         }),
         // Must be sent: unset means the provider's own default, and Bedrock's is
