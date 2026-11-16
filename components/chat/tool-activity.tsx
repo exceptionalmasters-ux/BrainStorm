@@ -282,12 +282,21 @@ export function ToolActivity({
         const isDone = state === "output-available"
         // A shape library, or the drawing guide of a diagram type
         const isGuide = toolName === "get_diagram_guide"
+        const isWeb = toolName === "search_device"
         return (
             <ToolRow
                 part={part}
                 icon={<Library />}
                 label={
-                    isDone ? (
+                    isWeb ? (
+                        isDone ? (
+                            "Device research ready — see Web results"
+                        ) : running ? (
+                            "Searching device sources…"
+                        ) : (
+                            "Search stopped"
+                        )
+                    ) : isDone ? (
                         isGuide ? (
                             t.guideLoaded
                         ) : (

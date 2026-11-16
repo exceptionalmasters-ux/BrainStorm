@@ -23,6 +23,7 @@ import { usePanelWidth } from "@/hooks/use-panel-width"
 import { modKey } from "@/lib/platform"
 import { noteAction } from "@/lib/user-actions"
 import { cn } from "@/lib/utils"
+import { useDeviceResearch } from "@/stores/device-research-store"
 import {
     PANEL_MAX_WIDTH,
     PANEL_MIN_WIDTH,
@@ -32,6 +33,7 @@ import { useUiStore } from "@/stores/ui-store"
 import { useVersionsStore } from "@/stores/versions-store"
 import { useChatEngine } from "./chat-engine"
 import { Composer } from "./composer"
+import { DeviceResearchPanel } from "./device-research"
 import { MessageList } from "./message-list"
 import { SessionMenu, useSessionTitle } from "./session-menu"
 
@@ -101,6 +103,7 @@ export function ChatPanel({
     onOpenFile: () => void
 }) {
     const dict = useDictionary()
+    const webEnabled = useDeviceResearch((s) => s.webEnabled)
     const engine = useChatEngine()
     const { loadDiagram, isDrawioReady } = useDiagram()
     const setSaveDialogOpen = useUiStore((s) => s.setSaveDialogOpen)
@@ -132,6 +135,7 @@ export function ChatPanel({
         <aside
             className={cn(
                 "flex flex-col bg-card",
+                webEnabled && "ring-2 ring-red-500",
                 mobile
                     ? "absolute inset-0"
                     : "absolute top-3 right-3 bottom-3 z-20 rounded-2xl shadow-float animate-panel-in",
@@ -219,6 +223,7 @@ export function ChatPanel({
                     )}
                 </div>
             </header>
+            <DeviceResearchPanel />
 
             <VersionStrip minVersions={hasCardless ? 1 : 2} />
 

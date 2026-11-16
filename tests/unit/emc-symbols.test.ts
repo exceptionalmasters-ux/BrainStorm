@@ -1,0 +1,253 @@
+import { generateText } from "ai"
+import { afterEach, describe, expect, it, vi } from "vitest"
+import { EMC_MODEL_ID, emcGatewayHeaders, emcModel } from "@/lib/emc-ai"
+import {
+    type EmcSymbol,
+    insertEmcSymbolNative,
+    symbolLayout,
+    validateEmcSymbol,
+} from "@/lib/emc-symbols"
+import { loadFlattenedServerModels } from "@/lib/server-model-config"
+import {
+    disableDeviceWeb,
+    researchDevice,
+    useDeviceResearch,
+} from "@/stores/device-research-store"
+
+const symbol: EmcSymbol = {
+    name: "Test module",
+    device: "Fixture 1",
+    package: "DIP-4",
+    pins: [
+        {
+            number: "1",
+            name: "VCC",
+            side: "left",
+            sourceUrl: "https://example.com/data",
+            evidence: "1: VCC",
+        },
+        {
+            number: "2",
+            name: "GND",
+            side: "left",
+            sourceUrl: "https://example.com/data",
+            evidence: "2: GND",
+        },
+        {
+            number: "3",
+            name: "IO",
+            side: "right",
+            sourceUrl: "https://example.com/data",
+            evidence: "3: IO",
+        },
+        {
+            number: "4",
+            name: "CLK",
+            side: "top",
+            sourceUrl: "https://example.com/data",
+            evidence: "4: CLK",
+        },
+    ],
+}
+afterEach(() => {
+    disableDeviceWeb()
+    useDeviceResearch.setState({ result: null, draft: null })
+    vi.unstubAllGlobals()
+    vi.unstubAllEnvs()
+})
+
+describe("EMC native symbols", () => {
+    it("uses the same, separated port coordinates in the preview and the native graph", () => {
+        const layout = symbolLayout(symbol)
+        expect(layout.pins.map((p) => [p.x, p.y])).toEqual([
+            [0, 1 / 3],
+            [0, 2 / 3],
+            [1, 1 / 2],
+            [1 / 2, 0],
+        ])
+        const cells: any[] = []
+        const graph = {
+            isEnabled: () => true,
+            getFreeInsertPoint: () => ({ x: 40, y: 50 }),
+            getDefaultParent: () => "layer",
+            stopEditing: vi.fn(),
+            model: {
+                beginUpdate: vi.fn(),
+                endUpdate: vi.fn(),
+                setGeometry: vi.fn(),
+            },
+            insertVertex: vi.fn((...args: any[]) => {
+                const cell = {
+                    args,
+                    setConnectable: vi.fn(),
+                    geometry: { clone: () => ({}) },
+                }
+                cells.push(cell)
+                return cell
+            }),
+            setSelectionCell: vi.fn(),
+            scrollCellToVisible: vi.fn(),
+        }
+        expect(
+            insertEmcSymbolNative(
+                { editor: { graph } },
+                {
+                    mxPoint: class {
+                        constructor(
+                            public x: number,
+                            public y: number,
+                        ) {}
+                    },
+                },
+                symbol,
+            ),
+        ).toBe(true)
+        expect(cells).toHaveLength(5)
+        expect(cells[0].setConnectable).toHaveBeenCalledWith(false)
+        expect(
+            cells
+                .slice(1)
+                .every((c) => c.args[0] === cells[0] && c.args[8] === true),
+        ).toBe(true)
+        expect(graph.model.beginUpdate).toHaveBeenCalledOnce()
+        expect(graph.model.endUpdate).toHaveBeenCalledOnce()
+        expect(graph.setSelectionCell).toHaveBeenCalledWith(cells[0])
+    })
+    it("rejects duplicate pins and non-HTTPS source URLs before graph mutation", () => {
+        expect(
+            validateEmcSymbol({
+                ...symbol,
+                pins: [symbol.pins[0], symbol.pins[0]],
+            }),
+        ).toBe(false)
+        expect(
+            validateEmcSymbol({
+                ...symbol,
+                pins: [{ ...symbol.pins[0], sourceUrl: "javascript:alert(1)" }],
+            }),
+        ).toBe(false)
+        expect(insertEmcSymbolNative({}, {}, symbol)).toBe(false)
+    })
+})
+describe("EMC shared model", () => {
+    it("is the default in production without hiding other configured models", async () => {
+        vi.stubEnv("EMC_OPERATIONS_ONLY", "1")
+        vi.stubEnv(
+            "AI_MODELS_CONFIG",
+            JSON.stringify({
+                providers: [
+                    {
+                        name: "Other",
+                        provider: "openai",
+                        models: ["other"],
+                        default: true,
+                    },
+                ],
+            }),
+        )
+        vi.stubEnv("SETTINGS_FILE", "/nonexistent/emc-settings.json")
+        const models = await loadFlattenedServerModels()
+        expect(models[0]).toMatchObject({
+            id: EMC_MODEL_ID,
+            modelId: "EMC OpenAI",
+            isDefault: true,
+        })
+        expect(models.find((m) => m.modelId === "other")).toMatchObject({
+            isDefault: false,
+        })
+    })
+    it("sends the Operations JWT to the fixed gateway and does not require the OpenAI secret", async () => {
+        const requests: any[] = []
+        vi.stubGlobal(
+            "fetch",
+            vi.fn(async (url, init) => {
+                requests.push({ url: String(url), init })
+                return Response.json({
+                    id: "resp_fixture",
+                    object: "response",
+                    created_at: 1,
+                    model: "fixture",
+                    output: [
+                        {
+                            type: "message",
+                            id: "msg1",
+                            status: "completed",
+                            role: "assistant",
+                            content: [
+                                {
+                                    type: "output_text",
+                                    text: "Ready",
+                                    annotations: [],
+                                },
+                            ],
+                        },
+                    ],
+                    usage: {
+                        input_tokens: 1,
+                        output_tokens: 1,
+                        total_tokens: 2,
+                    },
+                })
+            }),
+        )
+        const request = new Request("https://editor.example/api/chat", {
+            headers: {
+                "x-emc-access-token": "fixture-jwt",
+                "x-emc-context-type": "project",
+                "x-emc-context-id": "fixture-context",
+            },
+        })
+        expect(emcGatewayHeaders(request).Authorization).toBe(
+            "Bearer fixture-jwt",
+        )
+        const result = await generateText({
+            model: emcModel(request).model,
+            prompt: "Hello",
+        })
+        expect(result.text).toBe("Ready")
+        expect(requests[0].url).toBe(
+            "https://fzwiphplhspsoktugoqo.supabase.co/functions/v1/brainstorm-ai/responses",
+        )
+        expect(new Headers(requests[0].init.headers).get("authorization")).toBe(
+            "Bearer fixture-jwt",
+        )
+        expect(() =>
+            emcGatewayHeaders(new Request("https://editor.example/api/chat")),
+        ).toThrow(/Operations/)
+    })
+})
+describe("Web consent and cancellation", () => {
+    it("does not issue any request while Web is off", async () => {
+        const fetchMock = vi.fn()
+        vi.stubGlobal("fetch", fetchMock)
+        await expect(researchDevice("Fixture")).rejects.toThrow(/Enable Web/)
+        expect(fetchMock).not.toHaveBeenCalled()
+    })
+    it("aborts in-flight research and ignores a late result on disable", async () => {
+        let resolve!: (value: Response) => void
+        let signal: AbortSignal | undefined
+        vi.stubGlobal(
+            "fetch",
+            vi.fn((_url, init) => {
+                signal = init.signal
+                return new Promise<Response>((r) => {
+                    resolve = r
+                })
+            }),
+        )
+        useDeviceResearch.setState({ webEnabled: true })
+        const pending = researchDevice("Fixture")
+        disableDeviceWeb()
+        expect(signal?.aborted).toBe(true)
+        resolve(
+            Response.json({
+                researchId: "late",
+                questions: [],
+                candidates: [],
+            }),
+        )
+        await expect(pending).rejects.toThrow(/cancelled/)
+        expect(useDeviceResearch.getState().result).toBeNull()
+        expect(useDeviceResearch.getState().busy).toBe(false)
+    })
+})

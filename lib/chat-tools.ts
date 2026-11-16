@@ -21,6 +21,12 @@ import {
  * execute. get_shape_library and get_diagram_guide run on the server.
  */
 export const chatTools = {
+    search_device: tool({
+        description:
+            "Find up to five source-backed graphical wiring/pinout references for a device. Only when Web is ON. Ask for exact model/package when ambiguous. Pass only the device search terms, never private project data. Results appear in the EMC research panel. Never create or save symbols automatically; the user chooses Create symbol and approves the preview.",
+        inputSchema: z.object({ query: z.string().min(1).max(1000) }),
+        outputSchema: z.string(),
+    }),
     display_diagram: tool({
         description: `Display a diagram on draw.io. Pass ONLY the mxStyle definitions and the mxCell elements - wrapper tags and root cells are added automatically.
 

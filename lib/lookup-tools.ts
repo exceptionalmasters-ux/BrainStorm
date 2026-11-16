@@ -4,6 +4,10 @@
  * model goes on to draw with what it returned. Kept apart from the tool
  * definitions, which need the server's file system, so the browser can ask.
  */
-const LOOKUP_TOOLS = new Set(["get_shape_library", "get_diagram_guide"])
+const LOOKUP_TOOLS = new Set([
+    "get_shape_library",
+    "get_diagram_guide",
+    "search_device",
+])
 
 export const isLookupTool = (name: string) => LOOKUP_TOOLS.has(name)

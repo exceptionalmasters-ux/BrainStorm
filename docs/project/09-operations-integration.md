@@ -73,3 +73,44 @@ The web drawing controls are consolidated in one row above the canvas. After a s
 ## Save commands
 
 In Operations, Save commits the current document through the authenticated parent. Save As opens a dedicated filename dialog and creates a new document with the current drawing and conversation, leaving the original unchanged. Successful Save As adopts the new document ID and invalidates writes queued for the original generation. Failure retains the original document and keeps the dialog open. Export opens the separate file-format/download dialog. Ctrl/Cmd+S saves; Ctrl/Cmd+Shift+S opens Save As in Operations.
+
+## EMC OpenAI, Web research and reusable symbols
+
+Production adds `server:emc-openai:default` as the default, labelled **EMC OpenAI**.
+Existing personal and other server models remain selectable; a saved user choice
+is preserved. The actual model is resolved by the Supabase `brainstorm-ai` gateway
+from `OPENAI_BRAINSTORM_MODEL` or the existing `OPENAI_MODEL` secret. BrainStorm
+never needs a copy of `OPENAI_API_KEY`: the SDK's Responses requests use the current
+Operations JWT to authenticate the fixed gateway, which checks the user, MFA,
+workspace and rate reservation before calling OpenAI with the existing server key.
+
+The assistant panel has a Web switch with explicit enable consent and a red border
+plus WEB ACTIVE label. While enabled, AI tools research only; native manual drawing
+remains available. Turning Web off aborts research/draft requests and stops the AI
+turn. Subsequent AI drawing requests have no research tool. Search is also directly
+available in the Research field. Web research always uses the managed EMC model,
+including when the user selects a different drawing model.
+
+`search_device` is a client tool that calls the protected research endpoint with
+only the device query and puts the results in the panel. Ambiguous model/package
+information prompts clarification. Results contain up to five cited sources and
+optional actual thumbnails from hosted image search results. A result's Create symbol button requests a
+source-backed draft; missing pin evidence returns questions. The approval modal
+shows a vector preview, pin labels, side controls and per-pin evidence links. Cancel
+performs no library write or canvas insertion. Approve saves through Operations
+checks and inserts native cells in one undoable graph transaction. Library symbols
+can be filtered and inserted again with Web off. A failed insertion after a
+successful save reports that the symbol is available in the library.
+
+Server relay: `/api/emc/{research,draft,approve,library,symbol}`. Supabase migration,
+Edge gateway, SQL/ACL tests and deployment notes live in the EMC repository. Drawing
+requests never enable hosted Web search, so the full brief, canvas, conversation
+and attachments are not forwarded as search input. No secret belongs in a public
+Next.js variable, localStorage, sessionStorage, diagram, URL or window message.
+
+Verification: unit tests exercise native port geometry, unsafe/duplicate inputs,
+model selection, actual SDK gateway headers, Web opt-in and late-result cancellation.
+The Operations popup browser test exercises consent/cancel, clarification, five
+references, rejected/approved previews and repeated library insertion using mocked
+API boundaries and the real native draw.io editor. No real user data or paid model
+requests are used by these tests.
