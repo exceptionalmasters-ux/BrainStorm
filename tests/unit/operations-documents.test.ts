@@ -181,3 +181,36 @@ describe("mobile direct Operations document transport", () => {
         ).toEqual({ revision: 2 })
     })
 })
+
+it("acknowledges an identical logical retry without uploading and rejects a peer revision", async () => {
+    const revisionId = "00000000-0000-4000-8000-000000000009"
+    const path = `project/${contextId}/drawing/${revisionId}`
+    let peer = false
+    const fetchMock = vi.fn(async (url) =>
+        String(url).endsWith("brainstorm_context")
+            ? Response.json({
+                  contextType: "project",
+                  contextId,
+                  readOnly: false,
+              })
+            : Response.json({
+                  revision: peer ? 3 : 2,
+                  state_path: `${path}.json`,
+                  xml_path: `${path}.drawio`,
+              }),
+    )
+    vi.stubGlobal("fetch", fetchMock)
+    const body = {
+        method: "save",
+        payload: { session, expectedRevision: 1, revisionId },
+    }
+    expect(await operationsDocumentRequest(request(), body)).toEqual({
+        revision: 2,
+    })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    peer = true
+    await expect(operationsDocumentRequest(request(), body)).rejects.toThrow(
+        "another window",
+    )
+    expect(fetchMock).toHaveBeenCalledTimes(4)
+})

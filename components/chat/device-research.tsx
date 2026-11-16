@@ -169,6 +169,16 @@ function ApprovalDialog() {
                 </DialogHeader>
                 {draft && (
                     <>
+                        {draft.incomplete && (
+                            <p
+                                role="alert"
+                                className="rounded border border-amber-500 p-2 text-amber-400"
+                            >
+                                Incomplete proposal — not a verified pinout.
+                                Unknown pins are omitted.{" "}
+                                {(draft.warnings || []).join(" ")}
+                            </p>
+                        )}
                         <label className="text-sm">
                             Symbol name
                             <Input
@@ -429,6 +439,37 @@ export function DeviceResearchPanel() {
                         >
                             {state.error}
                         </p>
+                    )}
+                    {state.incompleteCandidateId && (
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                disabled={
+                                    state.busy || !state.webEnabled || readonly
+                                }
+                                onClick={() =>
+                                    void draftDevice(
+                                        state.incompleteCandidateId!,
+                                        "",
+                                        true,
+                                    )
+                                }
+                            >
+                                Create anyway
+                            </Button>
+                            <Button
+                                variant="outline"
+                                disabled={state.busy}
+                                onClick={() =>
+                                    state.set({
+                                        incompleteCandidateId: null,
+                                        error: "",
+                                    })
+                                }
+                            >
+                                Dismiss
+                            </Button>
+                        </div>
                     )}
                     {state.result?.questions.map((q) => (
                         <p

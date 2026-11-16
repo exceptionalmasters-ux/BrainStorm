@@ -22,6 +22,7 @@ import {
     type SessionMetadata,
     type StoredMessage,
     saveSession,
+    sessionSaveFailureText,
 } from "@/lib/session-storage"
 import { STORAGE_KEYS } from "@/lib/storage"
 import type { DiagramVersion } from "@/stores/versions-store"
@@ -96,7 +97,7 @@ function notifySaveFailed(dict: Dictionary) {
     // Same id, so repeated failures update one toast instead of stacking.
     // The storage error goes into the record.
     toastUnexpectedError(
-        dict.errors.sessionSaveFailed,
+        sessionSaveFailureText(dict.errors.sessionSaveFailed),
         dict.report.button,
         lastSaveError(),
         {
@@ -130,6 +131,11 @@ export function useSessionManager(
     const urlChangeSequenceRef = useRef(0)
     // The chat on screen, read by saves that run after a render or a wait
     const currentSessionRef = useRef<ChatSession | null>(null)
+    const provisionalCreationRef = useRef<{
+        generation: number
+        asNew: boolean
+        session: ChatSession
+    } | null>(null)
     // Goes up each time another chat is put on screen (creating the
     // session of the chat on screen does not count)
     const chatGenerationRef = useRef(0)
@@ -388,7 +394,11 @@ export function useSessionManager(
                 if (!currentSession) {
                     // Create a new session if none exists
                     const newSession: ChatSession = {
-                        ...createEmptySession(),
+                        ...(provisionalCreationRef.current?.generation ===
+                            generation &&
+                        provisionalCreationRef.current.asNew === asNew
+                            ? provisionalCreationRef.current.session
+                            : createEmptySession()),
                         messages: data.messages,
                         xmlSnapshots: data.xmlSnapshots,
                         diagramXml: data.diagramXml,
@@ -396,12 +406,18 @@ export function useSessionManager(
                         versions: data.versions,
                         title: data.title || extractTitle(data.messages),
                     }
+                    provisionalCreationRef.current = {
+                        generation,
+                        asNew,
+                        session: newSession,
+                    }
                     // Without a stored session, keep no session id (it would end
                     // up in the URL and point to nothing after a reload)
                     if (!(await saveSession(newSession))) {
                         notifySaveFailed(dict)
                         return false
                     }
+                    provisionalCreationRef.current = null
                     savedSeqRef.current = seq
                     const deleted = await enforceSessionLimit(
                         () => openingSessionRef.current?.id,

@@ -13,6 +13,75 @@ export const MAX_SESSIONS = 50
 // Types
 const remoteRevisions = new Map<string, number>()
 const listedRevisions = new Map<string, number>()
+const remoteSaveQueues = new Map<string, Promise<boolean>>()
+const pendingRemoteSaves = new Map<
+    string,
+    { json: string; expectedRevision: number; revisionId: string }
+>()
+
+/** Keep a logical write's UUID and exact bytes until acknowledged. A retry must
+ * finish that write before sending newer edits, without rebasing over a peer. */
+function saveRemoteSession(session: ChatSession): Promise<boolean> {
+    const json = JSON.stringify(session)
+    const run = async () => {
+        const write = async (pending: {
+            json: string
+            expectedRevision: number
+            revisionId: string
+        }) => {
+            const result = await operationsRequest<{ revision: number }>(
+                "save",
+                {
+                    session: JSON.parse(pending.json),
+                    expectedRevision: pending.expectedRevision,
+                    revisionId: pending.revisionId,
+                },
+            )
+            if (!Number.isSafeInteger(result?.revision) || result.revision < 1)
+                throw new Error(
+                    "Operations returned an invalid save acknowledgement. Keep the drawing open and retry.",
+                )
+            remoteRevisions.set(session.id, result.revision)
+            pendingRemoteSaves.delete(session.id)
+        }
+        const pending = pendingRemoteSaves.get(session.id)
+        if (pending) {
+            await write(pending)
+            if (pending.json === json) return true
+        }
+        const next = {
+            json,
+            expectedRevision: remoteRevisions.get(session.id) ?? 0,
+            revisionId: crypto.randomUUID(),
+        }
+        pendingRemoteSaves.set(session.id, next)
+        await write(next)
+        return true
+    }
+    const operation = (
+        remoteSaveQueues.get(session.id) ?? Promise.resolve(true)
+    )
+        .catch(() => false)
+        .then(run)
+    remoteSaveQueues.set(session.id, operation)
+    const done = () => {
+        if (remoteSaveQueues.get(session.id) === operation)
+            remoteSaveQueues.delete(session.id)
+    }
+    void operation.then(done, done)
+    return operation
+}
+
+export function sessionSaveFailureText(fallback: string): string {
+    if (!isOperationsMode()) return fallback
+    const message =
+        saveError instanceof Error
+            ? saveError.message
+            : "Check your Operations connection and retry."
+    if (/changed in another window|newer.*version|conflict/i.test(message))
+        return "Operations has a newer saved version of this drawing. Your changes remain open. Use File → Save As to keep them as a separate drawing, or compare with the saved version."
+    return `Could not save to Operations. Your drawing remains open. ${message.slice(0, 600)}`
+}
 
 export interface ChatSession {
     id: string
@@ -186,15 +255,9 @@ export async function saveSession(session: ChatSession): Promise<boolean> {
     if (!isIndexedDBAvailable()) return false
     try {
         if (isOperationsMode()) {
-            const saved = await operationsRequest<{ revision: number }>(
-                "save",
-                {
-                    session,
-                    expectedRevision: remoteRevisions.get(session.id) ?? 0,
-                },
-            )
-            remoteRevisions.set(session.id, saved.revision)
-            return true
+            const saved = await saveRemoteSession(session)
+            toast.dismiss("session-save-failed")
+            return saved
         }
         const db = await getDB()
         await db.put(STORE_NAME, session)

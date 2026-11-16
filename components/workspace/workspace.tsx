@@ -187,13 +187,7 @@ function WorkspaceLayout() {
         !isRealDiagram(chartXML) &&
         !heroDismissed
 
-    // Phones: show the canvas while the AI draws and when a new version
-    // lands, so the result is visible; the chat tab gets a dot meanwhile
-    const isBusy = engine.isBusy
-    useEffect(() => {
-        if (isMobile && isBusy) setMobileView("canvas")
-    }, [isMobile, isBusy, setMobileView])
-
+    // The phone keeps the user's chosen view while a reply runs.
     // ⌘B toggles the panel; ⌘/ asks the AI about the selection
     useEffect(() => {
         const handle = (event: KeyboardEvent) => {
