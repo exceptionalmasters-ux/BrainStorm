@@ -1,8 +1,6 @@
 import {
-    ChevronDown,
     Download,
     FilePlus,
-    LayoutGrid,
     MessageSquareDashed,
     PanelRightClose,
     Settings,
@@ -35,7 +33,6 @@ import { useChatEngine } from "./chat-engine"
 import { Composer } from "./composer"
 import { DeviceResearchPanel } from "./device-research"
 import { MessageList } from "./message-list"
-import { SessionMenu, useSessionTitle } from "./session-menu"
 
 const DEBUG = process.env.NODE_ENV === "development"
 
@@ -97,7 +94,7 @@ function EmptyThread() {
 /** The floating chat panel: header, versions, conversation, message box */
 export function ChatPanel({
     mobile = false,
-    onOpenFile,
+    onOpenFile: _onOpenFile,
 }: {
     mobile?: boolean
     onOpenFile: () => void
@@ -107,7 +104,6 @@ export function ChatPanel({
     const engine = useChatEngine()
     const { loadDiagram, isDrawioReady } = useDiagram()
     const setSaveDialogOpen = useUiStore((s) => s.setSaveDialogOpen)
-    const title = useSessionTitle()
     const panelWidth = usePanelWidth()
     const openSettings = useUiStore((s) => s.openSettings)
     const setPanelOpen = useUiStore((s) => s.setPanelOpen)
@@ -147,33 +143,6 @@ export function ChatPanel({
         >
             <header className="@container flex h-[52px] shrink-0 items-center gap-1 pr-12 pl-3">
                 <BrandMark />
-                {/* The title, framed with a grid icon so it reads as the way
-                    to the saved diagrams (its menu) */}
-                <Tooltip>
-                    <SessionMenu onOpenFile={onOpenFile}>
-                        <TooltipTrigger asChild>
-                            <button
-                                type="button"
-                                className={cn(
-                                    headerButtonClass,
-                                    "ml-1 min-w-0 shrink",
-                                )}
-                                data-testid="session-title"
-                            >
-                                {/* Only the title gives way in a narrow
-                                    header */}
-                                <LayoutGrid className="shrink-0" />
-                                <span className="truncate text-[15px] font-semibold tracking-[-0.01em]">
-                                    {title}
-                                </span>
-                                <ChevronDown className="shrink-0" />
-                            </button>
-                        </TooltipTrigger>
-                    </SessionMenu>
-                    <TooltipContent side="bottom">
-                        {dict.nav.diagrams}
-                    </TooltipContent>
-                </Tooltip>
                 <div className="ml-auto flex shrink-0 items-center">
                     {isDrawioReady && (
                         // The tooltip of the buttons next to it, also for

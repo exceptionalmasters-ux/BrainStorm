@@ -181,8 +181,7 @@ for (const withBrief of [true, false]) {
                 "Drawing from brief.drawio",
             )
         } else {
-            await expect(popup.getByTestId("chat-panel")).toHaveCount(0)
-            await popup.getByTestId("show-panel").click()
+            await expect(popup.getByTestId("chat-panel")).toBeVisible()
             await expect(prompt).toHaveValue("")
         }
         await expect(
@@ -264,7 +263,7 @@ for (const withBrief of [true, false]) {
             await page.evaluate(() => {
                 ;(window as any).suspendBridge = true
             })
-        await popup.getByTestId("drawing-create-rectangle").click()
+        await popup.getByTestId("drawing-create-text").click()
         await expect
             .poll(() => page.evaluate(() => (window as any).records.size))
             .toBe(1)
@@ -364,9 +363,7 @@ for (const withBrief of [true, false]) {
             await popup.getByTestId("toolbox-emc-library").click()
             const library = popup.getByTestId("emc-library-panel")
             await expect(library).toBeVisible()
-            await library
-                .getByRole("button", { name: "Insert", exact: true })
-                .click()
+            await library.getByRole("button", { name: /^Insert / }).click()
             await library
                 .getByRole("button", { name: "Close EMC library" })
                 .click()

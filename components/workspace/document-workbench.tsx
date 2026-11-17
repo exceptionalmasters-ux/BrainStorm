@@ -3,6 +3,7 @@
 import { Plus, X } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
+import { EmcConnection } from "@/components/workspace/emc-connection"
 import { Workspace } from "@/components/workspace/workspace"
 import {
     WORKBENCH_PROTOCOL,
@@ -92,7 +93,7 @@ export function DocumentWorkbench({
                             .catch((e) => setError(e.message))
                     }
                 >
-                    Connect to EMC
+                    Reconnect EMC
                 </button>
             </div>
         )
@@ -105,13 +106,36 @@ function Workbench() {
         { id: "root", title: "Untitled diagram", sessionId: null, busy: false },
     ])
     const [active, setActive] = useState("root")
+    const [exited, setExited] = useState(false)
+    const exiting = useRef(false)
+    useEffect(() => {
+        const exit = () => {
+            if (
+                !window.confirm(
+                    "Exit BrainStorm and discard unsaved changes in all open drawings? Previously saved changes remain saved.",
+                )
+            )
+                return
+            exiting.current = true
+            window.dispatchEvent(new Event("brainstorm-discard-exit"))
+            for (const frame of frames.current.values())
+                frame.contentWindow?.postMessage(
+                    { protocol: WORKBENCH_PROTOCOL, type: "discard-exit" },
+                    window.location.origin,
+                )
+            setExited(true)
+            setTimeout(() => window.close(), 100)
+        }
+        window.addEventListener("brainstorm-exit", exit)
+        return () => window.removeEventListener("brainstorm-exit", exit)
+    }, [])
     const tabsRef = useRef(tabs)
     tabsRef.current = tabs
     const activeRef = useRef(active)
     activeRef.current = active
     useEffect(() => {
         const warn = (event: BeforeUnloadEvent) => {
-            if (tabsRef.current.some((tab) => tab.dirty)) {
+            if (!exiting.current && tabsRef.current.some((tab) => tab.dirty)) {
                 event.preventDefault()
                 event.returnValue = ""
             }
@@ -187,6 +211,10 @@ function Workbench() {
         if (event.type === "new") add()
         else if (event.type === "open") add(event.sessionId)
         else if (event.type === "import") add(null, event.file)
+        else if (event.type === "reconnect")
+            window.dispatchEvent(new Event("emc-request-reconnect"))
+        else if (event.type === "exit")
+            window.dispatchEvent(new Event("brainstorm-exit"))
         else if (event.type === "close") remove(id)
         else if (event.type === "state")
             setTabs((previous) =>
@@ -449,6 +477,12 @@ function Workbench() {
         if (tab.id !== "root" && !urls.current.has(tab.id))
             urls.current.set(tab.id, frameUrl(tab))
 
+    if (exited)
+        return (
+            <div className="fixed inset-0 grid place-content-center bg-canvas text-foreground">
+                Editor closed. You can close this tab.
+            </div>
+        )
     return (
         <div
             className="fixed inset-0 flex flex-col bg-canvas"
@@ -457,19 +491,7 @@ function Workbench() {
             {contextLabel && (
                 <div className="shrink-0 border-b border-border px-3 py-1 text-xs text-muted-foreground">
                     Operations · {contextLabel}
-                    <button
-                        className="ml-3 rounded border px-2 py-1"
-                        type="button"
-                        onClick={() =>
-                            void reconnectOperations()
-                                .then(() =>
-                                    toast.success("EMC session connected"),
-                                )
-                                .catch((e) => toast.error(e.message))
-                        }
-                    >
-                        Reconnect EMC
-                    </button>
+                    <EmcConnection />
                 </div>
             )}
             <div className="relative min-h-0 flex-1">

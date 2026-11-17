@@ -32,7 +32,7 @@ import {
 import { useChatEngine } from "./chat-engine"
 import { openSourceAttachment, SourceFiles } from "./source-files"
 
-function SymbolPreview({ symbol }: { symbol: EmcSymbol }) {
+export function SymbolPreview({ symbol }: { symbol: EmcSymbol }) {
     const layout = symbolLayout(symbol)
     return (
         <svg

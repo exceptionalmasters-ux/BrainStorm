@@ -64,6 +64,9 @@ test("format shortcuts reveal native Style, Text and Arrange tabs for the select
     await page.getByTestId("editor-redo").click()
     await expect.poll(savedXml).toContain("fillcolor=#ff0000")
     await page.getByTestId("drawing-tool-strokeColor").click()
+    await page
+        .getByRole("menuitem", { name: "Line colour…", exact: true })
+        .click()
     const lines = canvas
         .locator("div.mxWindow")
         .filter({ hasText: "Line Color" })

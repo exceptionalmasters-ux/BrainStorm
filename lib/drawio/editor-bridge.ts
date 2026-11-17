@@ -43,12 +43,76 @@ type FrameWindow = any
 let ui: EditorUi | null = null
 let win: FrameWindow | null = null
 
-export function insertEmcSymbol(symbol: EmcSymbol) {
+export function insertEmcSymbol(
+    symbol: EmcSymbol,
+    clientPoint?: { x: number; y: number },
+) {
     if (getOperationsContext()?.readOnly || useCanvasStore.getState().isBusy)
         return false
-    const inserted = insertEmcSymbolNative(ui, win, symbol)
+    let position: { x: number; y: number } | undefined
+    if (clientPoint) {
+        const graph = ui?.editor?.graph
+        const frame = win?.frameElement?.getBoundingClientRect?.()
+        if (
+            !graph ||
+            !frame ||
+            clientPoint.x < frame.left ||
+            clientPoint.x > frame.right ||
+            clientPoint.y < frame.top ||
+            clientPoint.y > frame.bottom
+        )
+            return false
+        const rect = graph.container.getBoundingClientRect()
+        position = {
+            x:
+                (clientPoint.x -
+                    frame.left -
+                    rect.left +
+                    graph.container.scrollLeft) /
+                    graph.view.scale -
+                graph.view.translate.x,
+            y:
+                (clientPoint.y -
+                    frame.top -
+                    rect.top +
+                    graph.container.scrollTop) /
+                    graph.view.scale -
+                graph.view.translate.y,
+        }
+    }
+    const inserted = insertEmcSymbolNative(ui, win, symbol, position)
     syncAll()
     return inserted
+}
+
+/** Native style transactions preserve undo, selection and autosave. */
+export function setSelectedLineStyle(
+    key: "dashed" | "dashPattern" | "strokeWidth",
+    value: string,
+    pattern?: string,
+) {
+    const graph = ui?.editor?.graph
+    if (
+        !graph?.isEnabled?.() ||
+        getOperationsContext()?.readOnly ||
+        useCanvasStore.getState().isBusy ||
+        graph.isSelectionEmpty()
+    )
+        return false
+    graph.model.beginUpdate()
+    try {
+        graph.setCellStyles(key, value, graph.getSelectionCells())
+        if (key === "dashed" && pattern)
+            graph.setCellStyles(
+                "dashPattern",
+                pattern,
+                graph.getSelectionCells(),
+            )
+    } finally {
+        graph.model.endUpdate()
+    }
+    syncAll()
+    return true
 }
 
 export function editorActionState(name: string) {

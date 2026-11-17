@@ -118,12 +118,17 @@ export function emcPinLabel(pin: EmcSymbol["pins"][number]) {
         : `${pin.number} ${pin.name}`
 }
 /** Native cells, not remotely supplied XML, scripts or raster graphics. */
-export function insertEmcSymbolNative(ui: any, win: any, symbol: EmcSymbol) {
+export function insertEmcSymbolNative(
+    ui: any,
+    win: any,
+    symbol: EmcSymbol,
+    position?: { x: number; y: number },
+) {
     const valid = validateEmcSymbol(symbol)
     const graph = ui?.editor?.graph
     if (!valid || !graph?.isEnabled?.() || !win?.mxPoint) return false
     const layout = symbolLayout(symbol)
-    const point = graph.getFreeInsertPoint()
+    const point = position || graph.getFreeInsertPoint()
     let root: any
     graph.stopEditing(false)
     graph.model.beginUpdate()

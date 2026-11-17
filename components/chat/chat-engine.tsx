@@ -1530,8 +1530,8 @@ export function ChatEngineProvider({
         const brief = context?.brief?.trim() || ""
         const view = useUiStore.getState()
         view.setHeroDismissed(true)
-        view.setPanelOpen(!!brief)
-        view.setMobileView(brief ? "chat" : "canvas")
+        view.setPanelOpen(true)
+        view.setMobileView("chat")
         if (brief && !context?.readOnly) {
             if (!inputRef.current)
                 setInput(`${dict.lobby.briefPrompt}\n\n${brief}`)
@@ -2885,6 +2885,13 @@ export function ChatEngineProvider({
     })
     workbenchActions.current = { closeDrawing, openDiagramFile, flushDocument }
     useEffect(() => {
+        const discardExit = () => {
+            leavingRef.current = true
+            if (saveDebounceRef.current) clearTimeout(saveDebounceRef.current)
+            useDocumentSaveStore.setState({ autoSave: false, dirty: false })
+            unsavedCheckRef.current = () => false
+            stop()
+        }
         const close = () => {
             void workbenchActions.current.closeDrawing()
         }
@@ -2900,6 +2907,7 @@ export function ChatEngineProvider({
                 event.data?.protocol !== WORKBENCH_PROTOCOL
             )
                 return
+            if (event.data.type === "discard-exit") discardExit()
             if (event.data.type === "close-request") close()
             if (
                 event.data.type === "load-file" &&
@@ -2919,6 +2927,7 @@ export function ChatEngineProvider({
                     ),
                 )
         }
+        window.addEventListener("brainstorm-discard-exit", discardExit)
         window.addEventListener("brainstorm-close-document", close)
         window.addEventListener("brainstorm-flush-document", flush)
         window.addEventListener("message", receive)
@@ -2932,6 +2941,7 @@ export function ChatEngineProvider({
                 window.location.origin,
             )
         return () => {
+            window.removeEventListener("brainstorm-discard-exit", discardExit)
             window.removeEventListener("brainstorm-close-document", close)
             window.removeEventListener("brainstorm-flush-document", flush)
             window.removeEventListener("message", receive)

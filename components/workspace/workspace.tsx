@@ -31,6 +31,7 @@ import { useDictionary } from "@/hooks/use-dictionary"
 import { usePanelWidth } from "@/hooks/use-panel-width"
 import {
     isCurrentDocumentActive,
+    notifyWorkbench,
     WORKBENCH_PROTOCOL,
 } from "@/lib/document-workbench"
 import {
@@ -179,8 +180,8 @@ function WorkspaceLayout() {
     useEffect(() => {
         if (new URLSearchParams(window.location.search).get("blank") === "1") {
             setHeroDismissed(true)
-            setPanelOpen(false)
-            setMobileView("canvas")
+            setPanelOpen(true)
+            setMobileView("chat")
         }
     }, [setHeroDismissed, setPanelOpen, setMobileView])
 
@@ -355,6 +356,7 @@ function WorkspaceLayout() {
             <div className="absolute inset-0 flex flex-col">
                 {!showHero && (
                     <EditorHeader
+                        isMobile={isMobile}
                         onOpen={() => fileInputRef.current?.click()}
                         saveLabel={isOperationsMode() ? "Save" : undefined}
                         onSave={() => {
@@ -383,6 +385,7 @@ function WorkspaceLayout() {
                         onClose={() => {
                             void engine.closeDrawing()
                         }}
+                        onExit={() => notifyWorkbench({ type: "exit" })}
                         onSettings={() =>
                             useUiStore.getState().openSettings("general")
                         }
@@ -426,6 +429,9 @@ function WorkspaceLayout() {
                                         right: isMobile ? 0 : canvasRight,
                                     }}
                                 >
+                                    {isMobile && (
+                                        <DrawingToolbar section="primary" />
+                                    )}
                                     <DrawingToolbar />
                                 </div>
                             )}
@@ -447,7 +453,7 @@ function WorkspaceLayout() {
                                       )
                             }
                             style={{
-                                top: showHero ? 0 : 40,
+                                top: showHero ? 0 : isMobile ? 64 : 32,
                                 ...(isMobile ? {} : { right: canvasRight }),
                             }}
                             hideOverlays={heroCoversCanvas}

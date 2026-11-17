@@ -1,6 +1,7 @@
 import { type DBSchema, type IDBPDatabase, openDB } from "idb"
 import { nanoid } from "nanoid"
 import { toast } from "sonner"
+import { notifyWorkbench } from "@/lib/document-workbench"
 import { isOperationsMode, operationsRequest } from "@/lib/operations-bridge"
 import type { DiagramVersion } from "@/stores/versions-store"
 
@@ -267,6 +268,21 @@ export async function saveSession(session: ChatSession): Promise<boolean> {
     } catch (error) {
         console.error("Failed to save session:", error)
         saveError = error
+        if (
+            isOperationsMode() &&
+            /reconnect|expired|session|respond|401/i.test(String(error))
+        ) {
+            toast.error(sessionSaveFailureText(""), {
+                id: "emc-reconnect-required",
+                duration: 15000,
+                action: {
+                    label: "Reconnect EMC",
+                    onClick: () => {
+                        notifyWorkbench({ type: "reconnect" })
+                    },
+                },
+            })
+        }
         dbPromise = null
         return false
     }

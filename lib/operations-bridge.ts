@@ -33,6 +33,18 @@ export interface OperationsAuthorization {
 }
 let authorization: OperationsAuthorization | null = null
 let authorizationUntil = 0
+export type EmcConnectionState = "connected" | "reconnect" | "connecting"
+let connectionState: EmcConnectionState = "reconnect"
+export const getEmcConnectionState = () =>
+    connectionState === "connected" &&
+    (!authorization || Date.now() >= authorizationUntil)
+        ? "reconnect"
+        : connectionState
+function connection(value: EmcConnectionState) {
+    connectionState = value
+    if (typeof window !== "undefined")
+        window.dispatchEvent(new Event("emc-connection-state"))
+}
 let authorizationGeneration = 0
 let credentialGeneration = 0
 let authorizationPending: Promise<OperationsAuthorization> | null = null
@@ -56,7 +68,8 @@ function rememberAuthorization(value: OperationsAuthorization | undefined) {
         /* Legacy parents may not supply an expiry; never cache such tokens. */
     }
     authorization = value
-    authorizationUntil = Math.min(expires - 30000, Date.now() + 3600000)
+    connection("connected")
+    authorizationUntil = expires
 }
 export async function operationsAuthorization(): Promise<OperationsAuthorization> {
     if (authorization && Date.now() < authorizationUntil) return authorization
@@ -76,6 +89,10 @@ export async function operationsAuthorization(): Promise<OperationsAuthorization
                     )
                 rememberAuthorization(value)
                 return value
+            })
+            .catch((error) => {
+                connection("reconnect")
+                throw error
             })
             .finally(() => {
                 if (
@@ -117,12 +134,18 @@ export function reconnectOperations(): Promise<
     const popup = window.open(url.href, "_blank", "popup,width=620,height=600")
     if (!popup)
         return Promise.reject(new Error("Allow popups to reconnect to EMC."))
+    connection("connecting")
     reconnecting = new Promise((resolve, reject) => {
         const clean = () => {
             clearTimeout(timer)
             clearInterval(closedCheck)
             window.removeEventListener("message", receive)
             reconnecting = null
+            connection(
+                authorization && Date.now() < authorizationUntil
+                    ? "connected"
+                    : "reconnect",
+            )
         }
         const receive = (event: MessageEvent) => {
             if (
@@ -270,6 +293,7 @@ export async function connectOperations(
         ) {
             authorization = null
             authorizationUntil = 0
+            connection("reconnect")
         }
         return response
     }
@@ -326,6 +350,15 @@ export function operationsRequest<T>(
     if (
         ["list", "get", "save", "delete"].includes(method) &&
         authorization &&
+        Date.now() >= authorizationUntil
+    ) {
+        return operationsAuthorization().then(() =>
+            operationsRequest<T>(method, payload),
+        )
+    }
+    if (
+        ["list", "get", "save", "delete"].includes(method) &&
+        authorization &&
         Date.now() < authorizationUntil
     ) {
         const auth = authorization
@@ -355,6 +388,7 @@ export function operationsRequest<T>(
                     ) {
                         authorization = null
                         authorizationUntil = 0
+                        connection("reconnect")
                     }
                     throw error
                 }
@@ -388,6 +422,7 @@ export function operationsRequest<T>(
         }
         const timer = setTimeout(() => {
             cleanup()
+            connection("reconnect")
             reject(
                 new Error(
                     "Operations did not respond. Keep this drawing open and use Reconnect EMC in the main editor window, then retry.",

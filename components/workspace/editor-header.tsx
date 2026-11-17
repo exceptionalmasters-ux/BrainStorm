@@ -1,5 +1,7 @@
 import {
+    ChevronDown,
     FileUp,
+    LayoutGrid,
     PanelRightClose,
     PanelRightOpen,
     Save,
@@ -11,6 +13,7 @@ import { toast } from "sonner"
 import { SessionMenu, useSessionTitle } from "@/components/chat/session-menu"
 import { Switch } from "@/components/ui/switch"
 import { BrandMark } from "@/components/workspace/brand-mark"
+import { DrawingToolbar } from "@/components/workspace/drawing-toolbar"
 import { IconButton } from "@/components/workspace/icon-button"
 import { useDictionary } from "@/hooks/use-dictionary"
 import { usePathLocale } from "@/hooks/use-path-locale"
@@ -29,6 +32,7 @@ type Item = {
     disabled?: boolean
 }
 export function EditorHeader({
+    isMobile = false,
     onOpen,
     onSave,
     saveLabel,
@@ -36,11 +40,13 @@ export function EditorHeader({
     onSaveAs,
     onNew,
     onClose,
+    onExit,
     onSettings,
     onAssistant,
     assistantOpen,
     onReset,
 }: {
+    isMobile?: boolean
     onOpen: () => void
     onSave: () => void
     saveLabel?: string
@@ -48,6 +54,7 @@ export function EditorHeader({
     onSaveAs: () => void
     onNew: () => void
     onClose: () => void
+    onExit: () => void
     onSettings: () => void
     onAssistant: () => void
     assistantOpen: boolean
@@ -121,6 +128,7 @@ export function EditorHeader({
                     disabled: busy,
                     testId: "editor-close-drawing",
                 },
+                { label: "Exit", run: onExit, testId: "editor-exit" },
                 native("pageSetup", "Page setup…"),
                 native("print", "Print…"),
             ],
@@ -156,6 +164,19 @@ export function EditorHeader({
                 native("ruler", "Rulers"),
                 native("pageView", "Page view"),
                 native("pageTabs", "Page tabs"),
+                native("format", "Properties"),
+                native("layers", "Layers"),
+                native("outline", "Overview"),
+                native("toggleShapes", "Shapes panel"),
+                native("search", "Search shapes"),
+                native("scratchpad", "Scratchpad"),
+                native("tags", "Tags"),
+                native("comments", "Comments"),
+                native("pageScale", "Page scale"),
+                native("tooltips", "Tooltips"),
+                native("animations", "Animations"),
+                native("connectionArrows", "Connection arrows"),
+                native("connectionPoints", "Connection points"),
             ],
         },
         {
@@ -211,9 +232,6 @@ export function EditorHeader({
                     run: onAssistant,
                     selected: assistantOpen,
                 },
-                native("format", "Properties"),
-                native("layers", "Layers"),
-                native("outline", "Overview"),
                 {
                     label: t.fullscreen,
                     disabled:
@@ -278,11 +296,18 @@ export function EditorHeader({
                     <button
                         ref={history}
                         type="button"
-                        className="min-w-0 max-w-[50vw] truncate text-sm font-semibold"
+                        className="inline-flex min-w-0 max-w-[50vw] items-center gap-1 text-sm font-semibold"
                         onClick={() => setActive(null)}
-                        data-testid="editor-file-title"
+                        data-testid="session-title"
                     >
-                        {title}.drawio
+                        <LayoutGrid className="size-4 shrink-0" />
+                        <span
+                            className="min-w-0 truncate"
+                            data-testid="editor-file-title"
+                        >
+                            {title}.drawio
+                        </span>
+                        <ChevronDown className="size-4 shrink-0" />
                     </button>
                 </SessionMenu>
                 <label
@@ -374,7 +399,7 @@ export function EditorHeader({
             <div className="flex h-8 items-center gap-1 border-t border-border px-2">
                 <div
                     aria-label={t.menuBar}
-                    className="flex min-w-0 flex-1 overflow-x-auto"
+                    className="flex min-w-0 overflow-x-auto"
                     role="menubar"
                 >
                     {menus.map((menu, index) => (
@@ -420,6 +445,11 @@ export function EditorHeader({
                         </button>
                     ))}
                 </div>
+                {!isMobile && (
+                    <div className="min-w-0 shrink-0">
+                        <DrawingToolbar section="primary" />
+                    </div>
+                )}
             </div>
             {active !== null && (
                 <div

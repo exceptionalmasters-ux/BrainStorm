@@ -3,7 +3,7 @@ import { getAssetUrl } from "@/lib/base-path"
 export default function manifest(): MetadataRoute.Manifest {
     return {
         name: "BrainStorm",
-        short_name: "AIDraw.io",
+        short_name: "BrainStorm",
         description:
             "Create AWS architecture diagrams, flowcharts, and technical diagrams using AI. Free online tool integrating draw.io with AI assistance for professional diagram creation.",
         start_url: getAssetUrl("/"),
