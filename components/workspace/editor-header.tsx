@@ -177,6 +177,20 @@ export function EditorHeader({
                 native("animations", "Animations"),
                 native("connectionArrows", "Connection arrows"),
                 native("connectionPoints", "Connection points"),
+                {
+                    label: t.fullscreen,
+                    disabled:
+                        typeof document !== "undefined" &&
+                        !document.documentElement.requestFullscreen,
+                    run: () => {
+                        const change = document.fullscreenElement
+                            ? document.exitFullscreen()
+                            : document.documentElement.requestFullscreen()
+                        void change.catch(() =>
+                            toast.info(t.commandUnavailable),
+                        )
+                    },
+                },
             ],
         },
         {
@@ -231,20 +245,6 @@ export function EditorHeader({
                     label: dict.nav.aiChat,
                     run: onAssistant,
                     selected: assistantOpen,
-                },
-                {
-                    label: t.fullscreen,
-                    disabled:
-                        typeof document !== "undefined" &&
-                        !document.documentElement.requestFullscreen,
-                    run: () => {
-                        const change = document.fullscreenElement
-                            ? document.exitFullscreen()
-                            : document.documentElement.requestFullscreen()
-                        void change.catch(() =>
-                            toast.info(t.commandUnavailable),
-                        )
-                    },
                 },
                 { label: t.resetLayout, run: onReset },
             ],
