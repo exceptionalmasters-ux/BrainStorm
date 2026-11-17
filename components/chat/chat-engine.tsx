@@ -2890,6 +2890,8 @@ export function ChatEngineProvider({
             if (saveDebounceRef.current) clearTimeout(saveDebounceRef.current)
             useDocumentSaveStore.setState({ autoSave: false, dirty: false })
             unsavedCheckRef.current = () => false
+            sessionStorage.removeItem(inputStorageKey())
+            setInput("")
             stop()
         }
         const close = () => {

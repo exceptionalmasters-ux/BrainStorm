@@ -290,7 +290,7 @@ export function EditorHeader({
             className="relative z-30 shrink-0 border-b border-primary/25 bg-card text-foreground"
             data-testid="editor-header"
         >
-            <div className="flex h-10 items-center gap-2 px-3">
+            <div className="flex h-10 items-center gap-2 overflow-x-auto px-3">
                 <BrandMark className="size-6 shrink-0 text-primary" />
                 <SessionMenu onOpenFile={onOpen}>
                     <button
