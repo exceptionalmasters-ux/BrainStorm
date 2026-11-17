@@ -1,5 +1,7 @@
 export const WORKBENCH_PROTOCOL = "brainstorm-documents/v1"
 export type WorkbenchEvent =
+    | { type: "reconnect" }
+    | { type: "exit" }
     | { type: "new" }
     | { type: "open"; sessionId: string }
     | { type: "import"; file: File }

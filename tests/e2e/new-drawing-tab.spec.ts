@@ -51,7 +51,7 @@ for (const entry of ["file", "history", "assistant", "phone"] as const) {
         await expect(
             child.frameLocator("iframe").getByText("Test Box", { exact: true }),
         ).toHaveCount(0)
-        await child.getByTestId("show-panel").click()
+        await expect(child.getByTestId("chat-panel")).toBeVisible()
         await expect(child.getByTestId("chat-input")).toHaveValue("")
         await child
             .getByTestId("chat-input")

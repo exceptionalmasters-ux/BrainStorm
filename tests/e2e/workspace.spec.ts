@@ -307,7 +307,13 @@ test.describe("Workspace", () => {
         for (const trigger of ["session-title", "composer-add"]) {
             await page.getByTestId(trigger).click()
             await expect(popup).toBeVisible()
-            await canvas.click({ position: { x: 10, y: 10 } })
+            // The file chooser now opens from the main header on the left.
+            // Click exposed canvas below it, rather than through the popup.
+            const exposed = await canvas.boundingBox()
+            expect(exposed).not.toBeNull()
+            await canvas.click({
+                position: { x: exposed!.width - 30, y: exposed!.height - 30 },
+            })
             await expect(popup).toHaveCount(0)
             // The focus stays in the canvas, where the keys go; a closed
             // menu gives it back to its button a moment after it is gone

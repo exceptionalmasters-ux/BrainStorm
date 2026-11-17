@@ -1,9 +1,9 @@
 import { Library, X } from "lucide-react"
-import { useEffect, useState } from "react"
-import { Button } from "@/components/ui/button"
+import { useEffect, useRef, useState } from "react"
+import { SymbolPreview } from "@/components/chat/device-research"
 import { Input } from "@/components/ui/input"
 import { insertEmcSymbol } from "@/lib/drawio/editor-bridge"
-import type { EmcSymbol } from "@/lib/emc-symbols"
+import type { EmcSymbol, LibrarySymbol } from "@/lib/emc-symbols"
 import { getOperationsContext, isOperationsMode } from "@/lib/operations-bridge"
 import { useCanvasStore } from "@/stores/canvas-store"
 import { emcAction, useDeviceResearch } from "@/stores/device-research-store"
@@ -101,44 +101,12 @@ export function EmcLibraryPanel() {
                             .includes(filter.toLowerCase()),
                     )
                     .map((symbol) => (
-                        <div
+                        <SymbolTile
                             key={symbol.id}
-                            className="flex items-center gap-2 rounded border p-2"
-                        >
-                            <span className="min-w-0 flex-1 break-words">
-                                {symbol.name}
-                                <br />
-                                {symbol.device} · {symbol.package}
-                            </span>
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                disabled={!canInsert || readonly || libraryBusy}
-                                onClick={async () => {
-                                    setLibraryBusy(true)
-                                    setLibraryError("")
-                                    try {
-                                        const data = await emcAction<{
-                                            symbol: EmcSymbol
-                                        }>("symbol", { id: symbol.id })
-                                        if (!insertEmcSymbol(data.symbol))
-                                            throw new Error(
-                                                "The canvas is not ready. Please retry.",
-                                            )
-                                    } catch (e) {
-                                        setLibraryError(
-                                            e instanceof Error
-                                                ? e.message
-                                                : "Could not insert symbol",
-                                        )
-                                    } finally {
-                                        setLibraryBusy(false)
-                                    }
-                                }}
-                            >
-                                Insert
-                            </Button>
-                        </div>
+                            symbol={symbol}
+                            disabled={!canInsert || !!readonly}
+                            onError={setLibraryError}
+                        />
                     ))}
             </div>
         </section>
@@ -163,7 +131,123 @@ export function EmcLibraryButton({ onOpen }: { onOpen: () => void }) {
             }}
             className={`flex size-10 shrink-0 items-center justify-center rounded-lg border hover:border-primary hover:text-primary ${libraryOpen ? "border-primary bg-primary/10 text-primary" : "border-transparent"}`}
         >
-            <Library aria-hidden="true" className="size-5" />
+            <span aria-hidden="true" className="text-sm font-bold">
+                EM
+            </span>
         </button>
+    )
+}
+
+function SymbolTile({
+    symbol,
+    disabled,
+    onError,
+}: {
+    symbol: LibrarySymbol
+    disabled: boolean
+    onError: (message: string) => void
+}) {
+    const [definition, setDefinition] = useState<EmcSymbol | null>(null)
+    const [loading, setLoading] = useState(false)
+    const [dragging, setDragging] = useState(false)
+    const dragged = useRef(false)
+    const start = useRef<{ x: number; y: number } | null>(null)
+    useEffect(() => {
+        const controller = new AbortController()
+        void emcAction<{ symbol: EmcSymbol }>(
+            "symbol",
+            { id: symbol.id },
+            controller.signal,
+        )
+            .then((data) => {
+                if (!controller.signal.aborted) setDefinition(data.symbol)
+            })
+            .catch((e) => {
+                if (!controller.signal.aborted) onError(e.message)
+            })
+        return () => controller.abort()
+    }, [symbol.id, onError])
+    const insert = () => {
+        if (dragged.current) {
+            dragged.current = false
+            return
+        }
+        if (!definition || disabled) return
+        setLoading(true)
+        if (!insertEmcSymbol(definition))
+            onError("The canvas is not ready. Please retry.")
+        setLoading(false)
+    }
+    return (
+        <>
+            <button
+                type="button"
+                disabled={disabled || !definition || loading}
+                className="inline-flex w-[calc(50%-4px)] touch-none flex-col items-center gap-1 rounded border p-2 align-top hover:border-primary disabled:opacity-40"
+                title={`${symbol.name} · ${symbol.package}`}
+                aria-label={`Insert ${symbol.device || symbol.name}`}
+                onClick={insert}
+                onPointerDown={(e) => {
+                    if (definition && !disabled) {
+                        start.current = { x: e.clientX, y: e.clientY }
+                        e.currentTarget.setPointerCapture(e.pointerId)
+                    }
+                }}
+                onPointerMove={(e) => {
+                    if (
+                        start.current &&
+                        Math.hypot(
+                            e.clientX - start.current.x,
+                            e.clientY - start.current.y,
+                        ) > 8
+                    )
+                        setDragging(true)
+                }}
+                onPointerCancel={() => {
+                    start.current = null
+                    setDragging(false)
+                }}
+                onPointerUp={(e) => {
+                    const moved =
+                        start.current &&
+                        Math.hypot(
+                            e.clientX - start.current.x,
+                            e.clientY - start.current.y,
+                        ) > 8
+                    start.current = null
+                    dragged.current = !!moved
+                    if (moved && definition && !disabled) {
+                        e.preventDefault()
+                        insertEmcSymbol(definition, {
+                            x: e.clientX,
+                            y: e.clientY,
+                        })
+                    }
+                    setDragging(false)
+                }}
+            >
+                <span className="flex h-24 w-full items-center justify-center pointer-events-none">
+                    {definition ? (
+                        <SymbolPreview symbol={definition} />
+                    ) : (
+                        "Loading…"
+                    )}
+                </span>
+                <span className="w-full truncate text-center text-xs">
+                    {symbol.device || symbol.name}
+                </span>
+            </button>
+            {dragging && (
+                <div
+                    className="fixed inset-0 z-[100] cursor-copy"
+                    style={{ pointerEvents: "none" }}
+                    aria-hidden="true"
+                >
+                    <div className="absolute right-3 top-3 rounded border bg-card p-2 text-xs">
+                        Drop on drawing: {symbol.device}
+                    </div>
+                </div>
+            )}
+        </>
     )
 }

@@ -32,7 +32,7 @@ import {
 import { useChatEngine } from "./chat-engine"
 import { openSourceAttachment, SourceFiles } from "./source-files"
 
-function SymbolPreview({ symbol }: { symbol: EmcSymbol }) {
+export function SymbolPreview({ symbol }: { symbol: EmcSymbol }) {
     const layout = symbolLayout(symbol)
     return (
         <svg
@@ -414,7 +414,7 @@ export function DeviceResearchPanel() {
                     }
                 }}
             >
-                From file · attachments
+                Create symbol from file
             </button>
             {fileMode && <SourceFiles readonly={!!readonly} />}
             {(expanded || state.busy || state.result || state.error) && (

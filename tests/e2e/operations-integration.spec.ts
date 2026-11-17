@@ -181,8 +181,7 @@ for (const withBrief of [true, false]) {
                 "Drawing from brief.drawio",
             )
         } else {
-            await expect(popup.getByTestId("chat-panel")).toHaveCount(0)
-            await popup.getByTestId("show-panel").click()
+            await expect(popup.getByTestId("chat-panel")).toBeVisible()
             await expect(prompt).toHaveValue("")
         }
         await expect(
@@ -264,7 +263,7 @@ for (const withBrief of [true, false]) {
             await page.evaluate(() => {
                 ;(window as any).suspendBridge = true
             })
-        await popup.getByTestId("drawing-create-rectangle").click()
+        await popup.getByTestId("drawing-create-text").click()
         await expect
             .poll(() => page.evaluate(() => (window as any).records.size))
             .toBe(1)
@@ -302,6 +301,32 @@ for (const withBrief of [true, false]) {
             await expect(popup.getByTestId("chat-panel")).toHaveClass(
                 /ring-red-500/,
             )
+            // A pending Web-only AI turn must not lock the manual drawing toolbar.
+            let releaseResearch: () => void = () => {}
+            const researchGate = new Promise<void>((resolve) => {
+                releaseResearch = resolve
+            })
+            const managedUrl =
+                "https://fzwiphplhspsoktugoqo.supabase.co/functions/v1/brainstorm-ai/responses"
+            await popup.route(
+                managedUrl,
+                async (route) => {
+                    await researchGate
+                    await route.abort()
+                },
+                { times: 1 },
+            )
+            const researchRequest = popup.waitForRequest(managedUrl)
+            await sendMessage(popup, "Research the exact fixture device")
+            await researchRequest
+            await expect(
+                popup.getByRole("button", { name: /Stop/ }),
+            ).toBeVisible()
+            await expect(popup.getByTestId("drawing-create-text")).toBeEnabled()
+            await expect(popup.getByTestId("drawing-tool-zoomIn")).toBeEnabled()
+            await popup.getByTestId("drawing-tool-zoomIn").click()
+            await popup.getByRole("button", { name: /Stop/ }).click()
+            releaseResearch()
             const search = popup.getByRole("textbox", { name: "Device search" })
             await search.fill("ARM")
             await popup
@@ -364,9 +389,7 @@ for (const withBrief of [true, false]) {
             await popup.getByTestId("toolbox-emc-library").click()
             const library = popup.getByTestId("emc-library-panel")
             await expect(library).toBeVisible()
-            await library
-                .getByRole("button", { name: "Insert", exact: true })
-                .click()
+            await library.getByRole("button", { name: /^Insert / }).click()
             await library
                 .getByRole("button", { name: "Close EMC library" })
                 .click()

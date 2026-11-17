@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { emcClientChat } from "@/lib/emc-client-chat"
 import {
     connectOperations,
+    getEmcConnectionState,
     getOperationsContext,
     OPERATIONS_PROTOCOL,
     operationsAuthorization,
@@ -69,6 +70,21 @@ function bootstrap(expiresAt = Date.now() + 600000) {
     return { host, auth }
 }
 describe("mobile Operations authorisation", () => {
+    it("uses a still-valid lease in its last 30 seconds without waking a suspended parent", async () => {
+        const { host, auth } = bootstrap(Date.now() + 20000)
+        disconnect = await connectOperations()
+        expect(await operationsAuthorization()).toEqual(auth)
+        expect(getEmcConnectionState()).toBe("connected")
+        expect(host.postMessage).toHaveBeenCalledTimes(1)
+    })
+    it("shows reconnect when the lease expires without discarding the drawing context", async () => {
+        const { auth } = bootstrap(Date.now() + 600000)
+        disconnect = await connectOperations()
+        vi.spyOn(Date, "now").mockReturnValue(auth.expiresAt + 1)
+        expect(getEmcConnectionState()).toBe("reconnect")
+        expect(getOperationsContext()?.label).toBe("Project")
+    })
+
     it("saves after the original Operations tab is closed", async () => {
         const fetchMock = vi.fn(async () => Response.json({ revision: 1 }))
         vi.stubGlobal("fetch", fetchMock)

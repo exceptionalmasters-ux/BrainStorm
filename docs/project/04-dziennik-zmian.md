@@ -2,6 +2,17 @@
 
 Najnowsze na górze. Starsze wpisy zachowują historyczne ograniczenia i wyniki.
 
+## 2026-11-17 — editor refinements (issue #19)
+
+- Assistant opens on Operations launch, including Skip Brief; no automatic AI request.
+- Desktop primary drawing controls move beside the menus; phone controls retain their current location. Rectangle/Ellipse shortcuts are removed, Freehand uses a pencil and Diagram is last.
+- View options are consolidated in the menu. Line colour/style/width share a control; native transactions retain undo.
+- File → Exit discards unsaved open documents without requesting Save. Already submitted/completed saves are not rolled back. Browsers that reject window.close show a closed-editor screen.
+- EMC library uses symbol previews and short model labels, click insertion and pointer drag placement; rail icon reads EM.
+- Black-and-white brain app icon, with Lucide ISC attribution. Duplicate chat title/rename menu removed; the main header retains the title menu.
+- Connection control shows Connected / Reconnect EMC / Connecting, with a reconnect action beside connection errors. Valid short-lived access is not rejected 30 seconds early; expired access still requires secure renewal. Tab visibility does not clear the drawing or authentication. Actual backend session/permission checks remain authoritative.
+- Drawing guidelines remain deferred. Automated tests use mocked network boundaries; live authenticated tab-switch/expiry behaviour still needs acceptance.
+
 ## 2026-11-17 — main i aktualizacja planu
 
 - Pełna historia dev przeniesiona do main bez zmiany plików aplikacji.

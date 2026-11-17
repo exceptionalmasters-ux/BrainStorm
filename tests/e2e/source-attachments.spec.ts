@@ -158,9 +158,9 @@ test("private PDF upload, no-Web symbol, trash/restore/purge and reconnect witho
     await page.locator("#open").click()
     const popup = await opening
     await expect(popup.getByTestId("drawing-toolbar")).toBeVisible()
-    await popup.getByTestId("show-panel").click()
+    await expect(popup.getByTestId("chat-panel")).toBeVisible()
     await popup
-        .getByRole("button", { name: "From file · attachments", exact: true })
+        .getByRole("button", { name: "Create symbol from file", exact: true })
         .click()
     await popup.getByLabel("Upload source documentation").setInputFiles({
         name: "Device.pdf",
@@ -231,10 +231,6 @@ test("private PDF upload, no-Web symbol, trash/restore/purge and reconnect witho
     expect(actions).not.toContain("research")
     await page.close()
     await expect(popup.getByTestId("drawing-toolbar")).toBeVisible()
-    await popup
-        .getByRole("button", { name: "Reconnect EMC", exact: true })
-        .click()
-    await expect(
-        popup.getByText("EMC session connected", { exact: true }),
-    ).toBeVisible()
+    await popup.getByTestId("emc-reconnect").click()
+    await expect(popup.getByTestId("emc-reconnect")).toHaveText("Connected")
 })
