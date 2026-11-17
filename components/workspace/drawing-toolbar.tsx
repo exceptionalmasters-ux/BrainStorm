@@ -45,7 +45,7 @@ import { useCanvasStore } from "@/stores/canvas-store"
 export function DrawingToolbar({
     section = "tools",
 }: {
-    section?: "primary" | "tools"
+    section?: "primary" | "tools" | "all"
 }) {
     const [lineMenu, setLineMenu] = useState<{
         left: number
@@ -128,7 +128,7 @@ export function DrawingToolbar({
             className="shrink-0 border-b border-border bg-card text-foreground"
             data-testid={
                 section === "primary"
-                    ? "drawing-toolbar-primary"
+                    ? "drawing-primary-container"
                     : "drawing-toolbar"
             }
         >
@@ -137,8 +137,11 @@ export function DrawingToolbar({
                 aria-label="Drawing tools"
                 className="flex h-8 items-center gap-0.5 overflow-x-auto px-1"
             >
-                {section === "primary" ? (
-                    <>
+                {section !== "tools" && (
+                    <div
+                        data-testid="drawing-toolbar-primary"
+                        className="flex shrink-0 items-center gap-0.5"
+                    >
                         {action(
                             "insertPage",
                             "insertPage",
@@ -164,8 +167,9 @@ export function DrawingToolbar({
                             "Fit window",
                             Maximize,
                         )}
-                    </>
-                ) : (
+                    </div>
+                )}
+                {section !== "primary" && (
                     <>
                         <button
                             type="button"

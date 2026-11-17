@@ -429,10 +429,9 @@ function WorkspaceLayout() {
                                         right: isMobile ? 0 : canvasRight,
                                     }}
                                 >
-                                    {isMobile && (
-                                        <DrawingToolbar section="primary" />
-                                    )}
-                                    <DrawingToolbar />
+                                    <DrawingToolbar
+                                        section={isMobile ? "all" : "tools"}
+                                    />
                                 </div>
                             )}
                         <CanvasStage
@@ -453,7 +452,7 @@ function WorkspaceLayout() {
                                       )
                             }
                             style={{
-                                top: showHero ? 0 : isMobile ? 64 : 32,
+                                top: showHero ? 0 : 32,
                                 ...(isMobile ? {} : { right: canvasRight }),
                             }}
                             hideOverlays={heroCoversCanvas}
