@@ -350,6 +350,7 @@ export function operationsRequest<T>(
     if (
         ["list", "get", "save", "delete"].includes(method) &&
         authorization &&
+        authorizationUntil > 0 &&
         Date.now() >= authorizationUntil
     ) {
         return operationsAuthorization().then(() =>
