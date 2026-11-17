@@ -2,7 +2,7 @@
 
 Panel webowy do tworzenia edytowalnych schematów technicznych z pomocą AI. Użytkownik opisuje problem, asystent AI (OpenAI) generuje koncepcję i rysunek, a wynik otwiera się w osadzonym draw.io, gdzie można go dalej edytować ręcznie.
 
-Status: wczesny etap. Kod bazowy pochodzi z projektu next-ai-draw-io (Apache 2.0), a rozwijamy go w kierunku opisanym w dokumentacji.
+Status: zintegrowane MVP EMC Operations, rozwijane i stabilizowane. Kod bazowy pochodzi z projektu next-ai-draw-io (Apache 2.0). Aktualny stan i kolejne scenariusze akceptacji opisuje [plan prac](docs/project/05-plan.md).
 
 ## Dokumentacja
 
@@ -17,7 +17,7 @@ Dokumentacja jest częścią repozytorium i jest aktualizowana razem z kodem.
 | [docs/project/05-plan.md](docs/project/05-plan.md) | Plan prac i otwarte zadania |
 | [docs/upstream/README.md](docs/upstream/README.md) | Oryginalny README projektu bazowego |
 
-Integracja z Operations, zakładki dokumentów i konfiguracja wdrożenia: [09-operations-integration.md](docs/project/09-operations-integration.md).
+Integracja z Operations, zakładki dokumentów i konfiguracja wdrożenia: [09-operations-integration.md](docs/project/09-operations-integration.md). Starsze sekcje są zapisem wcześniejszych etapów; aktualny transport opisuje sekcja Direct managed transport.
 
 ## Stack
 
@@ -25,9 +25,15 @@ Integracja z Operations, zakładki dokumentów i konfiguracja wdrożenia: [09-op
 - OpenAI API (wywoływane z serwera, klucz nigdy w przeglądarce)
 - Cloudflare (build i hosting, adapter OpenNext)
 - Supabase Storage i uprawnienia Operations przez integrację z panelem EMC
-- GitHub: gałąź `main` to produkcja, `dev` to bieżąca praca
+- GitHub: Cloudflare publikuje produkcję z `main`; `dev` pozostaje gałęzią rozwojową
+- Produkcja: https://brainstorm-worker.exceptionalmasters.workers.dev/en (własna domena nie jest wymagana)
+
+EMC OpenAI i dokumenty komunikują się bezpośrednio z Supabase; hostingowy Worker nie przetwarza ich strumieni ani danych dokumentu. Klucz OpenAI pozostaje w bramce Supabase. Edytor przechowuje krótkotrwały dostęp Operations w pamięci i obsługuje Reconnect EMC.
 
 ## Uruchomienie lokalne
+
+Poniższa konfiguracja służy lokalnemu, samodzielnemu dostawcy AI. Produkcyjne EMC OpenAI korzysta z istniejącego klucza w Supabase; nie kopiujemy go do Cloudflare ani przeglądarki.
+
 
 ```bash
 cp env.example .env.local   # ustaw AI_PROVIDER=openai, AI_MODEL, OPENAI_API_KEY

@@ -1,6 +1,15 @@
 # Dziennik zmian
 
-Najnowsze na górze.
+Najnowsze na górze. Starsze wpisy zachowują historyczne ograniczenia i wyniki.
+
+## 2026-11-17 — main i aktualizacja planu
+
+- Pełna historia dev przeniesiona do main bez zmiany plików aplikacji.
+- Właściciel potwierdził przełączenie gałęzi produkcyjnej Cloudflare na main.
+- Pusty commit 62e8ded wywołał udany Workers Build; GitHub Actions #44125078627 zakończył się sukcesem.
+- Plan i README opisują wdrożone AI, prywatne dokumenty, symbole, bezpośredni transport i niezależne sesje.
+- Scenariusze rzeczywistej akceptacji pozostają do wykonania; nie są zastępowane przez testy z atrapami sieci.
+- Własna domena pozostaje opcjonalna. Wspólna edycja nadal odłożona.
 
 ## 2026-11-15 — document tabs and Operations integration
 
