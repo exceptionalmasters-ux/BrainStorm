@@ -160,7 +160,7 @@ test("private PDF upload, no-Web symbol, trash/restore/purge and reconnect witho
     await expect(popup.getByTestId("drawing-toolbar")).toBeVisible()
     await expect(popup.getByTestId("chat-panel")).toBeVisible()
     await popup
-        .getByRole("button", { name: "From file · attachments", exact: true })
+        .getByRole("button", { name: "Create symbol from file", exact: true })
         .click()
     await popup.getByLabel("Upload source documentation").setInputFiles({
         name: "Device.pdf",

@@ -1149,8 +1149,8 @@ export function ChatEngineProvider({
     // Canvas components (version cards, the compare dialog, "ask AI") read
     // the busy flag from the canvas store
     useEffect(() => {
-        useCanvasStore.getState().set({ isBusy })
-    }, [isBusy])
+        useCanvasStore.getState().set({ isBusy: isBusy && !webEnabled })
+    }, [isBusy, webEnabled])
     // The page goes (another language mounts a new one): the answer stops,
     // so it cannot reach the next page's canvas
     const stopRef = useRef(stop)

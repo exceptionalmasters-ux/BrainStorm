@@ -414,7 +414,7 @@ export function DeviceResearchPanel() {
                     }
                 }}
             >
-                From file · attachments
+                Create symbol from file
             </button>
             {fileMode && <SourceFiles readonly={!!readonly} />}
             {(expanded || state.busy || state.result || state.error) && (

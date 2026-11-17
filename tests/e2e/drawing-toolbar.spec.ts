@@ -173,7 +173,7 @@ test("quick insert creates native shapes and arrow lines with undo", async ({
         .click()
 })
 
-test("one unified tools row replaces the native strip and duplicate history controls", async ({
+test("desktop header controls replace duplicate history controls and retain native tools", async ({
     page,
 }) => {
     await openApp(page)
@@ -183,9 +183,12 @@ test("one unified tools row replaces the native strip and duplicate history cont
     await expect(page.getByTestId("editor-undo")).toHaveCount(1)
     await expect(page.getByTestId("editor-redo")).toHaveCount(1)
     await expect(
-        page.getByTestId("drawing-toolbar").getByTestId("editor-undo"),
+        page.getByTestId("drawing-toolbar-primary").getByTestId("editor-undo"),
     ).toBeVisible()
-    await page.getByTestId("drawing-create-rectangle").click()
+    await page.getByTestId("drawing-insert-shapes").click()
+    await getIframeContent(page)
+        .getByRole("menuitem", { name: "Rectangle", exact: true })
+        .click()
     await expect(page.getByTestId("editor-undo")).toBeEnabled()
     await page.getByTestId("editor-undo").click()
     await expect(page.getByTestId("editor-redo")).toBeEnabled()
