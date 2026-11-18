@@ -127,6 +127,8 @@ test("private PDF upload, no-Web symbol, trash/restore/purge and reconnect witho
         }
         if (url.pathname === "/api/chat")
             throw Error("No chat API call expected for file analysis")
+        if (new URL(route.request().url()).pathname.endsWith("/name-available"))
+            data = { available: true }
         await route.fulfill({ json: data })
     })
     await mockOperationsStorage(context, { token: auth.accessToken, records })

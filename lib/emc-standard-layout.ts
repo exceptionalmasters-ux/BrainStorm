@@ -141,25 +141,16 @@ export function standardSymbolLayout(symbol: EmcSymbol) {
                     Math.floor((frame.y + marker.y * bodyH - 20) / 10) * 10,
                 )
         }
-        const slots = sorted.map((p, i) =>
-            Math.max(
-                low + i * pitch,
-                Math.min(
-                    high - (sorted.length - 1 - i) * pitch,
-                    Math.round(
-                        ((horizontal ? frame.x : frame.y) +
-                            p.ratio * (horizontal ? bodyW : bodyH)) /
-                            10,
-                    ) * 10,
-                ),
-            ),
-        )
-        for (let i = 1; i < slots.length; i++)
-            slots[i] = Math.max(slots[i], slots[i - 1] + pitch)
+        // Source position establishes order; regular schematic rows use one pitch.
+        // Matching left/right rows (and top/bottom columns) share their first axis.
+        const count = horizontal ? horizontalCount : verticalCount
+        const first = Math.round((low + high - (count - 1) * pitch) / 20) * 10
+        const start = Math.max(low, Math.min(high - (count - 1) * pitch, first))
+        const slots = sorted.map((_pin, i) => start + i * pitch)
         sorted.forEach((pin, i) => {
             const row = slots[i],
                 sx = horizontal
-                    ? frame.x + pin.ratio * bodyW
+                    ? row
                     : side === "left"
                       ? frame.x
                       : frame.x + bodyW,
@@ -167,7 +158,7 @@ export function standardSymbolLayout(symbol: EmcSymbol) {
                     ? side === "top"
                         ? frame.y
                         : frame.y + bodyH
-                    : frame.y + pin.ratio * bodyH
+                    : row
             const x = horizontal ? row : side === "left" ? 0 : width,
                 y = horizontal ? (side === "top" ? 40 : height) : row
             pins.push({
@@ -337,7 +328,7 @@ export function insertStandardSymbolNative(
                 8,
                 "shape=ellipse;fillColor=#000000;strokeColor=#000000;",
             )
-        // Each adapter ends on the grid, while the original source pad positions stay on the faithful body.
+        // Straight schematic stems share the pin row/column and terminate on the grid.
         for (const line of l.leaders) {
             const edge = graph.insertEdge(
                 root,
@@ -363,7 +354,7 @@ export function insertStandardSymbolNative(
                 pin.y,
                 6,
                 6,
-                "shape=ellipse;html=0;fillColor=#000000;strokeColor=#000000;perimeter=none;points=[[0.5,0.5,0]];outlineConnect=0;snapToPoint=1;movable=0;resizable=0;rotatable=0;",
+                `shape=ellipse;html=0;fillColor=#000000;strokeColor=#000000;perimeter=none;points=[[0.5,0.5,0]];outlineConnect=0;snapToPoint=1;movable=0;resizable=0;rotatable=0;emcPinSide=${pin.side};`,
                 true,
             )
             const g = c.geometry.clone()

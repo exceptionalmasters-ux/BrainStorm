@@ -17,7 +17,9 @@ import {
 } from "@/lib/manual-symbol"
 import { getOperationsContext } from "@/lib/operations-bridge"
 import { emcAction, useDeviceResearch } from "@/stores/device-research-store"
+import { UniqueNameStatus } from "./unique-name-status"
 export function ManualSymbolDialog() {
+    const [nameValid, setNameValid] = useState(false)
     const [open, setOpen] = useState(false),
         [symbol, setSymbol] = useState<ManualSymbol | null>(null),
         [name, setName] = useState(""),
@@ -97,6 +99,11 @@ export function ManualSymbolDialog() {
                             onChange={(e) => setName(e.target.value)}
                             disabled={saving}
                         />
+                        <UniqueNameStatus
+                            name={name}
+                            kind="symbol"
+                            onValid={setNameValid}
+                        />
                     </>
                 )}
                 {error && (
@@ -116,6 +123,7 @@ export function ManualSymbolDialog() {
                         disabled={
                             !symbol ||
                             !name.trim() ||
+                            !nameValid ||
                             saving ||
                             !!getOperationsContext()?.readOnly
                         }

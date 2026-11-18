@@ -1,6 +1,7 @@
 import { FileUp, Pencil, Plus, Search, Trash2 } from "lucide-react"
 import { useParams } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
+import { toast } from "sonner"
 import {
     AlertDialog,
     AlertDialogAction,
@@ -16,7 +17,9 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover"
+import { UniqueNameStatus } from "@/components/workspace/unique-name-status"
 import { useDictionary } from "@/hooks/use-dictionary"
+import { isOperationsMode } from "@/lib/operations-bridge"
 import { formatRelativeTime } from "@/lib/relative-time"
 import { cn } from "@/lib/utils"
 import { useChatEngine } from "./chat-engine"
@@ -56,6 +59,7 @@ export function SessionMenu({
     const [renaming, setRenaming] = useState(false)
     const [draftTitle, setDraftTitle] = useState("")
     const [toDelete, setToDelete] = useState<string | null>(null)
+    const [nameValid, setNameValid] = useState(false)
     const renameRef = useRef<HTMLInputElement>(null)
     const triggerRef = useRef<HTMLButtonElement>(null)
 
@@ -80,8 +84,17 @@ export function SessionMenu({
 
     const commitRename = async () => {
         const next = draftTitle.trim()
-        setRenaming(false)
-        if (next && next !== title) await engine.renameSession(next)
+        if (isOperationsMode() && next !== title && !nameValid) return
+        try {
+            if (next && next !== title) await engine.renameSession(next)
+            setRenaming(false)
+        } catch (error) {
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : "Could not rename drawing",
+            )
+        }
     }
 
     return (
@@ -98,27 +111,42 @@ export function SessionMenu({
                 >
                     <div className="border-b border-border p-3">
                         {renaming ? (
-                            <input
-                                ref={renameRef}
-                                value={draftTitle}
-                                onChange={(e) => setDraftTitle(e.target.value)}
-                                onBlur={commitRename}
-                                onKeyDown={(e) => {
-                                    // Enter that picks an IME candidate
-                                    // (Safari: keyCode 229)
-                                    if (
-                                        e.nativeEvent.isComposing ||
-                                        e.keyCode === 229
-                                    ) {
-                                        return
+                            <div>
+                                <input
+                                    ref={renameRef}
+                                    value={draftTitle}
+                                    onChange={(e) =>
+                                        setDraftTitle(e.target.value)
                                     }
-                                    if (e.key === "Enter") commitRename()
-                                    if (e.key === "Escape") setRenaming(false)
-                                }}
-                                maxLength={100}
-                                aria-label={t.rename}
-                                className="h-8 w-full rounded-lg border border-foreground/20 bg-card px-2.5 text-[13px] font-medium outline-none"
-                            />
+                                    onBlur={commitRename}
+                                    onKeyDown={(e) => {
+                                        // Enter that picks an IME candidate
+                                        // (Safari: keyCode 229)
+                                        if (
+                                            e.nativeEvent.isComposing ||
+                                            e.keyCode === 229
+                                        ) {
+                                            return
+                                        }
+                                        if (e.key === "Enter") commitRename()
+                                        if (e.key === "Escape")
+                                            setRenaming(false)
+                                    }}
+                                    maxLength={100}
+                                    aria-label={t.rename}
+                                    className="h-8 w-full rounded-lg border border-foreground/20 bg-card px-2.5 text-[13px] font-medium outline-none"
+                                />
+                                {isOperationsMode() && (
+                                    <UniqueNameStatus
+                                        name={draftTitle}
+                                        kind="drawing"
+                                        excludeId={
+                                            engine.currentSessionId || undefined
+                                        }
+                                        onValid={setNameValid}
+                                    />
+                                )}
+                            </div>
                         ) : (
                             <button
                                 type="button"

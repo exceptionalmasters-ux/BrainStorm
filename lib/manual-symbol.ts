@@ -34,7 +34,7 @@ export type ManualSymbol = {
     cells: ManualCell[]
 }
 const keys = new Set(
-    "entryX entryY entryDx entryDy exitX exitY exitDx exitDy entryPerimeter exitPerimeter shape rounded arcSize whiteSpace align verticalAlign fillColor strokeColor fontColor fontSize fontFamily fontStyle strokeWidth dashed dashPattern opacity fillOpacity strokeOpacity rotation direction flipH flipV startArrow endArrow startFill endFill startSize endSize edgeStyle elbow curved orthogonalLoop jettySize perimeter points outlineConnect snapToPoint movable resizable rotatable labelPosition verticalLabelPosition spacing spacingLeft spacingRight spacingTop spacingBottom horizontal connectable collapsible portConstraint polyCoords overflow".split(
+    "emcWire emcPinSide jumpStyle jumpSize segment entryX entryY entryDx entryDy exitX exitY exitDx exitDy entryPerimeter exitPerimeter shape rounded arcSize whiteSpace align verticalAlign fillColor strokeColor fontColor fontSize fontFamily fontStyle strokeWidth dashed dashPattern opacity fillOpacity strokeOpacity rotation direction flipH flipV startArrow endArrow startFill endFill startSize endSize edgeStyle elbow curved orthogonalLoop jettySize perimeter points outlineConnect snapToPoint movable resizable rotatable labelPosition verticalLabelPosition spacing spacingLeft spacingRight spacingTop spacingBottom horizontal connectable collapsible portConstraint polyCoords overflow".split(
         " ",
     ),
 )
@@ -201,7 +201,7 @@ export function captureManualSymbol(ui: any, win: any): ManualSymbol {
             ((model.getTerminal(cell, true) && source < 0) ||
                 (model.getTerminal(cell, false) && target < 0))
         )
-            throw Error("Select both connected objects together with the line.")
+            throw Error("Select the line and both connected objects.")
         let freehand: Point[][] | undefined
         const style = graph.getCellStyle(cell)
         if (style.image)

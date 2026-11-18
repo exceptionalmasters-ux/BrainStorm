@@ -133,6 +133,8 @@ test("right-click saves an editable group with internal wires and compact librar
                     : [],
             }
         if (action === "symbol") data = { symbol: saved }
+        if (new URL(route.request().url()).pathname.endsWith("/name-available"))
+            data = { available: true }
         await route.fulfill({ json: data })
     })
     await context.route(`${parent}/__manual-parent`, (route) =>

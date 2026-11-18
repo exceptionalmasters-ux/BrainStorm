@@ -45,6 +45,13 @@ type FrameWindow = any
 let ui: EditorUi | null = null
 let win: FrameWindow | null = null
 
+/** Web-only tools keep their code out of the reusable MCP canvas bundle. */
+export function attachNativeTool(
+    attach: (editorUi: any, frameWindow: any) => () => void,
+) {
+    return ui && win ? attach(ui, win) : () => {}
+}
+
 // The full EMC library is web-only; the reusable canvas shell stays lightweight.
 let emcLibrary: {
     capture: (ui: any, win: any) => Promise<ManualSymbol>

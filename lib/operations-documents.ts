@@ -152,6 +152,14 @@ export async function operationsDocumentRequest(request: Request, body: any) {
                 "Drawing changed in another window. Use Save As to keep your current changes.",
             )
     }
+    const available = await rpc("brainstorm_name_available", {
+        ...args,
+        p_kind: "drawing",
+        p_name: session.title,
+        p_exclude_id: docId,
+    })
+    if (!available)
+        throw new Error("This name already exists. Choose another name.")
     for (const [name, blob] of [
         [`${path}.drawio`, xml],
         [`${path}.json`, state],
