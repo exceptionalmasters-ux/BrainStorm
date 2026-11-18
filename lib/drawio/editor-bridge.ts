@@ -16,6 +16,7 @@ import {
     readEditorAction,
 } from "@/lib/drawio/editor-actions"
 import {
+    activeFormatTab,
     type FormatTab,
     selectObjects,
     showEditorMenu,
@@ -31,7 +32,8 @@ import {
     type ShapeGroup,
     type ToolboxLabels,
 } from "@/lib/drawio/shape-toolbox"
-import { type EmcSymbol, insertEmcSymbolNative } from "@/lib/emc-symbols"
+import type { EmcSymbol } from "@/lib/emc-symbols"
+import type { ManualSymbol } from "@/lib/manual-symbol"
 import { getOperationsContext } from "@/lib/operations-bridge"
 import { hasCells } from "@/packages/mcp-server/src/pages.ts"
 import type { SelectionAnswer } from "@/packages/mcp-server/src/selection.ts"
@@ -43,8 +45,25 @@ type FrameWindow = any
 let ui: EditorUi | null = null
 let win: FrameWindow | null = null
 
+// The full EMC library is web-only; the reusable canvas shell stays lightweight.
+let emcLibrary: {
+    capture: (ui: any, win: any) => Promise<ManualSymbol>
+    styleChoice?: (event: any) => void
+    insert: (
+        ui: any,
+        win: any,
+        symbol: ManualSymbol | EmcSymbol,
+        position?: { x: number; y: number },
+    ) => boolean
+} | null = null
+export function registerEmcLibrary(handlers: NonNullable<typeof emcLibrary>) {
+    emcLibrary = handlers
+    return () => {
+        if (emcLibrary === handlers) emcLibrary = null
+    }
+}
 export function insertEmcSymbol(
-    symbol: EmcSymbol,
+    symbol: EmcSymbol | ManualSymbol,
     clientPoint?: { x: number; y: number },
 ) {
     if (getOperationsContext()?.readOnly || useCanvasStore.getState().isBusy)
@@ -80,7 +99,7 @@ export function insertEmcSymbol(
                 graph.view.translate.y,
         }
     }
-    const inserted = insertEmcSymbolNative(ui, win, symbol, position)
+    const inserted = emcLibrary?.insert(ui, win, symbol, position) ?? false
     syncAll()
     return inserted
 }
@@ -134,10 +153,56 @@ export function activateSelectionPointer() {
     return result
 }
 
-export function openEditorFormatTab(tab: FormatTab) {
-    const result = showFormatTab(ui, win?.mxResources, tab)
+/** Close the native panel immediately; its docked width is otherwise animated asynchronously. */
+export function closeEditorFormatPanel() {
+    if (!ui) return false
+    if (ui.formatWindow?.window) ui.formatWindow.window.setVisible(false)
+    else {
+        ui.formatWidth = 0
+        ui.refresh?.()
+        if (win?.mxEventObject)
+            ui.fireEvent?.(new win.mxEventObject("formatWidthChanged"))
+    }
     syncAll()
+    return true
+}
+export function openEditorFormatTab(tab: FormatTab, toggle = false) {
+    const current = ui
+    const result = showFormatTab(ui, win?.mxResources, tab, toggle)
+    watchFormatWindow()
+    syncAll()
+    // Docked panels finish their width transition after the action returns.
+    setTimeout(() => {
+        if (ui === current) syncAll()
+    }, 350)
     return result
+}
+
+export function setSelectedColour(kind: "fill" | "line", colour: string) {
+    const graph = ui?.editor?.graph
+    if (
+        !/^#[\da-f]{6}$/i.test(colour) ||
+        !graph?.isEnabled?.() ||
+        graph.isSelectionEmpty() ||
+        getOperationsContext()?.readOnly ||
+        useCanvasStore.getState().isBusy
+    )
+        return false
+    graph.model.beginUpdate()
+    try {
+        graph.setCellStyles(
+            kind === "fill" ? "fillColor" : "strokeColor",
+            colour,
+            graph.getSelectionCells(),
+        )
+    } finally {
+        graph.model.endUpdate()
+    }
+    syncAll()
+    return true
+}
+export function openEditorLineSection() {
+    return openEditorFormatTab("style")
 }
 
 export function editorMenuAvailable(name: string) {
@@ -427,6 +492,8 @@ function closeSidePanels() {
 }
 
 export function detachEditor() {
+    detachFormatWindow?.()
+    detachFormatWindow = null
     detachListeners?.()
     detachListeners = null
     clearHighlights()
@@ -438,6 +505,7 @@ export function detachEditor() {
         selection: [],
         selectionRect: null,
         isFormatOpen: false,
+        activeFormatTab: null,
         isDrawioPopupOpen: false,
     })
 }
@@ -1253,9 +1321,24 @@ function syncAll() {
         selectionRect: readSelectionRect(),
         isFreehand: !!g?.freehand?.isDrawing?.(),
         isFormatOpen: isFormatPanelOpen(),
+        activeFormatTab: activeFormatTab(ui, win?.mxResources),
     })
 }
 
+let detachFormatWindow: (() => void) | null = null
+let observedFormatWindow: any = null
+function watchFormatWindow() {
+    const window = ui?.formatWindow?.window
+    if (!window?.addListener || window === observedFormatWindow) return
+    detachFormatWindow?.()
+    observedFormatWindow = window
+    window.addListener(win.mxEvent.SHOW, syncAll)
+    window.addListener(win.mxEvent.HIDE, syncAll)
+    detachFormatWindow = () => {
+        window.removeListener(syncAll)
+        observedFormatWindow = null
+    }
+}
 function isFormatPanelOpen(): boolean {
     try {
         if (typeof ui.isFormatPanelVisible === "function") {
@@ -1272,8 +1355,62 @@ function installListeners(): () => void {
     if (!g || !win?.mxEvent) return () => {}
     const mxEvent = win.mxEvent
     const cleanups: (() => void)[] = []
+    const menus = ui.menus
+    const originalPopup = menus?.createPopupMenu
+    if (originalPopup) {
+        menus.createPopupMenu = function (menu: any, cell: any, evt: any) {
+            originalPopup.call(this, menu, cell, evt)
+            if (
+                emcLibrary &&
+                getOperationsContext() &&
+                !getOperationsContext()?.readOnly &&
+                !g.isSelectionEmpty() &&
+                !useCanvasStore.getState().isBusy
+            ) {
+                menu.addSeparator()
+                menu.addItem("Add to EMC library", null, async () => {
+                    try {
+                        window.dispatchEvent(
+                            new CustomEvent("emc-manual-symbol", {
+                                detail: {
+                                    symbol: await emcLibrary?.capture(ui, win),
+                                },
+                            }),
+                        )
+                    } catch (error) {
+                        window.dispatchEvent(
+                            new CustomEvent("emc-manual-symbol", {
+                                detail: {
+                                    error:
+                                        error instanceof Error
+                                            ? error.message
+                                            : "Could not capture the drawing",
+                                },
+                            }),
+                        )
+                    }
+                })
+            }
+        }
+        cleanups.push(() => {
+            menus.createPopupMenu = originalPopup
+        })
+    }
+    const formatClick = () =>
+        requestAnimationFrame(() => {
+            watchFormatWindow()
+            syncAll()
+        })
+    win.document?.addEventListener("click", formatClick)
+    cleanups.push(() =>
+        win?.document?.removeEventListener("click", formatClick),
+    )
 
-    const listen = (source: any, name: string, handler: () => void) => {
+    const listen = (
+        source: any,
+        name: string,
+        handler: (...args: any[]) => void,
+    ) => {
         if (!source?.addListener) return
         source.addListener(name, handler)
         cleanups.push(() => source.removeListener(handler))
@@ -1281,6 +1418,10 @@ function installListeners(): () => void {
 
     // Any user action ends the "what the AI just changed" highlight: a
     // click on the canvas, a selection, another page
+    // Native More colors / Style > Line choices also update the independent quick swatches.
+    listen(ui, "styleChanged", (_sender: any, event: any) =>
+        emcLibrary?.styleChoice?.(event),
+    )
     const onSelection = () => {
         clearHighlights()
         syncAll()

@@ -4,11 +4,9 @@ import {
     GitBranch,
     LayoutPanelTop,
     Maximize,
-    Minus,
     MoreHorizontal,
     MousePointer2,
     MoveRight,
-    PaintBucket,
     PanelRight,
     Pencil,
     PenTool,
@@ -24,10 +22,10 @@ import {
     ZoomIn,
     ZoomOut,
 } from "lucide-react"
-import { useState } from "react"
-import { createPortal } from "react-dom"
+import { QuickColour } from "@/components/workspace/quick-colour"
 import {
     activateSelectionPointer,
+    closeEditorFormatPanel,
     editorActionState,
     editorLabel,
     editorMenuAvailable,
@@ -36,7 +34,6 @@ import {
     openNativeEditorMenu,
     openQuickInsertMenu,
     runEditorAction,
-    setSelectedLineStyle,
 } from "@/lib/drawio/editor-bridge"
 import { getOperationsContext } from "@/lib/operations-bridge"
 import { useCanvasStore } from "@/stores/canvas-store"
@@ -47,13 +44,10 @@ export function DrawingToolbar({
 }: {
     section?: "primary" | "tools" | "all"
 }) {
-    const [lineMenu, setLineMenu] = useState<{
-        left: number
-        top: number
-    } | null>(null)
     const ready = useCanvasStore((s) => s.hasEditor)
     const busy = useCanvasStore((s) => s.isBusy)
     const selection = useCanvasStore((s) => s.selection)
+    const activeFormatTab = useCanvasStore((s) => s.activeFormatTab)
     const freehand = useCanvasStore((s) => s.isFreehand)
     useCanvasStore((s) => s.isFormatOpen)
     const readOnly = !!getOperationsContext()?.readOnly
@@ -288,119 +282,18 @@ export function DrawingToolbar({
                             aria-hidden
                             className="mx-1 h-5 shrink-0 border-l border-border"
                         />
-                        {action(
-                            "fillColor",
-                            "fillColor",
-                            "Fill color",
-                            PaintBucket,
-                            true,
-                        )}
-                        <button
-                            type="button"
-                            className={base}
-                            data-testid="drawing-tool-strokeColor"
-                            title="Line colour and style"
-                            aria-label="Line colour and style"
-                            aria-haspopup="menu"
+                        <QuickColour
+                            kind="fill"
                             disabled={
                                 !ready || busy || readOnly || !selection.length
                             }
-                            onClick={(e) => {
-                                const r =
-                                    e.currentTarget.getBoundingClientRect()
-                                setLineMenu(
-                                    lineMenu
-                                        ? null
-                                        : {
-                                              left: Math.min(
-                                                  r.left,
-                                                  window.innerWidth - 210,
-                                              ),
-                                              top: r.bottom,
-                                          },
-                                )
-                            }}
-                        >
-                            <Minus size={16} />
-                            <span aria-hidden>▾</span>
-                        </button>
-                        {lineMenu &&
-                            createPortal(
-                                <>
-                                    <button
-                                        type="button"
-                                        aria-label="Close line style menu"
-                                        className="fixed inset-0 z-40"
-                                        onClick={() => setLineMenu(null)}
-                                    />
-                                    <div
-                                        role="menu"
-                                        aria-label="Line colour and style"
-                                        className="fixed z-50 w-52 rounded border bg-card p-2 shadow-xl"
-                                        style={lineMenu}
-                                        onKeyDown={(e) => {
-                                            if (e.key === "Escape")
-                                                setLineMenu(null)
-                                        }}
-                                    >
-                                        <button
-                                            type="button"
-                                            role="menuitem"
-                                            className="block w-full rounded p-2 text-left text-xs hover:bg-accent"
-                                            onClick={() => {
-                                                setLineMenu(null)
-                                                runEditorAction("strokeColor")
-                                            }}
-                                        >
-                                            Line colour…
-                                        </button>
-                                        {[
-                                            ["Solid", "0"],
-                                            ["Dashed", "1"],
-                                            ["Dotted", "1 3"],
-                                        ].map(([label, pattern]) => (
-                                            <button
-                                                key={label}
-                                                type="button"
-                                                role="menuitem"
-                                                className="block w-full rounded p-2 text-left text-xs hover:bg-accent"
-                                                onClick={() => {
-                                                    setSelectedLineStyle(
-                                                        "dashed",
-                                                        pattern === "0"
-                                                            ? "0"
-                                                            : "1",
-                                                        pattern === "1 3"
-                                                            ? "1 3"
-                                                            : "3 3",
-                                                    )
-                                                    setLineMenu(null)
-                                                }}
-                                            >
-                                                {label}
-                                            </button>
-                                        ))}
-                                        {[1, 2, 3, 4].map((width) => (
-                                            <button
-                                                key={width}
-                                                type="button"
-                                                role="menuitem"
-                                                className="block w-full rounded p-2 text-left text-xs hover:bg-accent"
-                                                onClick={() => {
-                                                    setSelectedLineStyle(
-                                                        "strokeWidth",
-                                                        String(width),
-                                                    )
-                                                    setLineMenu(null)
-                                                }}
-                                            >
-                                                Width {width}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </>,
-                                document.body,
-                            )}
+                        />
+                        <QuickColour
+                            kind="line"
+                            disabled={
+                                !ready || busy || readOnly || !selection.length
+                            }
+                        />
                         <span
                             aria-hidden
                             className="mx-1 h-5 shrink-0 border-l border-border"
@@ -415,8 +308,9 @@ export function DrawingToolbar({
                             <button
                                 key={tab}
                                 type="button"
-                                className={base}
+                                className={`${base} ${activeFormatTab === tab ? "bg-primary/10 text-primary" : "text-foreground"}`}
                                 data-testid={`drawing-format-${tab}`}
+                                aria-pressed={activeFormatTab === tab}
                                 title={editorLabel(tab, tab)}
                                 aria-label={editorLabel(tab, tab)}
                                 disabled={
@@ -425,7 +319,11 @@ export function DrawingToolbar({
                                     (tab !== "style" &&
                                         (!selection.length || readOnly))
                                 }
-                                onClick={() => openEditorFormatTab(tab)}
+                                onClick={() =>
+                                    activeFormatTab === tab
+                                        ? closeEditorFormatPanel()
+                                        : openEditorFormatTab(tab)
+                                }
                             >
                                 <Icon size={16} />
                             </button>

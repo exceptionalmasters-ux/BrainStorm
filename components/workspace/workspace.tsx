@@ -26,6 +26,7 @@ import {
     EmcLibraryPanel,
 } from "@/components/workspace/emc-library-panel"
 import { IconButton } from "@/components/workspace/icon-button"
+import { ManualSymbolDialog } from "@/components/workspace/manual-symbol-dialog"
 import { useDiagram } from "@/contexts/diagram-context"
 import { useDictionary } from "@/hooks/use-dictionary"
 import { usePanelWidth } from "@/hooks/use-panel-width"
@@ -475,6 +476,7 @@ function WorkspaceLayout() {
                                     }),
                             }}
                         />
+                        <ManualSymbolDialog />
                     </div>
                     {isMobile ? (
                         mobileView === "chat" &&

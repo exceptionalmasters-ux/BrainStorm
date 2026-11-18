@@ -11,6 +11,8 @@ let generation = 0
 export const useDeviceResearch = create<{
     webEnabled: boolean
     busy: boolean
+    startedAt: number | null
+    phase: string
     error: string
     result: DeviceResearch | null
     incompleteCandidateId: string | null
@@ -26,6 +28,8 @@ function researchState() {
     return {
         webEnabled: false,
         busy: false,
+        startedAt: null as number | null,
+        phase: "",
         error: "",
         result: null as DeviceResearch | null,
         incompleteCandidateId: null as string | null,
@@ -65,7 +69,12 @@ export async function researchDevice(query: string): Promise<DeviceResearch> {
     controller?.abort()
     controller = new AbortController()
     const ticket = ++generation
-    useDeviceResearch.setState({ busy: true, error: "" })
+    useDeviceResearch.setState({
+        busy: true,
+        error: "",
+        startedAt: Date.now(),
+        phase: "Searching cited pinouts and device views",
+    })
     try {
         const result = await emcAction<DeviceResearch>(
             "research",
@@ -100,7 +109,12 @@ export async function draftDevice(
     controller?.abort()
     controller = new AbortController()
     const ticket = ++generation
-    useDeviceResearch.setState({ busy: true, error: "" })
+    useDeviceResearch.setState({
+        busy: true,
+        error: "",
+        startedAt: Date.now(),
+        phase: "Reading source geometry and documented pins",
+    })
     try {
         const response = await emcAction<{
             symbol: EmcSymbol | null
@@ -138,6 +152,8 @@ export async function analyseSource(sourceId: string, query: string) {
     const ticket = ++generation
     useDeviceResearch.setState({
         busy: true,
+        startedAt: Date.now(),
+        phase: "Reading the attached documentation",
         error: "",
         result: null,
         draft: null,

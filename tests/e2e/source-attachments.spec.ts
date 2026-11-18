@@ -195,6 +195,41 @@ test("private PDF upload, no-Web symbol, trash/restore/purge and reconnect witho
     await expect(
         getIframeContent(popup).getByText("RST", { exact: true }),
     ).toBeVisible()
+    const port = await getIframeContent(popup)
+        .locator("body")
+        .evaluate((body) => {
+            const w = body.ownerDocument.defaultView as any
+            let result: any
+            w.Draw.loadPlugin((ui: any) => {
+                const graph = ui.editor.graph,
+                    root = graph.getSelectionCell(),
+                    pin = graph.model
+                        .getChildren(root)
+                        .find((c: any) => c.isConnectable()),
+                    state = graph.view.getState(pin),
+                    constraints = graph.getAllConnectionConstraints(state, true)
+                const point = graph.getConnectionPoint(state, constraints[0])
+                result = {
+                    count: constraints.length,
+                    x: constraints[0].point.x,
+                    y: constraints[0].point.y,
+                    perimeter: constraints[0].perimeter,
+                    dx: Math.abs(point.x - (state.x + state.width / 2)),
+                    dy: Math.abs(point.y - (state.y + state.height / 2)),
+                    fill: state.style.fillColor,
+                }
+            })
+            return result
+        })
+    expect(port).toMatchObject({
+        count: 1,
+        x: 0.5,
+        y: 0.5,
+        perimeter: false,
+        fill: "#000000",
+    })
+    expect(port.dx).toBeLessThanOrEqual(1)
+    expect(port.dy).toBeLessThanOrEqual(1)
     await files
         .getByRole("button", { name: "Move to trash", exact: true })
         .click()

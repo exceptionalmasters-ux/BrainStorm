@@ -1,3 +1,8 @@
+import {
+    distinctPinPositions,
+    type SymbolBody,
+    validSymbolBody,
+} from "./symbol-geometry"
 export interface EmcSymbol {
     name: string
     device: string
@@ -5,7 +10,7 @@ export interface EmcSymbol {
     incomplete?: boolean
     warnings?: string[]
     sourceUrl?: string
-    body?: { width: number; height: number; antennaHeight?: number }
+    body?: SymbolBody
     sourceKind?: "pdf" | "image" | "document" | "summary"
     pins: {
         number: string
@@ -33,20 +38,11 @@ export function validateEmcSymbol(value: unknown): value is EmcSymbol {
         text(d.name, 120) &&
         text(d.device, 160) &&
         text(d.package, 120) &&
-        (!d.body ||
-            (Number.isFinite(d.body.width) &&
-                d.body.width >= 160 &&
-                d.body.width <= 800 &&
-                Number.isFinite(d.body.height) &&
-                d.body.height >= 160 &&
-                d.body.height <= 1000 &&
-                (d.body.antennaHeight === undefined ||
-                    (Number.isFinite(d.body.antennaHeight) &&
-                        d.body.antennaHeight >= 0 &&
-                        d.body.antennaHeight <= 0.5)))) &&
+        validSymbolBody(d.body) &&
         Array.isArray(d.pins) &&
         (d.pins.length > 0 || (d.incomplete === true && source(d.sourceUrl))) &&
         d.pins.length <= 128 &&
+        distinctPinPositions(d.pins) &&
         new Set(d.pins.map((p) => p?.number)).size === d.pins.length &&
         d.pins.every(
             (p) =>
@@ -74,12 +70,18 @@ export interface DeviceCandidate {
     sourceUrl: string
     imageUrl: string | null
     sourceImageUrl?: string | null
+    representationKind?: "pinout" | "device_view" | "document"
+    variantUnconfirmed?: boolean
 }
 export interface DeviceResearch {
     sourceId?: string
     researchId: string
     questions: string[]
     candidates: DeviceCandidate[]
+    status?: "results" | "needs_clarification" | "no_sources"
+    warnings?: string[]
+    elapsedMs?: number
+    filteredCount?: number
 }
 export interface LibrarySymbol {
     id: string
@@ -93,22 +95,147 @@ export interface LibrarySymbol {
 export function symbolLayout(symbol: EmcSymbol) {
     const count = (side: string) =>
         symbol.pins.filter((p) => p.side === side).length
-    const width =
+    const indexes: Record<string, number> = {}
+    const pins = symbol.pins.map((pin) => {
+        const index = (indexes[pin.side] = (indexes[pin.side] || 0) + 1)
+        const ratio = pin.position ?? index / (count(pin.side) + 1)
+        return {
+            ...pin,
+            x: pin.side === "left" ? 0 : pin.side === "right" ? 1 : ratio,
+            y: pin.side === "top" ? 0 : pin.side === "bottom" ? 1 : ratio,
+        }
+    })
+    const baseW =
         symbol.body?.width ??
         Math.max(280, (Math.max(count("top"), count("bottom")) + 1) * 65)
-    const height =
+    const baseH =
         symbol.body?.height ??
         Math.max(160, (Math.max(count("left"), count("right")) + 1) * 28)
-    const indexes: Record<string, number> = {}
+    let scale = 1
+    const rich = !!symbol.body?.labelsInside
+    const span = (side: string) =>
+        Math.max(
+            0,
+            ...pins
+                .filter((p) => p.side === side)
+                .map((p) => p.name.length * 7 + 52),
+        )
+    if (rich) {
+        // Reserve corner label corridors and a centre title area, preserving source aspect ratio.
+        scale = Math.max(
+            scale,
+            (span("left") +
+                span("right") +
+                Math.max(
+                    180,
+                    symbol.name.length * 8,
+                    symbol.device.length * 7,
+                    symbol.package.length * 7,
+                )) /
+                baseW,
+            (span("top") + span("bottom") + 120) / baseH,
+        )
+        for (const side of ["left", "right", "top", "bottom"]) {
+            const horizontal = side === "top" || side === "bottom"
+            const values = pins
+                .filter((p) => p.side === side)
+                .map((p) => (horizontal ? p.x : p.y))
+                .sort((a, b) => a - b)
+            for (let i = 1; i < values.length; i++)
+                scale = Math.max(
+                    scale,
+                    28 /
+                        Math.max(
+                            0.001,
+                            (values[i] - values[i - 1]) *
+                                (horizontal ? baseW : baseH),
+                        ),
+                )
+            for (const v of values)
+                scale = Math.max(
+                    scale,
+                    (horizontal ? span("left") : span("top")) /
+                        Math.max(1, v * (horizontal ? baseW : baseH)),
+                    (horizontal ? span("right") : span("bottom")) /
+                        Math.max(1, (1 - v) * (horizontal ? baseW : baseH)),
+                )
+        }
+    }
+    const width = baseW * scale,
+        height = baseH * scale
     return {
         width,
         height,
-        pins: symbol.pins.map((pin) => {
-            const index = (indexes[pin.side] = (indexes[pin.side] || 0) + 1)
-            const ratio = pin.position ?? index / (count(pin.side) + 1)
-            const x = pin.side === "left" ? 0 : pin.side === "right" ? 1 : ratio
-            const y = pin.side === "top" ? 0 : pin.side === "bottom" ? 1 : ratio
-            return { ...pin, x, y }
+        pins,
+        rich,
+        outline:
+            symbol.body?.outline ||
+            ([
+                [0, 0],
+                [1, 0],
+                [1, 1],
+                [0, 1],
+            ] as [number, number][]),
+        labels: pins.flatMap((pin) => {
+            const x = pin.x * width,
+                y = pin.y * height,
+                named =
+                    pin.identifierKind === "label" || pin.name === pin.number
+            if (!rich)
+                return [
+                    {
+                        id: `${pin.number}:label`,
+                        text: emcPinLabel(pin),
+                        x:
+                            x +
+                            (pin.side === "left"
+                                ? 12
+                                : pin.side === "right"
+                                  ? -12
+                                  : 0),
+                        y:
+                            y +
+                            (pin.side === "top"
+                                ? 18
+                                : pin.side === "bottom"
+                                  ? -12
+                                  : 0),
+                        width: emcPinLabel(pin).length * 7 + 8,
+                        rotation: 0,
+                        anchor:
+                            pin.side === "left"
+                                ? "start"
+                                : pin.side === "right"
+                                  ? "end"
+                                  : "middle",
+                    },
+                ]
+            const side = pin.side,
+                horizontal = side === "left" || side === "right",
+                sign = side === "left" || side === "top" ? 1 : -1
+            const number = {
+                id: `${pin.number}:number`,
+                text: pin.number,
+                x: horizontal ? x + sign * 18 : x,
+                y: horizontal ? y : y + sign * 16,
+                width: Math.max(20, pin.number.length * 7),
+                rotation: 0,
+                anchor: "middle",
+            }
+            const name = {
+                id: `${pin.number}:name`,
+                text: pin.name,
+                x: horizontal ? x + sign * (named ? 16 : 46) : x,
+                y: horizontal ? y : y + sign * (named ? 16 : 44),
+                width: pin.name.length * 7 + 8,
+                rotation: horizontal ? 0 : side === "top" ? 90 : 270,
+                anchor: horizontal
+                    ? side === "left"
+                        ? "start"
+                        : "end"
+                    : "start",
+            }
+            return named ? [name] : [number, name]
         }),
     }
 }
@@ -141,7 +268,7 @@ export function insertEmcSymbolNative(
             point.y,
             layout.width,
             layout.height,
-            "rounded=0;html=0;whiteSpace=wrap;align=center;verticalAlign=middle;collapsible=0;",
+            `rounded=0;html=0;whiteSpace=wrap;align=center;verticalAlign=middle;collapsible=0;fontSize=14;fillColor=#ffffff;strokeColor=#000000;${symbol.body?.outline ? `shape=mxgraph.basic.polygon;polyCoords=${JSON.stringify(layout.outline)};` : ""}`,
         )
         root.setConnectable(false)
         if (symbol.body?.antennaHeight) {
@@ -168,18 +295,62 @@ export function insertEmcSymbolNative(
             const port = graph.insertVertex(
                 root,
                 null,
-                emcPinLabel(pin),
+                layout.rich ? "" : emcPinLabel(pin),
                 pin.x,
                 pin.y,
-                10,
-                10,
-                `shape=ellipse;html=0;fillColor=#edcb6d;strokeColor=#777777;movable=0;resizable=0;rotatable=0;labelPosition=${labelPosition};verticalLabelPosition=${horizontal ? "middle" : pin.side === "top" ? "bottom" : "top"};align=${pin.side === "left" ? "left" : pin.side === "right" ? "right" : "center"};verticalAlign=middle;`,
+                6,
+                6,
+                `shape=ellipse;html=0;fillColor=#000000;strokeColor=#000000;perimeter=none;points=[[0.5,0.5,0]];outlineConnect=0;snapToPoint=1;movable=0;resizable=0;rotatable=0;labelPosition=${labelPosition};verticalLabelPosition=${horizontal ? "middle" : pin.side === "top" ? "bottom" : "top"};align=${pin.side === "left" ? "left" : pin.side === "right" ? "right" : "center"};verticalAlign=middle;`,
                 true,
             )
             const geometry = port.geometry.clone()
-            geometry.offset = new win.mxPoint(-5, -5)
+            geometry.offset = new win.mxPoint(-3, -3)
             graph.model.setGeometry(port, geometry)
         }
+        if (symbol.body?.pin1) {
+            const mark = graph.insertVertex(
+                root,
+                null,
+                "",
+                symbol.body.pin1.x * layout.width - 4,
+                symbol.body.pin1.y * layout.height - 4,
+                8,
+                8,
+                "shape=ellipse;fillColor=#000000;strokeColor=#000000;connectable=0;",
+            )
+            mark.setConnectable(false)
+        }
+        if (layout.rich)
+            for (const label of layout.labels) {
+                const vertical = label.rotation !== 0
+                const centreX =
+                    label.x +
+                    (vertical
+                        ? 0
+                        : label.anchor === "start"
+                          ? label.width / 2
+                          : label.anchor === "end"
+                            ? -label.width / 2
+                            : 0)
+                const centreY =
+                    label.y +
+                    (vertical
+                        ? label.rotation === 90
+                            ? label.width / 2
+                            : -label.width / 2
+                        : 0)
+                const cell = graph.insertVertex(
+                    root,
+                    null,
+                    label.text,
+                    centreX - label.width / 2,
+                    centreY - 7,
+                    label.width,
+                    14,
+                    `shape=text;html=0;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11;whiteSpace=nowrap;overflow=visible;rotation=${label.rotation};connectable=0;`,
+                )
+                cell.setConnectable(false)
+            }
     } finally {
         graph.model.endUpdate()
     }

@@ -33,6 +33,7 @@ test("format shortcuts reveal native Style, Text and Arrange tabs for the select
         canvas.locator('.geFormatTitle[title="Arrange"]'),
     ).toBeVisible()
     await page.getByTestId("drawing-tool-fillColor").click()
+    await page.getByRole("button", { name: "More colors", exact: true }).click()
     const colors = canvas
         .locator("div.mxWindow")
         .filter({ hasText: "Fill Color" })
@@ -59,20 +60,18 @@ test("format shortcuts reveal native Style, Text and Arrange tabs for the select
         })
     await expect.poll(savedXml).toContain("fillcolor=#ff0000")
     await expect(colors).toBeHidden()
+    await expect(page.getByTestId("last-fill-colour")).toHaveAccessibleName(
+        "Apply last fill colour #FF0000",
+    )
     await page.getByTestId("editor-undo").click()
     await expect.poll(savedXml).not.toContain("fillcolor=#ff0000")
     await page.getByTestId("editor-redo").click()
     await expect.poll(savedXml).toContain("fillcolor=#ff0000")
     await page.getByTestId("drawing-tool-strokeColor").click()
-    await page
-        .getByRole("menuitem", { name: "Line colour…", exact: true })
-        .click()
-    const lines = canvas
-        .locator("div.mxWindow")
-        .filter({ hasText: "Line Color" })
-        .first()
-    await expect(lines).toBeVisible()
-    await lines.locator('img[title="Close"]').click()
+    await page.getByRole("button", { name: "More", exact: true }).click()
+    await expect(canvas.locator('.geFormatTitle[title="Style"]')).toHaveClass(
+        /geActiveFormatTitle/,
+    )
     await page.getByTestId("drawing-tool-insert").click()
     await expect(canvas.locator(".mxPopupMenu:visible").first()).toBeVisible()
 })
