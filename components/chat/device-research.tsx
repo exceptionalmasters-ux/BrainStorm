@@ -6,6 +6,16 @@ export { SymbolPreview } from "@/components/workspace/symbol-preview"
 import { Globe, Loader2 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import {
     Dialog,
@@ -20,6 +30,7 @@ import { insertEmcSymbol } from "@/lib/drawio/editor-bridge"
 import {
     type DeviceCandidate,
     type EmcSymbol,
+    symbolLayout,
     validateEmcSymbol,
 } from "@/lib/emc-symbols"
 import { getOperationsContext, isOperationsMode } from "@/lib/operations-bridge"
@@ -33,9 +44,27 @@ import {
 } from "@/stores/device-research-store"
 import { useChatEngine } from "./chat-engine"
 import { openSourceAttachment, SourceFiles } from "./source-files"
+import { SymbolInstructions } from "./symbol-instructions"
 
 function ApprovalDialog() {
     const { draft, result, set } = useDeviceResearch()
+    const [discard, setDiscard] = useState(false)
+    useEffect(() => {
+        if (!draft) return
+        const protect = (event: BeforeUnloadEvent) => {
+            event.preventDefault()
+            event.returnValue = ""
+        }
+        window.addEventListener("beforeunload", protect)
+        return () => window.removeEventListener("beforeunload", protect)
+    }, [draft])
+    const [acceptIncomplete, setAcceptIncomplete] = useState(false)
+    useEffect(() => {
+        setAcceptIncomplete(false)
+    }, [draft])
+    const requestClose = () => {
+        if (!saving) setDiscard(true)
+    }
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState("")
     const canvasBusy = useCanvasStore((s) => s.isBusy)
@@ -62,199 +91,298 @@ function ApprovalDialog() {
             })
     }
     return (
-        <Dialog
-            open={!!draft}
-            onOpenChange={(open) => {
-                if (!open && !saving) {
-                    set({ draft: null })
-                    setError("")
-                }
-            }}
-        >
-            <DialogContent
-                className="max-h-[90vh] overflow-y-auto sm:max-w-3xl"
-                onEscapeKeyDown={(e) => {
-                    if (saving) e.preventDefault()
-                }}
-                onInteractOutside={(e) => {
-                    if (saving) e.preventDefault()
+        <>
+            <AlertDialog open={discard} onOpenChange={setDiscard}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>
+                            Close without saving the symbol?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Your generated symbol and unsaved edits will be
+                            discarded.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Continue editing</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => {
+                                set({ draft: null })
+                                setError("")
+                                setDiscard(false)
+                            }}
+                        >
+                            Close without saving
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+            <Dialog
+                open={!!draft}
+                onOpenChange={(open) => {
+                    if (!open) requestClose()
                 }}
             >
-                <DialogHeader>
-                    <DialogTitle>Approve EMC symbol</DialogTitle>
-                    <DialogDescription>
-                        Check the exact device, package and every pin against
-                        the linked datasheet. Nothing is saved or inserted until
-                        you approve.
-                    </DialogDescription>
-                </DialogHeader>
-                {draft && (
-                    <>
-                        {draft.incomplete && (
-                            <p
-                                role="alert"
-                                className="rounded border border-amber-500 p-2 text-amber-400"
-                            >
-                                Incomplete proposal — not a verified pinout.
-                                Unknown pins are omitted.{" "}
-                                {(draft.warnings || []).join(" ")}
-                            </p>
-                        )}
-                        <label className="text-sm">
-                            Symbol name
-                            <Input
-                                value={draft.name}
-                                maxLength={120}
-                                disabled={saving}
-                                onChange={(e) =>
-                                    set({
-                                        draft: {
-                                            ...draft,
-                                            name: e.target.value,
-                                        },
-                                    })
-                                }
-                            />
-                        </label>
-                        <p className="text-sm">
-                            {draft.device} · {draft.package}
-                            {draft.sourceKind && (
-                                <span className="block">
-                                    Source analysed:{" "}
-                                    {draft.sourceKind === "pdf"
-                                        ? "PDF text and page images"
-                                        : draft.sourceKind === "image"
-                                          ? "source image"
-                                          : draft.sourceKind === "document"
-                                            ? "attached document text"
-                                            : "research summary only"}
-                                </span>
-                            )}
-                        </p>
-                        <SymbolPreview symbol={draft} />
-                        <div className="max-h-64 space-y-2 overflow-auto">
-                            {draft.pins.map((pin, index) => (
-                                <div
-                                    key={`${index}-${pin.number}`}
-                                    className="grid grid-cols-[50px_1fr_90px] gap-2 rounded border p-2 text-xs"
+                <DialogContent
+                    className="max-h-[90vh] overflow-y-auto sm:max-w-3xl"
+                    onEscapeKeyDown={(e) => {
+                        e.preventDefault()
+                        if (!discard) requestClose()
+                    }}
+                    onInteractOutside={(e) => {
+                        e.preventDefault()
+                        if (!discard) requestClose()
+                    }}
+                >
+                    <DialogHeader>
+                        <DialogTitle>Approve EMC symbol</DialogTitle>
+                        <DialogDescription>
+                            Check the exact device, package and every pin
+                            against the linked datasheet. Nothing is saved or
+                            inserted until you approve.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {draft && (
+                        <>
+                            {draft.incomplete && (
+                                <p
+                                    role="alert"
+                                    className="rounded border border-amber-500 p-2 text-amber-400"
                                 >
-                                    <span className="self-center">
-                                        Pin {pin.number}
-                                    </span>
-                                    <Input
-                                        aria-label={`Pin ${pin.number} name`}
-                                        value={pin.name}
-                                        disabled={saving}
-                                        maxLength={60}
+                                    Incomplete proposal — not a verified pinout.
+                                    Unknown pins are omitted.{" "}
+                                    {(draft.warnings || []).join(" ")}
+                                </p>
+                            )}
+                            <label className="text-sm">
+                                Symbol size
+                                <select
+                                    aria-label="Symbol size"
+                                    className="ml-2 rounded border bg-background p-1"
+                                    disabled={saving}
+                                    value={draft.body?.density || "standard"}
+                                    onChange={(e) =>
+                                        set({
+                                            draft: {
+                                                ...draft,
+                                                body: {
+                                                    ...(draft.body || {
+                                                        width: 200,
+                                                        height: 240,
+                                                    }),
+                                                    labelsInside: true,
+                                                    density: e.target.value as
+                                                        | "compact"
+                                                        | "standard"
+                                                        | "spacious",
+                                                },
+                                            },
+                                        })
+                                    }
+                                >
+                                    <option value="compact">
+                                        Compact · text 10
+                                    </option>
+                                    <option value="standard">
+                                        Standard · text 12 / pin pitch 20
+                                    </option>
+                                    <option value="spacious">
+                                        Spacious · text 12 / pin pitch 30
+                                    </option>
+                                </select>
+                            </label>
+                            <p className="text-xs text-muted-foreground">
+                                Drawing size:{" "}
+                                {Math.round(symbolLayout(draft).width)} ×{" "}
+                                {Math.round(symbolLayout(draft).height)} units ·
+                                source proportions preserved
+                            </p>
+                            {draft.incomplete && (
+                                <label className="flex gap-2 text-sm">
+                                    <input
+                                        type="checkbox"
+                                        checked={acceptIncomplete}
                                         onChange={(e) =>
-                                            updatePin(index, {
-                                                name: e.target.value,
-                                            })
+                                            setAcceptIncomplete(
+                                                e.target.checked,
+                                            )
                                         }
+                                        disabled={saving}
                                     />
-                                    <select
-                                        aria-label={`Pin ${pin.number} side`}
-                                        className="rounded border bg-background"
-                                        value={pin.side}
-                                        disabled={saving}
-                                        onChange={(e) =>
-                                            updatePin(index, {
-                                                side: e.target
-                                                    .value as typeof pin.side,
-                                            })
-                                        }
+                                    I accept this incomplete pinout and will
+                                    verify it before wiring.
+                                </label>
+                            )}
+                            <label className="text-sm">
+                                Symbol name
+                                <Input
+                                    value={draft.name}
+                                    maxLength={120}
+                                    disabled={saving}
+                                    onChange={(e) =>
+                                        set({
+                                            draft: {
+                                                ...draft,
+                                                name: e.target.value,
+                                            },
+                                        })
+                                    }
+                                />
+                            </label>
+                            <p className="text-sm">
+                                {draft.device} · {draft.package}
+                                {draft.sourceKind && (
+                                    <span className="block">
+                                        Source analysed:{" "}
+                                        {draft.sourceKind === "pdf"
+                                            ? "PDF text and page images"
+                                            : draft.sourceKind === "image"
+                                              ? "source image"
+                                              : draft.sourceKind === "document"
+                                                ? "attached document text"
+                                                : "research summary only"}
+                                    </span>
+                                )}
+                            </p>
+                            <SymbolPreview symbol={draft} />
+                            <div className="max-h-64 space-y-2 overflow-auto">
+                                {draft.pins.map((pin, index) => (
+                                    <div
+                                        key={`${index}-${pin.number}`}
+                                        className="grid grid-cols-[50px_1fr_90px] gap-2 rounded border p-2 text-xs"
                                     >
-                                        {["left", "right", "top", "bottom"].map(
-                                            (side) => (
+                                        <span className="self-center">
+                                            Pin {pin.number}
+                                        </span>
+                                        <Input
+                                            aria-label={`Pin ${pin.number} name`}
+                                            value={pin.name}
+                                            disabled={saving}
+                                            maxLength={60}
+                                            onChange={(e) =>
+                                                updatePin(index, {
+                                                    name: e.target.value,
+                                                })
+                                            }
+                                        />
+                                        <select
+                                            aria-label={`Pin ${pin.number} side`}
+                                            className="rounded border bg-background"
+                                            value={pin.side}
+                                            disabled={saving}
+                                            onChange={(e) =>
+                                                updatePin(index, {
+                                                    side: e.target
+                                                        .value as typeof pin.side,
+                                                })
+                                            }
+                                        >
+                                            {[
+                                                "left",
+                                                "right",
+                                                "top",
+                                                "bottom",
+                                            ].map((side) => (
                                                 <option key={side}>
                                                     {side}
                                                 </option>
-                                            ),
-                                        )}
-                                    </select>
-                                    <a
-                                        href={pin.sourceUrl}
-                                        onClick={(e) => {
-                                            if (result?.sourceId) {
-                                                e.preventDefault()
-                                                void openSourceAttachment(
-                                                    result.sourceId,
-                                                ).catch((e) =>
-                                                    setError(e.message),
-                                                )
-                                            }
-                                        }}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="col-span-3 text-amber-400 underline"
-                                    >
-                                        {pin.evidence}
-                                    </a>
-                                </div>
-                            ))}
-                        </div>
-                        {error && (
-                            <p role="alert" className="text-sm text-red-500">
-                                {error}
-                            </p>
-                        )}
-                        <div className="flex flex-wrap justify-end gap-2">
-                            <Button
-                                variant="outline"
-                                disabled={saving}
-                                onClick={() => {
-                                    set({ draft: null })
-                                    setError("")
-                                }}
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                disabled={
-                                    saving || canvasBusy || !editable || !result
-                                }
-                                onClick={async () => {
-                                    const valid = validateEmcSymbol(draft)
-                                    if (!valid) {
-                                        setError(
-                                            "Check names, unique pin numbers, and source URLs.",
-                                        )
-                                        return
+                                            ))}
+                                        </select>
+                                        <a
+                                            href={pin.sourceUrl}
+                                            onClick={(e) => {
+                                                if (result?.sourceId) {
+                                                    e.preventDefault()
+                                                    void openSourceAttachment(
+                                                        result.sourceId,
+                                                    ).catch((e) =>
+                                                        setError(e.message),
+                                                    )
+                                                }
+                                            }}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="col-span-3 text-amber-400 underline"
+                                        >
+                                            {pin.evidence}
+                                        </a>
+                                    </div>
+                                ))}
+                            </div>
+                            {error && (
+                                <p
+                                    role="alert"
+                                    className="text-sm text-red-500"
+                                >
+                                    {error}
+                                </p>
+                            )}
+                            <div className="flex flex-wrap justify-end gap-2">
+                                <Button
+                                    variant="outline"
+                                    disabled={saving}
+                                    onClick={() => {
+                                        requestClose()
+                                    }}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    disabled={
+                                        saving ||
+                                        canvasBusy ||
+                                        !editable ||
+                                        !result ||
+                                        (!!draft?.incomplete &&
+                                            !acceptIncomplete)
                                     }
-                                    setSaving(true)
-                                    setError("")
-                                    try {
-                                        await emcAction("approve", {
-                                            approved: true,
-                                            researchId: result?.researchId,
-                                            symbol: draft,
-                                        })
-                                        const inserted = insertEmcSymbol(draft)
-                                        toast.success(
-                                            inserted
-                                                ? "Symbol saved to EMC library and inserted"
-                                                : "Symbol saved. Insert it from the EMC library when the canvas is ready.",
-                                        )
-                                        if (alive.current) set({ draft: null })
-                                    } catch (e) {
-                                        if (alive.current)
+                                    onClick={async () => {
+                                        const valid = validateEmcSymbol(draft)
+                                        if (!valid) {
                                             setError(
-                                                e instanceof Error
-                                                    ? e.message
-                                                    : "Save failed",
+                                                "Check names, unique pin numbers, and source URLs.",
                                             )
-                                    } finally {
-                                        if (alive.current) setSaving(false)
-                                    }
-                                }}
-                            >
-                                {saving ? "Saving…" : "Approve, save & insert"}
-                            </Button>
-                        </div>
-                    </>
-                )}
-            </DialogContent>
-        </Dialog>
+                                            return
+                                        }
+                                        setSaving(true)
+                                        setError("")
+                                        try {
+                                            await emcAction("approve", {
+                                                approved: true,
+                                                researchId: result?.researchId,
+                                                symbol: draft,
+                                            })
+                                            const inserted =
+                                                insertEmcSymbol(draft)
+                                            toast.success(
+                                                inserted
+                                                    ? "Symbol saved to EMC library and inserted"
+                                                    : "Symbol saved. Insert it from the EMC library when the canvas is ready.",
+                                            )
+                                            if (alive.current)
+                                                set({ draft: null })
+                                        } catch (e) {
+                                            if (alive.current)
+                                                setError(
+                                                    e instanceof Error
+                                                        ? e.message
+                                                        : "Save failed",
+                                                )
+                                        } finally {
+                                            if (alive.current) setSaving(false)
+                                        }
+                                    }}
+                                >
+                                    {saving
+                                        ? "Saving…"
+                                        : "Approve, save & insert"}
+                                </Button>
+                            </div>
+                        </>
+                    )}
+                </DialogContent>
+            </Dialog>
+        </>
     )
 }
 
@@ -391,6 +519,9 @@ export function DeviceResearchPanel() {
             >
                 Create symbol from file
             </button>
+            {!fileMode && (
+                <SymbolInstructions disabled={state.busy || !!readonly} />
+            )}
             {fileMode && <SourceFiles readonly={!!readonly} />}
             {(expanded || state.busy || state.result || state.error) && (
                 <div className="mt-2 max-h-[35vh] space-y-2 overflow-y-auto">
@@ -457,7 +588,7 @@ export function DeviceResearchPanel() {
                                 onClick={() =>
                                     void draftDevice(
                                         state.incompleteCandidateId!,
-                                        "",
+                                        undefined,
                                         true,
                                     )
                                 }

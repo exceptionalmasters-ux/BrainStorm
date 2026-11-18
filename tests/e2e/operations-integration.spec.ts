@@ -98,8 +98,12 @@ for (const withBrief of [true, false]) {
                                       }),
                                   ),
                               }
-                if (action === "draft")
+                if (action === "draft") {
+                    expect(body.edits).toBe(
+                        "Drawing page 2; pin table pages 3–4",
+                    )
                     data = { questions: [], symbol: fixtureSymbol }
+                }
                 if (action === "approve") {
                     expect(body.approved).toBe(true)
                     approvals++
@@ -337,6 +341,9 @@ for (const withBrief of [true, false]) {
                     exact: true,
                 }),
             ).toBeVisible()
+            await popup
+                .getByLabel("Symbol instructions", { exact: true })
+                .fill("Drawing page 2; pin table pages 3–4")
             await search.fill("Fixture DIP-2")
             await popup
                 .getByRole("button", { name: "Search", exact: true })
@@ -361,6 +368,24 @@ for (const withBrief of [true, false]) {
             await approval
                 .getByRole("button", { name: "Cancel", exact: true })
                 .click()
+            const discard = popup.getByRole("alertdialog", {
+                name: "Close without saving the symbol?",
+            })
+            await expect(discard).toBeVisible()
+            await discard
+                .getByRole("button", { name: "Continue editing", exact: true })
+                .click()
+            await expect(discard).not.toBeVisible()
+            await expect(approval).toBeVisible()
+            await popup.keyboard.press("Escape")
+            await expect(discard).toBeVisible()
+            await discard
+                .getByRole("button", {
+                    name: "Close without saving",
+                    exact: true,
+                })
+                .click()
+            await expect(approval).not.toBeVisible()
             expect(approvals).toBe(0)
             await popup
                 .getByRole("button", { name: "Create symbol", exact: true })

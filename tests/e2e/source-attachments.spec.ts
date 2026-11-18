@@ -24,7 +24,12 @@ test("private PDF upload, no-Web symbol, trash/restore/purge and reconnect witho
         device: "Fixture",
         package: "Module",
         sourceKind: "pdf",
-        body: { width: 240, height: 360, antennaHeight: 0.25 },
+        body: {
+            width: 240,
+            height: 360,
+            antennaHeight: 0.25,
+            labelsInside: true,
+        },
         pins: [
             {
                 number: "RST",
@@ -74,7 +79,8 @@ test("private PDF upload, no-Web symbol, trash/restore/purge and reconnect witho
                 sources[0].version = 2
                 data = { ok: true }
             }
-            if (action === "source-research")
+            if (action === "source-research") {
+                expect(body.query).toBe("Drawing page 2; pin table pages 3–4")
                 data = {
                     researchId: "local-research",
                     sourceId,
@@ -91,13 +97,16 @@ test("private PDF upload, no-Web symbol, trash/restore/purge and reconnect witho
                         },
                     ],
                 }
+            }
             if (action === "draft") {
+                expect(body.edits).toBe("Drawing page 2; pin table pages 3–4")
                 expect(body.webEnabled).toBe(false)
                 data = { questions: [], symbol }
             }
             if (action === "approve") {
+                expect(body.symbol.body.density).toBe("compact")
                 approvals++
-                data = { id: "symbol", symbol }
+                data = { id: "symbol", symbol: body.symbol }
             }
             if (action === "source-trash") {
                 sources[0].state = "trashed"
@@ -171,6 +180,9 @@ test("private PDF upload, no-Web symbol, trash/restore/purge and reconnect witho
     await expect(
         files.getByRole("button", { name: "Analyse file", exact: true }),
     ).toBeEnabled()
+    await popup
+        .getByLabel("Symbol instructions", { exact: true })
+        .fill("Drawing page 2; pin table pages 3–4")
     await files
         .getByRole("button", { name: "Analyse file", exact: true })
         .click()
@@ -185,6 +197,26 @@ test("private PDF upload, no-Web symbol, trash/restore/purge and reconnect witho
     await expect(
         approval.getByText("Source analysed: PDF text and page images"),
     ).toBeVisible()
+    const discard = popup.getByRole("alertdialog", {
+        name: "Close without saving the symbol?",
+    })
+    await approval.getByRole("button", { name: "Close", exact: true }).click()
+    await expect(discard).toBeVisible()
+    await discard
+        .getByRole("button", { name: "Continue editing", exact: true })
+        .click()
+    await expect(discard).not.toBeVisible()
+    await popup
+        .locator('[data-slot="dialog-overlay"]')
+        .click({ position: { x: 2, y: 2 }, force: true })
+    await expect(discard).toBeVisible()
+    await discard
+        .getByRole("button", { name: "Continue editing", exact: true })
+        .click()
+    await expect(discard).not.toBeVisible()
+    await approval
+        .getByLabel("Symbol size", { exact: true })
+        .selectOption("compact")
     await approval
         .getByRole("button", { name: "Approve, save & insert", exact: true })
         .click()
