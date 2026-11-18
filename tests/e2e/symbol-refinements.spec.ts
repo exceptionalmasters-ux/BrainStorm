@@ -57,7 +57,9 @@ test("quick colours keep independent last-used swatches and native panels toggle
         fill.getByRole("button").filter({ hasText: /^$/ }),
     ).toHaveCount(16)
     await fill.getByLabel("fill HEX colour").fill("#123abc")
-    await fill.getByRole("button", { name: "Apply", exact: true }).click()
+    await fill
+        .getByRole("button", { name: "Apply colour", exact: true })
+        .click()
     await expect(page.getByTestId("last-fill-colour")).toHaveAccessibleName(
         "Apply last fill colour #123ABC",
     )
