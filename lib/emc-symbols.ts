@@ -130,6 +130,7 @@ export function symbolLayout(symbol: EmcSymbol) {
                     180,
                     symbol.name.length * 8,
                     symbol.device.length * 7,
+                    symbol.package.length * 7,
                 )) /
                 baseW,
             (span("top") + span("bottom") + 120) / baseH,

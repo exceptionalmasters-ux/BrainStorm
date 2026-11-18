@@ -25,6 +25,7 @@ import {
 import { QuickColour } from "@/components/workspace/quick-colour"
 import {
     activateSelectionPointer,
+    closeEditorFormatPanel,
     editorActionState,
     editorLabel,
     editorMenuAvailable,
@@ -318,7 +319,11 @@ export function DrawingToolbar({
                                     (tab !== "style" &&
                                         (!selection.length || readOnly))
                                 }
-                                onClick={() => openEditorFormatTab(tab, true)}
+                                onClick={() =>
+                                    activeFormatTab === tab
+                                        ? closeEditorFormatPanel()
+                                        : openEditorFormatTab(tab)
+                                }
                             >
                                 <Icon size={16} />
                             </button>

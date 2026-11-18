@@ -157,6 +157,19 @@ export function activateSelectionPointer() {
     return result
 }
 
+/** Close the native panel immediately; its docked width is otherwise animated asynchronously. */
+export function closeEditorFormatPanel() {
+    if (!ui) return false
+    if (ui.formatWindow?.window) ui.formatWindow.window.setVisible(false)
+    else {
+        ui.formatWidth = 0
+        ui.refresh?.()
+        if (win?.mxEventObject)
+            ui.fireEvent?.(new win.mxEventObject("formatWidthChanged"))
+    }
+    syncAll()
+    return true
+}
 export function openEditorFormatTab(tab: FormatTab, toggle = false) {
     const current = ui
     const result = showFormatTab(ui, win?.mxResources, tab, toggle)
