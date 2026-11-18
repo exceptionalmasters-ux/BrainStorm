@@ -44,7 +44,7 @@ describe("EMC wires", () => {
             listeners = new Set<() => void>()
         let connections = 0,
             enabled = true
-        const handler = {
+        const handler: any = {
             reset() {},
             waypointsEnabled: true,
             isStartEvent: () => true,
