@@ -375,6 +375,7 @@ for (const withBrief of [true, false]) {
             await discard
                 .getByRole("button", { name: "Continue editing", exact: true })
                 .click()
+            await expect(discard).not.toBeVisible()
             await expect(approval).toBeVisible()
             await popup.keyboard.press("Escape")
             await expect(discard).toBeVisible()

@@ -205,6 +205,7 @@ test("private PDF upload, no-Web symbol, trash/restore/purge and reconnect witho
     await discard
         .getByRole("button", { name: "Continue editing", exact: true })
         .click()
+    await expect(discard).not.toBeVisible()
     await popup
         .locator('[data-slot="dialog-overlay"]')
         .click({ position: { x: 2, y: 2 }, force: true })
@@ -212,6 +213,7 @@ test("private PDF upload, no-Web symbol, trash/restore/purge and reconnect witho
     await discard
         .getByRole("button", { name: "Continue editing", exact: true })
         .click()
+    await expect(discard).not.toBeVisible()
     await approval
         .getByLabel("Symbol size", { exact: true })
         .selectOption("compact")
