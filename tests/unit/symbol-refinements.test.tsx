@@ -69,6 +69,17 @@ describe("source geometry", () => {
                 y = vert ? v.y - (v.rotation === 270 ? v.width : 0) : v.y - 7
             return { x, y, w: vert ? 14 : v.width, h: vert ? v.width : 14 }
         })
+        const dot = {
+            x: l.bodyFrame.x + 0.08 * l.bodyFrame.width,
+            y: l.bodyFrame.y + 0.08 * l.bodyFrame.height,
+        }
+        for (const b of bounds)
+            expect(
+                dot.x + 4 <= b.x ||
+                    dot.x - 4 >= b.x + b.w ||
+                    dot.y + 4 <= b.y ||
+                    dot.y - 4 >= b.y + b.h,
+            ).toBe(true)
         for (let i = 0; i < bounds.length; i++) {
             const a = bounds[i]
             for (const b of bounds.slice(i + 1)) {

@@ -20,6 +20,7 @@ export function SymbolPreview({
     return (
         <svg
             role="img"
+            fontFamily="Helvetica, Arial, sans-serif"
             aria-label={
                 compact ? "Symbol thumbnail" : "Symbol approval preview"
             }

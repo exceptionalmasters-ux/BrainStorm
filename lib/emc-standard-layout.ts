@@ -44,8 +44,34 @@ export function standardSymbolLayout(symbol: EmcSymbol) {
     const topBand = sidePins("top").length ? span("top") + 28 : 20
     const bottomBand = sidePins("bottom").length ? span("bottom") + 28 : 20
     const antenna = symbol.body?.antennaHeight || 0
+    const marker = symbol.body?.pin1
+    const cornerX =
+        marker && (marker.y <= 0.25 || marker.y >= 0.75)
+            ? marker.x <= 0.25
+                ? marker.x
+                : marker.x >= 0.75
+                  ? 1 - marker.x
+                  : 0
+            : 0
+    const cornerY =
+        marker && (marker.x <= 0.25 || marker.x >= 0.75)
+            ? marker.y <= 0.25
+                ? marker.y
+                : marker.y >= 0.75
+                  ? 1 - marker.y
+                  : 0
+            : 0
+    const horizontalCount = Math.max(
+        sidePins("top").length,
+        sidePins("bottom").length,
+    )
+    const verticalCount = Math.max(
+        sidePins("left").length,
+        sidePins("right").length,
+    )
     const minW = Math.max(
         120,
+        ((horizontalCount - 1) * pitch + 60) / (1 - cornerX),
         span("left") + span("right") + 60,
         (Math.max(sidePins("top").length, sidePins("bottom").length) - 1) *
             pitch +
@@ -53,6 +79,8 @@ export function standardSymbolLayout(symbol: EmcSymbol) {
     )
     const minH = Math.max(
         100,
+        ((verticalCount - 1) * pitch + 40 + Math.max(topBand, bottomBand)) /
+            (1 - cornerY),
         topBand + bottomBand + 40,
         ((Math.max(sidePins("left").length, sidePins("right").length) - 1) *
             pitch +
@@ -78,12 +106,41 @@ export function standardSymbolLayout(symbol: EmcSymbol) {
                 ratio: p.position ?? (i + 1) / (ps.length + 1),
             }))
             .sort((a, b) => a.ratio - b.ratio)
-        const low = horizontal
+        let low = horizontal
             ? round(frame.x + 20)
             : round(frame.y + topBand + bodyH * antenna)
-        const high = horizontal
+        let high = horizontal
             ? Math.floor((frame.x + bodyW - 20) / 10) * 10
             : Math.floor((frame.y + bodyH - bottomBand) / 10) * 10
+        // Reserve the source pin-1 dot's corner instead of covering it with a pin label.
+        if (
+            marker &&
+            horizontal &&
+            ((side === "top" && marker.y <= 0.25) ||
+                (side === "bottom" && marker.y >= 0.75))
+        ) {
+            if (marker.x <= 0.25)
+                low = Math.max(low, round(frame.x + marker.x * bodyW + 20))
+            if (marker.x >= 0.75)
+                high = Math.min(
+                    high,
+                    Math.floor((frame.x + marker.x * bodyW - 20) / 10) * 10,
+                )
+        }
+        if (
+            marker &&
+            !horizontal &&
+            ((side === "left" && marker.x <= 0.25) ||
+                (side === "right" && marker.x >= 0.75))
+        ) {
+            if (marker.y <= 0.25)
+                low = Math.max(low, round(frame.y + marker.y * bodyH + 20))
+            if (marker.y >= 0.75)
+                high = Math.min(
+                    high,
+                    Math.floor((frame.y + marker.y * bodyH - 20) / 10) * 10,
+                )
+        }
         const slots = sorted.map((p, i) =>
             Math.max(
                 low + i * pitch,
