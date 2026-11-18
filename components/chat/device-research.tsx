@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
+import { UniqueNameStatus } from "@/components/workspace/unique-name-status"
 import { insertEmcSymbol } from "@/lib/drawio/editor-bridge"
 import {
     type DeviceCandidate,
@@ -66,6 +67,7 @@ function ApprovalDialog() {
         if (!saving) setDiscard(true)
     }
     const [saving, setSaving] = useState(false)
+    const [nameValid, setNameValid] = useState(false)
     const [error, setError] = useState("")
     const canvasBusy = useCanvasStore((s) => s.isBusy)
     const alive = useRef(true)
@@ -229,6 +231,11 @@ function ApprovalDialog() {
                                     }
                                 />
                             </label>
+                            <UniqueNameStatus
+                                name={draft.name}
+                                kind="symbol"
+                                onValid={setNameValid}
+                            />
                             <p className="text-sm">
                                 {draft.device} · {draft.package}
                                 {draft.sourceKind && (
@@ -331,6 +338,7 @@ function ApprovalDialog() {
                                     disabled={
                                         saving ||
                                         canvasBusy ||
+                                        !nameValid ||
                                         !editable ||
                                         !result ||
                                         (!!draft?.incomplete &&

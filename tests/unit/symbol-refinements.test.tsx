@@ -124,9 +124,18 @@ describe("source geometry", () => {
         expect(standard.width).toBeLessThan(500)
         expect(standard.height).toBeLessThan(1000)
         expect(standard.pins).toHaveLength(34)
-        expect(standard.pins[0].sourceY).toBeCloseTo(
-            standard.bodyFrame.y + 0.02 * standard.bodyFrame.height,
-        )
+        const left = standard.pins.filter((p) => p.side === "left")
+        const right = standard.pins.filter((p) => p.side === "right")
+        for (let i = 0; i < left.length; i++) {
+            expect(left[i].sourceY).toBeCloseTo(left[i].y * standard.height)
+            expect(left[i].sourceY).toBeCloseTo(right[i].sourceY)
+            if (i) expect(left[i].sourceY - left[i - 1].sourceY).toBe(20)
+        }
+        for (const lead of standard.leaders) {
+            const a = lead.points[0],
+                b = lead.points[2]
+            expect(a.x === b.x || a.y === b.y).toBe(true)
+        }
         const compact = standardSymbolLayout({
             ...module,
             body: { ...module.body!, density: "compact" },

@@ -1,6 +1,16 @@
-import { Library, X } from "lucide-react"
+import { Library, Trash2, X } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { SymbolPreview } from "@/components/chat/device-research"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input"
 import { insertEmcSymbol } from "@/lib/drawio/editor-bridge"
 import type { EmcSymbol, LibrarySymbol } from "@/lib/emc-symbols"
@@ -17,6 +27,9 @@ export function EmcLibraryPanel() {
     const [libraryBusy, setLibraryBusy] = useState(false)
     const [libraryError, setLibraryError] = useState("")
     const [filter, setFilter] = useState("")
+    const [canDelete, setCanDelete] = useState(false)
+    const [removing, setRemoving] = useState<LibrarySymbol | null>(null)
+    const [deleting, setDeleting] = useState(false)
     const canInsert = useCanvasStore((s) => s.hasEditor && !s.isBusy)
     const readonly = getOperationsContext()?.readOnly
     useEffect(() => {
@@ -25,14 +38,16 @@ export function EmcLibraryPanel() {
         setLibraryBusy(true)
         setLibraryError("")
         setFilter("")
-        void emcAction<{ symbols: typeof state.library }>(
+        void emcAction<{ symbols: typeof state.library; canDelete?: boolean }>(
             "library",
             {},
             controller.signal,
         )
             .then((data) => {
-                if (!controller.signal.aborted)
+                if (!controller.signal.aborted) {
                     useDeviceResearch.setState({ library: data.symbols })
+                    setCanDelete(data.canDelete === true)
+                }
             })
             .catch((error) => {
                 if (!controller.signal.aborted)
@@ -50,7 +65,11 @@ export function EmcLibraryPanel() {
     useEffect(() => {
         const close = () => useDeviceResearch.setState({ libraryOpen: false })
         const handleEscape = (event: KeyboardEvent) => {
-            if (event.key === "Escape") close()
+            if (
+                event.key === "Escape" &&
+                !document.querySelector('[role="alertdialog"]')
+            )
+                close()
         }
         window.addEventListener("emc-close-toolbox", close)
         document.addEventListener("keydown", handleEscape)
@@ -109,9 +128,73 @@ export function EmcLibraryPanel() {
                             symbol={symbol}
                             disabled={!canInsert || !!readonly}
                             onError={setLibraryError}
+                            canDelete={canDelete}
+                            onDelete={() => setRemoving(symbol)}
                         />
                     ))}
             </div>
+            <AlertDialog
+                open={!!removing}
+                onOpenChange={(open) => {
+                    if (!open && !deleting) setRemoving(null)
+                }}
+            >
+                <AlertDialogContent
+                    onEscapeKeyDown={(event) => {
+                        if (deleting) event.preventDefault()
+                    }}
+                >
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>
+                            Remove symbol from library?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Remove “{removing?.name}”? Symbols already inserted
+                            in drawings will remain unchanged.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={deleting}>
+                            Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            disabled={deleting}
+                            className="bg-red-600 text-white hover:bg-red-700"
+                            onClick={async (event) => {
+                                event.preventDefault()
+                                if (!removing) return
+                                setDeleting(true)
+                                setLibraryError("")
+                                try {
+                                    await emcAction("symbol-delete", {
+                                        id: removing.id,
+                                        version: removing.version,
+                                        confirm: true,
+                                    })
+                                    useDeviceResearch.setState({
+                                        library: useDeviceResearch
+                                            .getState()
+                                            .library.filter(
+                                                (s) => s.id !== removing.id,
+                                            ),
+                                    })
+                                    setRemoving(null)
+                                } catch (error) {
+                                    setLibraryError(
+                                        error instanceof Error
+                                            ? error.message
+                                            : "Could not remove symbol",
+                                    )
+                                } finally {
+                                    setDeleting(false)
+                                }
+                            }}
+                        >
+                            {deleting ? "Removing…" : "Remove symbol"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </section>
     )
 }
@@ -145,7 +228,11 @@ function SymbolTile({
     symbol,
     disabled,
     onError,
+    canDelete,
+    onDelete,
 }: {
+    canDelete: boolean
+    onDelete: () => void
     symbol: LibrarySymbol
     disabled: boolean
     onError: (message: string) => void
@@ -155,6 +242,20 @@ function SymbolTile({
     >(null)
     const [loading, setLoading] = useState(false)
     const [dragging, setDragging] = useState(false)
+    const [peek, setPeek] = useState<{ left: number; top: number } | null>(null)
+    const longPress = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const showPreview = (element: HTMLElement) => {
+        const r = element.getBoundingClientRect()
+        setPeek({
+            left: Math.max(8, Math.min(window.innerWidth - 288, r.right + 8)),
+            top: Math.max(8, Math.min(window.innerHeight - 340, r.top)),
+        })
+    }
+    const stopLongPress = () => {
+        if (longPress.current) clearTimeout(longPress.current)
+        longPress.current = null
+    }
+    useEffect(() => () => stopLongPress(), [])
     const dragged = useRef(false)
     const start = useRef<{ x: number; y: number } | null>(null)
     useEffect(() => {
@@ -191,17 +292,39 @@ function SymbolTile({
         setLoading(false)
     }
     return (
-        <>
+        <div className="relative inline-flex w-[calc(25%-6px)] align-top">
             <button
                 type="button"
                 disabled={disabled || !definition || loading}
-                className="inline-flex w-[calc(25%-6px)] touch-none flex-col items-center gap-1 rounded border p-2 align-top hover:border-primary disabled:opacity-40"
+                className="inline-flex w-full touch-none flex-col items-center gap-1 rounded border p-1 hover:border-primary disabled:opacity-40"
                 title={`${symbol.name} · ${symbol.package}`}
-                aria-label={`Insert ${symbol.device || symbol.name}`}
+                aria-label={`Insert ${symbol.name}`}
                 onClick={insert}
+                onPointerEnter={(event) => {
+                    if (event.pointerType !== "touch")
+                        showPreview(event.currentTarget)
+                }}
+                onPointerLeave={(event) => {
+                    if (event.pointerType !== "touch") setPeek(null)
+                }}
+                onFocus={(event) => showPreview(event.currentTarget)}
+                onBlur={() => setPeek(null)}
+                onContextMenu={(event) => {
+                    event.preventDefault()
+                    showPreview(event.currentTarget)
+                }}
                 onPointerDown={(e) => {
                     if (definition && !disabled) {
                         start.current = { x: e.clientX, y: e.clientY }
+                        stopLongPress()
+                        if (e.pointerType === "touch") {
+                            const element = e.currentTarget
+                            longPress.current = setTimeout(() => {
+                                showPreview(element)
+                                dragged.current = true
+                                start.current = null
+                            }, 500)
+                        }
                         e.currentTarget.setPointerCapture(e.pointerId)
                     }
                 }}
@@ -212,14 +335,23 @@ function SymbolTile({
                             e.clientX - start.current.x,
                             e.clientY - start.current.y,
                         ) > 8
-                    )
+                    ) {
+                        stopLongPress()
+                        setPeek(null)
                         setDragging(true)
+                    }
                 }}
                 onPointerCancel={() => {
+                    stopLongPress()
                     start.current = null
                     setDragging(false)
                 }}
                 onPointerUp={(e) => {
+                    stopLongPress()
+                    if (dragged.current && !start.current) {
+                        setTimeout(() => setPeek(null), 2500)
+                        return
+                    }
                     const moved =
                         start.current &&
                         Math.hypot(
@@ -238,7 +370,7 @@ function SymbolTile({
                     setDragging(false)
                 }}
             >
-                <span className="flex h-14 w-full items-center justify-center pointer-events-none">
+                <span className="pointer-events-none flex h-8 w-full items-center justify-center">
                     {definition ? (
                         "kind" in definition ? (
                             <ManualPreview symbol={definition} />
@@ -250,9 +382,38 @@ function SymbolTile({
                     )}
                 </span>
                 <span className="w-full truncate text-center text-xs">
-                    {symbol.device || symbol.name}
+                    {symbol.name}
                 </span>
             </button>
+            {canDelete && (
+                <button
+                    type="button"
+                    aria-label={`Remove ${symbol.name} from library`}
+                    title="Remove symbol from library"
+                    onClick={onDelete}
+                    className="absolute -right-1 -top-1 flex size-7 items-center justify-center rounded-full border bg-card text-muted-foreground hover:text-red-500"
+                >
+                    <Trash2 aria-hidden="true" size={12} />
+                </button>
+            )}
+            {peek && definition && (
+                <div
+                    role="tooltip"
+                    className="pointer-events-none fixed z-[120] w-[280px] rounded-xl border border-primary/30 bg-white p-3 text-black shadow-xl"
+                    style={peek}
+                >
+                    <div className="h-[280px] w-full">
+                        {"kind" in definition ? (
+                            <ManualPreview symbol={definition} />
+                        ) : (
+                            <SymbolPreview symbol={definition} compact />
+                        )}
+                    </div>
+                    <p className="mt-1 truncate text-center text-xs font-semibold">
+                        {symbol.name}
+                    </p>
+                </div>
+            )}
             {dragging && (
                 <div
                     className="fixed inset-0 z-[100] cursor-copy"
@@ -264,6 +425,6 @@ function SymbolTile({
                     </div>
                 </div>
             )}
-        </>
+        </div>
     )
 }

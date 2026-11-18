@@ -9,6 +9,8 @@ const actions = new Set([
     "manual-create",
     "library",
     "symbol",
+    "name-available",
+    "symbol-delete",
     "source-create",
     "source-complete",
     "source-list",

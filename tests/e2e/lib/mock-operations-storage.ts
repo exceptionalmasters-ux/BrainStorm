@@ -48,6 +48,8 @@ export async function mockOperationsStorage(
                     body: objects.get(path) || "",
                 })
             }
+            if (rpc === "brainstorm_name_available")
+                return route.fulfill({ json: true })
             const args = req.postDataJSON()
             if (rpc === "brainstorm_context")
                 return route.fulfill({

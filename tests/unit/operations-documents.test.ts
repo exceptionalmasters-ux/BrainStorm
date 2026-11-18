@@ -28,6 +28,8 @@ describe("mobile direct Operations document transport", () => {
             "fetch",
             vi.fn(async (url, init) => {
                 calls.push({ url: String(url), init })
+                if (String(url).endsWith("brainstorm_name_available"))
+                    return Response.json(true)
                 if (String(url).endsWith("brainstorm_context"))
                     return Response.json({
                         contextType: "project",
@@ -122,7 +124,9 @@ describe("mobile direct Operations document transport", () => {
                       contextId,
                       readOnly: readonly,
                   })
-                : Response.json({ error: "Denied" }, { status: 403 }),
+                : String(url).endsWith("brainstorm_name_available")
+                  ? Response.json(true)
+                  : Response.json({ error: "Denied" }, { status: 403 }),
         )
         vi.stubGlobal("fetch", fetchMock)
         await expect(
@@ -150,6 +154,8 @@ describe("mobile direct Operations document transport", () => {
         vi.stubGlobal(
             "fetch",
             vi.fn(async (url, init) => {
+                if (String(url).endsWith("brainstorm_name_available"))
+                    return Response.json(true)
                 if (String(url).endsWith("brainstorm_context"))
                     return Response.json({
                         contextType: "project",

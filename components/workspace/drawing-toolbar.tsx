@@ -22,6 +22,7 @@ import {
     ZoomIn,
     ZoomOut,
 } from "lucide-react"
+import { EmcConnectorTool } from "@/components/workspace/emc-connector-tool"
 import { QuickColour } from "@/components/workspace/quick-colour"
 import {
     activateSelectionPointer,
@@ -49,6 +50,7 @@ export function DrawingToolbar({
     const selection = useCanvasStore((s) => s.selection)
     const activeFormatTab = useCanvasStore((s) => s.activeFormatTab)
     const freehand = useCanvasStore((s) => s.isFreehand)
+    const connector = useCanvasStore((s) => s.isConnector)
     useCanvasStore((s) => s.isFormatOpen)
     const readOnly = !!getOperationsContext()?.readOnly
     const base =
@@ -77,7 +79,11 @@ export function DrawingToolbar({
                 (changes && readOnly) ||
                 !editorActionState(name).enabled
             }
-            onClick={() => runEditorAction(name)}
+            onClick={() => {
+                if (connector && name === "insertFreehand")
+                    activateSelectionPointer()
+                runEditorAction(name)
+            }}
         >
             <Icon size={16} />
             <span className="sr-only">{editorLabel(key, fallback)}</span>
@@ -171,7 +177,7 @@ export function DrawingToolbar({
                             data-testid="drawing-tool-select"
                             title={editorLabel("select", "Select objects")}
                             aria-label={editorLabel("select", "Select objects")}
-                            aria-pressed={!freehand}
+                            aria-pressed={!freehand && !connector}
                             disabled={!ready || busy}
                             onClick={activateSelectionPointer}
                         >
@@ -232,6 +238,7 @@ export function DrawingToolbar({
                                 <span aria-hidden>▾</span>
                             </button>
                         ))}
+                        <EmcConnectorTool />
                         {([[7, "Text", Type]] as const).map(
                             ([index, label, Icon]) => (
                                 <button

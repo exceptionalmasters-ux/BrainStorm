@@ -1,6 +1,15 @@
 "use client"
+import { Trash2 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { UniqueNameStatus } from "@/components/workspace/unique-name-status"
 import { EMC_SUPABASE_PUBLIC_KEY, EMC_SUPABASE_URL } from "@/lib/emc-deployment"
 import { operationsAuthorization } from "@/lib/operations-bridge"
 import {
@@ -50,7 +59,13 @@ export function SourceFiles({ readonly }: { readonly: boolean }) {
     useEffect(() => {
         void load().catch((e) => setError(e.message))
     }, [])
-    const change = async (action: string, row: Source) => {
+    const [pendingName, setPendingName] = useState<{
+        file?: File
+        row?: Source
+    } | null>(null)
+    const [newName, setNewName] = useState("")
+    const [nameValid, setNameValid] = useState(false)
+    const change = async (action: string, row: Source, name?: string) => {
         setBusy(true)
         setError("")
         try {
@@ -58,6 +73,7 @@ export function SourceFiles({ readonly }: { readonly: boolean }) {
                 id: row.id,
                 version: row.version,
                 confirm: action === "source-purge",
+                name,
             })
             if (research.result?.sourceId === row.id) {
                 cancelDeviceResearch()
@@ -68,8 +84,17 @@ export function SourceFiles({ readonly }: { readonly: boolean }) {
                 })
             }
             setPurge(null)
+            setPendingName(null)
             await load()
         } catch (e) {
+            if (
+                action === "source-restore" &&
+                e instanceof Error &&
+                /name already exists/i.test(e.message)
+            ) {
+                setPendingName({ row })
+                setNewName(row.name)
+            }
             setError(
                 e instanceof Error ? e.message : "Attachment operation failed",
             )
@@ -113,10 +138,37 @@ export function SourceFiles({ readonly }: { readonly: boolean }) {
                     "File upload failed. You can remove the pending attachment or retry.",
                 )
             await emcAction("source-complete", { id: prepared.id })
+            setPendingName(null)
             await load()
         } catch (e) {
+            if (e instanceof Error && /name already exists/i.test(e.message)) {
+                setPendingName({ file })
+                setNewName(file.name)
+            }
             setError(e instanceof Error ? e.message : "Upload failed")
             await load().catch(() => {})
+        } finally {
+            setBusy(false)
+            if (input.current) input.current.value = ""
+        }
+    }
+    const chooseFile = async (file: File) => {
+        setBusy(true)
+        setError("")
+        try {
+            const data = await emcAction<{ available: boolean }>(
+                "name-available",
+                { kind: "source", name: file.name },
+            )
+            if (data.available) await upload(file)
+            else {
+                setPendingName({ file })
+                setNewName(file.name)
+            }
+        } catch (e) {
+            setError(
+                e instanceof Error ? e.message : "Could not check the filename",
+            )
         } finally {
             setBusy(false)
             if (input.current) input.current.value = ""
@@ -176,7 +228,7 @@ export function SourceFiles({ readonly }: { readonly: boolean }) {
                 aria-label="Upload source documentation"
                 onChange={(e) => {
                     const file = e.target.files?.[0]
-                    if (file) void upload(file)
+                    if (file) void chooseFile(file)
                 }}
             />
             <SymbolInstructions disabled={busy || research.busy || readonly} />
@@ -238,11 +290,16 @@ export function SourceFiles({ readonly }: { readonly: boolean }) {
                                         size="sm"
                                         variant="outline"
                                         disabled={readonly || busy}
+                                        aria-label="Move to trash"
+                                        title="Move to trash"
                                         onClick={() =>
                                             void change("source-trash", row)
                                         }
                                     >
-                                        Move to trash
+                                        <Trash2
+                                            aria-hidden="true"
+                                            className="size-4"
+                                        />
                                     </Button>
                                 )}
                                 {row.state === "trashed" && (
@@ -271,6 +328,64 @@ export function SourceFiles({ readonly }: { readonly: boolean }) {
                         </li>
                     ))}
             </ul>
+            <Dialog
+                open={!!pendingName}
+                onOpenChange={(open) => {
+                    if (!open && !busy) setPendingName(null)
+                }}
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Choose another filename</DialogTitle>
+                    </DialogHeader>
+                    <p className="text-sm">
+                        This name already exists. Enter a unique name, keeping
+                        the file extension.
+                    </p>
+                    <Input
+                        aria-label="Attachment filename"
+                        value={newName}
+                        maxLength={200}
+                        disabled={busy}
+                        onChange={(e) => setNewName(e.target.value)}
+                    />
+                    <UniqueNameStatus
+                        name={newName}
+                        kind="source"
+                        onValid={setNameValid}
+                    />
+                    <div className="flex justify-end gap-2">
+                        <Button
+                            variant="outline"
+                            disabled={busy}
+                            onClick={() => setPendingName(null)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            disabled={busy || !nameValid}
+                            onClick={() => {
+                                if (pendingName?.file)
+                                    void upload(
+                                        new File(
+                                            [pendingName.file],
+                                            newName.trim(),
+                                            { type: pendingName.file.type },
+                                        ),
+                                    )
+                                else if (pendingName?.row)
+                                    void change(
+                                        "source-restore",
+                                        pendingName.row,
+                                        newName.trim(),
+                                    )
+                            }}
+                        >
+                            Continue
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
             {purge && (
                 <div
                     role="alertdialog"

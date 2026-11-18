@@ -22,6 +22,7 @@ interface CanvasState {
     selectionRect: CanvasRect | null
     /** Freehand drawing is on */
     isFreehand: boolean
+    isConnector?: boolean
     /** draw.io's format panel (fill, line, text) is open */
     isFormatOpen: boolean
     activeFormatTab: "style" | "text" | "arrange" | null
