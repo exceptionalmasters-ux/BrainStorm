@@ -112,6 +112,7 @@ for (const withBrief of [true, false]) {
                 if (action === "library")
                     data = { symbols: approvals ? [libraryItem] : [] }
                 if (action === "symbol") data = { symbol: fixtureSymbol }
+                if (action === "name-available") data = { available: true }
             }
             return route.fulfill({
                 contentType: "application/json",
