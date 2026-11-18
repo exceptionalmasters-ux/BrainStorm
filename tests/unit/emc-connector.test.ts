@@ -97,6 +97,13 @@ describe("EMC wires", () => {
                 () => true,
                 () => {},
             )!
+        const unfinished = {
+            style: { emcWire: 1 },
+            absolutePoints: [null, { x: 10, y: 20 }, null],
+        }
+        expect(() => graph.view.updatePoints(unfinished)).not.toThrow()
+        expect(unfinished.absolutePoints[0]).toBeNull()
+        expect(unfinished.absolutePoints[2]).toBeNull()
         tool.setActive(true)
         expect(graph.gridSize).toBe(10)
         handler.connect(cell, cell)

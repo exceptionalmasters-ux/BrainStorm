@@ -198,7 +198,9 @@ export function installEmcConnector(
                         edge.absolutePoints || [],
                         this.scale,
                         this.translate,
-                    ).map((p: any) => new win.mxPoint(p.x, p.y))
+                    ).map((p: any) =>
+                        p == null ? null : new win.mxPoint(p.x, p.y),
+                    )
                 }
                 return result
             },
