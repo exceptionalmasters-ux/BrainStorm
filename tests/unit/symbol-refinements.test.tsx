@@ -223,7 +223,7 @@ it("captures resolved native function styles and reinserts the original internal
         getCellStyle: (c: any) =>
             c.edge
                 ? { edgeStyle: perimeter, endArrow: "classic" }
-                : { perimeter, fillColor: "#ffffff" },
+                : { shape: "label", perimeter, fillColor: "#ffffff" },
     }
     const win: any = {
         mxStyleRegistry: { getName: () => "rectanglePerimeter" },

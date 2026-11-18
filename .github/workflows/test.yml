@@ -179,6 +179,12 @@ jobs:
 
       # Check the native pointer/editor interaction before the long shard, so a
       # regression reports immediately rather than waiting for unrelated tests.
+      - name: Check symbol palettes and manual library round-trip
+        if: matrix.shard == 4
+        run: npx playwright test tests/e2e/symbol-refinements.spec.ts --retries=0
+        env:
+          CI: true
+
       - name: Check source attachments and independent session
         if: matrix.shard == 2
         run: npx playwright test tests/e2e/source-attachments.spec.ts --retries=0

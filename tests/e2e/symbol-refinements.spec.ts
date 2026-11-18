@@ -25,6 +25,18 @@ test("quick colours keep independent last-used swatches and native panels toggle
     await expect(style).toHaveAttribute("aria-pressed", "true")
     await style.click()
     await expect(style).toHaveAttribute("aria-pressed", "false")
+    await expect
+        .poll(() =>
+            frame.locator("body").evaluate((body) => {
+                const w = body.ownerDocument.defaultView as any
+                let visible = true
+                w.Draw.loadPlugin((ui: any) => {
+                    visible = ui.isFormatPanelVisible()
+                })
+                return visible
+            }),
+        )
+        .toBe(false)
     await page.getByTestId("drawing-format-text").click()
     await expect(page.getByTestId("drawing-format-text")).toHaveAttribute(
         "aria-pressed",
@@ -176,6 +188,7 @@ test("right-click saves an editable group with internal wires and compact librar
     await frame.getByText("Add to EMC library", { exact: true }).click()
     const dialog = popup.getByRole("dialog", { name: "Add to EMC library" })
     await expect(dialog).toBeVisible()
+    await expect(dialog.getByRole("alert")).toHaveCount(0)
     await dialog.getByLabel("Symbol name").fill("My circuit")
     await dialog
         .getByRole("button", { name: "Add to library", exact: true })

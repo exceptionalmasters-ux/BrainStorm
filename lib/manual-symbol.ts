@@ -53,7 +53,7 @@ export function safeManualStyle(style: unknown): boolean {
             if (k === "shape")
                 return (
                     /^(?:[a-zA-Z][\w.]*|none)$/.test(v) &&
-                    !/image|label|stencil/i.test(v)
+                    !/image|stencil/i.test(v)
                 )
             return true
         })
@@ -204,6 +204,10 @@ export function captureManualSymbol(ui: any, win: any): ManualSymbol {
             throw Error("Select both connected objects together with the line.")
         let freehand: Point[][] | undefined
         const style = graph.getCellStyle(cell)
+        if (style.image)
+            throw Error(
+                "Images cannot be stored as editable vector symbols. Select vector shapes instead.",
+            )
         if (String(style.shape).startsWith("stencil(")) {
             const xml = win.Graph.decompress(style.shape.slice(8, -1)),
                 doc = new win.DOMParser().parseFromString(xml, "text/xml")

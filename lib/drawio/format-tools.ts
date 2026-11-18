@@ -46,9 +46,13 @@ export function showFormatTab(
             ? ui.isFormatPanelVisible()
             : ui.formatWidth > 0
     if (toggle && visible && activeFormatTab(ui, resources) === tab) {
-        const action = ui.actions?.get?.("format")
-        if (!action?.funct || action.isEnabled?.() === false) return false
-        action.funct()
+        if (typeof ui.toggleFormatPanel === "function")
+            ui.toggleFormatPanel(false)
+        else {
+            const action = ui.actions?.get?.("format")
+            if (!action?.funct || action.isEnabled?.() === false) return false
+            action.funct()
+        }
         return true
     }
     if (!visible) {

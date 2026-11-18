@@ -158,8 +158,14 @@ export function activateSelectionPointer() {
 }
 
 export function openEditorFormatTab(tab: FormatTab, toggle = false) {
+    const current = ui
     const result = showFormatTab(ui, win?.mxResources, tab, toggle)
+    watchFormatWindow()
     syncAll()
+    // Docked panels finish their width transition after the action returns.
+    setTimeout(() => {
+        if (ui === current) syncAll()
+    }, 350)
     return result
 }
 
@@ -489,6 +495,8 @@ function closeSidePanels() {
 }
 
 export function detachEditor() {
+    detachFormatWindow?.()
+    detachFormatWindow = null
     detachListeners?.()
     detachListeners = null
     clearHighlights()
@@ -1320,6 +1328,20 @@ function syncAll() {
     })
 }
 
+let detachFormatWindow: (() => void) | null = null
+let observedFormatWindow: any = null
+function watchFormatWindow() {
+    const window = ui?.formatWindow?.window
+    if (!window?.addListener || window === observedFormatWindow) return
+    detachFormatWindow?.()
+    observedFormatWindow = window
+    window.addListener(win.mxEvent.SHOW, syncAll)
+    window.addListener(win.mxEvent.HIDE, syncAll)
+    detachFormatWindow = () => {
+        window.removeListener(syncAll)
+        observedFormatWindow = null
+    }
+}
 function isFormatPanelOpen(): boolean {
     try {
         if (typeof ui.isFormatPanelVisible === "function") {
@@ -1380,7 +1402,11 @@ function installListeners(): () => void {
             menus.createPopupMenu = originalPopup
         })
     }
-    const formatClick = () => requestAnimationFrame(syncAll)
+    const formatClick = () =>
+        requestAnimationFrame(() => {
+            watchFormatWindow()
+            syncAll()
+        })
     win.document?.addEventListener("click", formatClick)
     cleanups.push(() =>
         win?.document?.removeEventListener("click", formatClick),
