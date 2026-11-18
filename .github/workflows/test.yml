@@ -174,10 +174,6 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
 
-      - name: Inspect production embed headers
-        if: matrix.shard == 4
-        run: node scripts/check-production-embed.mjs
-
       - name: Build app
         run: npm run build
 

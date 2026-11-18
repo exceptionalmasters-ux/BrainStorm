@@ -1,0 +1,22 @@
+name: Shared board deployment probe
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - scripts/check-production-embed.mjs
+      - .github/workflows/embed-diagnostic.yml
+permissions:
+  contents: read
+jobs:
+  production-embed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install chromium --with-deps
+      - run: node scripts/check-production-embed.mjs
