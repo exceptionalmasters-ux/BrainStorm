@@ -16,6 +16,7 @@ import {
     readEditorAction,
 } from "@/lib/drawio/editor-actions"
 import {
+    activeFormatTab,
     type FormatTab,
     selectObjects,
     showEditorMenu,
@@ -32,6 +33,7 @@ import {
     type ToolboxLabels,
 } from "@/lib/drawio/shape-toolbox"
 import { type EmcSymbol, insertEmcSymbolNative } from "@/lib/emc-symbols"
+import type { ManualSymbol } from "@/lib/manual-symbol"
 import { getOperationsContext } from "@/lib/operations-bridge"
 import { hasCells } from "@/packages/mcp-server/src/pages.ts"
 import type { SelectionAnswer } from "@/packages/mcp-server/src/selection.ts"
@@ -43,8 +45,26 @@ type FrameWindow = any
 let ui: EditorUi | null = null
 let win: FrameWindow | null = null
 
+// The full EMC library is web-only; the reusable canvas shell stays lightweight.
+let manualLibrary: {
+    capture: (ui: any, win: any) => ManualSymbol
+    insert: (
+        ui: any,
+        win: any,
+        symbol: ManualSymbol,
+        position?: { x: number; y: number },
+    ) => boolean
+} | null = null
+export function registerManualLibrary(
+    handlers: NonNullable<typeof manualLibrary>,
+) {
+    manualLibrary = handlers
+    return () => {
+        if (manualLibrary === handlers) manualLibrary = null
+    }
+}
 export function insertEmcSymbol(
-    symbol: EmcSymbol,
+    symbol: EmcSymbol | ManualSymbol,
     clientPoint?: { x: number; y: number },
 ) {
     if (getOperationsContext()?.readOnly || useCanvasStore.getState().isBusy)
@@ -80,7 +100,10 @@ export function insertEmcSymbol(
                 graph.view.translate.y,
         }
     }
-    const inserted = insertEmcSymbolNative(ui, win, symbol, position)
+    const inserted =
+        "kind" in symbol && symbol.kind === "manual"
+            ? (manualLibrary?.insert(ui, win, symbol, position) ?? false)
+            : insertEmcSymbolNative(ui, win, symbol as EmcSymbol, position)
     syncAll()
     return inserted
 }
@@ -134,10 +157,49 @@ export function activateSelectionPointer() {
     return result
 }
 
-export function openEditorFormatTab(tab: FormatTab) {
-    const result = showFormatTab(ui, win?.mxResources, tab)
+export function openEditorFormatTab(tab: FormatTab, toggle = false) {
+    const result = showFormatTab(ui, win?.mxResources, tab, toggle)
     syncAll()
     return result
+}
+
+export function setSelectedColour(kind: "fill" | "line", colour: string) {
+    const graph = ui?.editor?.graph
+    if (
+        !/^#[\da-f]{6}$/i.test(colour) ||
+        !graph?.isEnabled?.() ||
+        graph.isSelectionEmpty() ||
+        getOperationsContext()?.readOnly ||
+        useCanvasStore.getState().isBusy
+    )
+        return false
+    graph.model.beginUpdate()
+    try {
+        graph.setCellStyles(
+            kind === "fill" ? "fillColor" : "strokeColor",
+            colour,
+            graph.getSelectionCells(),
+        )
+    } finally {
+        graph.model.endUpdate()
+    }
+    syncAll()
+    return true
+}
+export function openEditorLineSection() {
+    const opened = openEditorFormatTab("style")
+    if (!opened) return false
+    // The native Style tab owns the complete line controls; expand its line section if collapsed.
+    const title = win?.mxResources?.get?.("line") || "Line"
+    const headings = ui?.format?.container?.querySelectorAll?.("div") || []
+    const heading = Array.from(headings).find(
+        (node: any) =>
+            node.textContent?.trim() === title &&
+            node.querySelector?.("img.geSprite"),
+    ) as HTMLElement | undefined
+    heading?.scrollIntoView?.({ block: "nearest" })
+    syncAll()
+    return true
 }
 
 export function editorMenuAvailable(name: string) {
@@ -438,6 +500,7 @@ export function detachEditor() {
         selection: [],
         selectionRect: null,
         isFormatOpen: false,
+        activeFormatTab: null,
         isDrawioPopupOpen: false,
     })
 }
@@ -1253,6 +1316,7 @@ function syncAll() {
         selectionRect: readSelectionRect(),
         isFreehand: !!g?.freehand?.isDrawing?.(),
         isFormatOpen: isFormatPanelOpen(),
+        activeFormatTab: activeFormatTab(ui, win?.mxResources),
     })
 }
 
@@ -1272,6 +1336,52 @@ function installListeners(): () => void {
     if (!g || !win?.mxEvent) return () => {}
     const mxEvent = win.mxEvent
     const cleanups: (() => void)[] = []
+    const menus = ui.menus
+    const originalPopup = menus?.createPopupMenu
+    if (originalPopup) {
+        menus.createPopupMenu = function (menu: any, cell: any, evt: any) {
+            originalPopup.call(this, menu, cell, evt)
+            if (
+                manualLibrary &&
+                getOperationsContext() &&
+                !getOperationsContext()?.readOnly &&
+                !g.isSelectionEmpty() &&
+                !useCanvasStore.getState().isBusy
+            ) {
+                menu.addSeparator()
+                menu.addItem("Add to EMC library", null, () => {
+                    try {
+                        window.dispatchEvent(
+                            new CustomEvent("emc-manual-symbol", {
+                                detail: {
+                                    symbol: manualLibrary?.capture(ui, win),
+                                },
+                            }),
+                        )
+                    } catch (error) {
+                        window.dispatchEvent(
+                            new CustomEvent("emc-manual-symbol", {
+                                detail: {
+                                    error:
+                                        error instanceof Error
+                                            ? error.message
+                                            : "Could not capture the drawing",
+                                },
+                            }),
+                        )
+                    }
+                })
+            }
+        }
+        cleanups.push(() => {
+            menus.createPopupMenu = originalPopup
+        })
+    }
+    const formatClick = () => requestAnimationFrame(syncAll)
+    win.document?.addEventListener("click", formatClick)
+    cleanups.push(() =>
+        win?.document?.removeEventListener("click", formatClick),
+    )
 
     const listen = (source: any, name: string, handler: () => void) => {
         if (!source?.addListener) return

@@ -14,13 +14,43 @@ export function selectObjects(ui: any) {
     return true
 }
 
-export function showFormatTab(ui: any, resources: any, tab: FormatTab) {
+export function activeFormatTab(ui: any, resources: any): FormatTab | null {
+    if (
+        !ui ||
+        !(typeof ui.isFormatPanelVisible === "function"
+            ? ui.isFormatPanelVisible()
+            : ui.formatWidth > 0)
+    )
+        return null
+    const active = ui.format?.container?.querySelector?.(
+        ".geFormatTitle.geActiveFormatTitle",
+    )
+    const title = active?.getAttribute("title")
+    return (
+        (["style", "text", "arrange"] as const).find(
+            (tab) => title === (resources?.get?.(tab) || tab),
+        ) || null
+    )
+}
+
+export function showFormatTab(
+    ui: any,
+    resources: any,
+    tab: FormatTab,
+    toggle = false,
+) {
     const graph = ui?.editor?.graph
     if (!graph || (tab !== "style" && graph.isSelectionEmpty())) return false
     const visible =
         typeof ui.isFormatPanelVisible === "function"
             ? ui.isFormatPanelVisible()
             : ui.formatWidth > 0
+    if (toggle && visible && activeFormatTab(ui, resources) === tab) {
+        const action = ui.actions?.get?.("format")
+        if (!action?.funct || action.isEnabled?.() === false) return false
+        action.funct()
+        return true
+    }
     if (!visible) {
         const action = ui.actions?.get?.("format")
         if (!action?.funct || action.isEnabled?.() === false) return false

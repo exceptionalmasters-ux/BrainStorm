@@ -1,4 +1,7 @@
 "use client"
+import { SymbolPreview } from "@/components/workspace/symbol-preview"
+
+export { SymbolPreview } from "@/components/workspace/symbol-preview"
 
 import { Globe, Loader2 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
@@ -15,9 +18,8 @@ import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { insertEmcSymbol } from "@/lib/drawio/editor-bridge"
 import {
+    type DeviceCandidate,
     type EmcSymbol,
-    emcPinLabel,
-    symbolLayout,
     validateEmcSymbol,
 } from "@/lib/emc-symbols"
 import { getOperationsContext, isOperationsMode } from "@/lib/operations-bridge"
@@ -31,108 +33,6 @@ import {
 } from "@/stores/device-research-store"
 import { useChatEngine } from "./chat-engine"
 import { openSourceAttachment, SourceFiles } from "./source-files"
-
-export function SymbolPreview({ symbol }: { symbol: EmcSymbol }) {
-    const layout = symbolLayout(symbol)
-    return (
-        <svg
-            role="img"
-            aria-label="Symbol approval preview"
-            viewBox={`-90 -60 ${layout.width + 180} ${layout.height + 120}`}
-            className="max-h-80 w-full rounded border bg-white text-black"
-        >
-            <title>{symbol.name} — connection points</title>
-            <rect
-                width={layout.width}
-                height={layout.height}
-                fill="white"
-                stroke="black"
-            />
-            {!!symbol.body?.antennaHeight && (
-                <>
-                    <line
-                        x1="0"
-                        x2={layout.width}
-                        y1={layout.height * symbol.body.antennaHeight}
-                        y2={layout.height * symbol.body.antennaHeight}
-                        stroke="black"
-                    />
-                    <text
-                        x={layout.width / 2}
-                        y={(layout.height * symbol.body.antennaHeight) / 2}
-                        textAnchor="middle"
-                        fontSize="12"
-                    >
-                        ANTENNA
-                    </text>
-                </>
-            )}
-            <text
-                x={layout.width / 2}
-                y={layout.height / 2 - 12}
-                textAnchor="middle"
-                fontSize="16"
-            >
-                {symbol.name}
-            </text>
-            <text
-                x={layout.width / 2}
-                y={layout.height / 2 + 10}
-                textAnchor="middle"
-                fontSize="12"
-            >
-                {symbol.device}
-            </text>
-            <text
-                x={layout.width / 2}
-                y={layout.height / 2 + 28}
-                textAnchor="middle"
-                fontSize="10"
-            >
-                {symbol.package}
-            </text>
-            {layout.pins.map((pin) => (
-                <g key={pin.number}>
-                    <circle
-                        cx={pin.x * layout.width}
-                        cy={pin.y * layout.height}
-                        r="5"
-                        fill="#edcb6d"
-                        stroke="black"
-                    />
-                    <text
-                        x={
-                            pin.x * layout.width +
-                            (pin.side === "left"
-                                ? 12
-                                : pin.side === "right"
-                                  ? -12
-                                  : 0)
-                        }
-                        y={
-                            pin.y * layout.height +
-                            (pin.side === "top"
-                                ? 18
-                                : pin.side === "bottom"
-                                  ? -12
-                                  : 4)
-                        }
-                        textAnchor={
-                            pin.side === "left"
-                                ? "start"
-                                : pin.side === "right"
-                                  ? "end"
-                                  : "middle"
-                        }
-                        fontSize="11"
-                    >
-                        {emcPinLabel(pin)}
-                    </text>
-                </g>
-            ))}
-        </svg>
-    )
-}
 
 function ApprovalDialog() {
     const { draft, result, set } = useDeviceResearch()
@@ -365,6 +265,20 @@ export function DeviceResearchPanel() {
     const [warning, setWarning] = useState(false)
     const [expanded, setExpanded] = useState(false)
     const [query, setQuery] = useState("")
+    const [preview, setPreview] = useState<DeviceCandidate | null>(null)
+    const [elapsed, setElapsed] = useState(0)
+    useEffect(() => {
+        if (!state.busy || !state.startedAt) return
+        const tick = () =>
+            setElapsed(
+                Math.floor(
+                    (Date.now() - (state.startedAt || Date.now())) / 1000,
+                ),
+            )
+        tick()
+        const timer = setInterval(tick, 1000)
+        return () => clearInterval(timer)
+    }, [state.busy, state.startedAt])
     const readonly = getOperationsContext()?.readOnly
     if (!isOperationsMode()) return null
     return (
@@ -372,6 +286,54 @@ export function DeviceResearchPanel() {
             className="max-h-[45vh] shrink-0 overflow-y-auto border-b px-3 py-2 text-xs"
             data-testid="device-research"
         >
+            <Dialog
+                open={!!preview}
+                onOpenChange={(open) => {
+                    if (!open) setPreview(null)
+                }}
+            >
+                <DialogContent className="max-w-3xl">
+                    <DialogHeader>
+                        <DialogTitle>
+                            {preview?.title || "Source preview"}
+                        </DialogTitle>
+                        <DialogDescription>
+                            Source evidence; verify the device variant and
+                            pinout before wiring.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {preview?.imageUrl && (
+                        <img
+                            src={preview.sourceImageUrl || preview.imageUrl}
+                            alt={preview.title}
+                            referrerPolicy="no-referrer"
+                            className="max-h-[65vh] w-full bg-white object-contain"
+                        />
+                    )}
+                    <p className="text-sm">{preview?.description}</p>
+                    <div className="flex gap-2">
+                        <a
+                            className="underline"
+                            href={preview?.sourceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            Open original source
+                        </a>
+                        <Button
+                            disabled={state.busy || readonly}
+                            onClick={() => {
+                                if (preview) {
+                                    void draftDevice(preview.id)
+                                    setPreview(null)
+                                }
+                            }}
+                        >
+                            Create symbol
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
             <div className="flex items-center gap-2">
                 <Globe className="size-4" />
                 <label
@@ -458,7 +420,7 @@ export function DeviceResearchPanel() {
                     {state.busy && (
                         <p role="status" className="flex items-center gap-2">
                             <Loader2 className="size-3 animate-spin" />
-                            Researching device…
+                            {state.phase || "Researching device"}… {elapsed}s
                         </p>
                     )}
                     {state.error && (
@@ -503,6 +465,24 @@ export function DeviceResearchPanel() {
                             </Button>
                         </div>
                     )}
+                    {state.result?.status === "no_sources" && (
+                        <p role="status">
+                            No verified source found. Try another query or
+                            attach a datasheet.
+                        </p>
+                    )}
+                    {state.result?.warnings?.map((w) => (
+                        <p key={w} className="text-amber-500">
+                            {w}
+                        </p>
+                    ))}
+                    {state.result?.elapsedMs !== undefined && !state.busy && (
+                        <p className="text-muted-foreground">
+                            {state.result.candidates.length} source-backed
+                            proposals ·{" "}
+                            {(state.result.elapsedMs / 1000).toFixed(1)}s
+                        </p>
+                    )}
                     {state.result?.questions.map((q) => (
                         <p
                             key={q}
@@ -516,21 +496,38 @@ export function DeviceResearchPanel() {
                             key={candidate.id}
                             className="space-y-1 rounded border p-2"
                         >
+                            {(candidate.representationKind === "device_view" ||
+                                candidate.variantUnconfirmed) && (
+                                <p className="text-amber-500">
+                                    {candidate.variantUnconfirmed
+                                        ? "Variant unconfirmed · "
+                                        : ""}
+                                    {candidate.representationKind ===
+                                    "device_view"
+                                        ? "Device view · pinout unconfirmed"
+                                        : "Choose the documented variant before wiring"}
+                                </p>
+                            )}
+                            {!candidate.imageUrl && (
+                                <button
+                                    type="button"
+                                    className="rounded border p-2"
+                                    onClick={() => setPreview(candidate)}
+                                >
+                                    Preview source{" "}
+                                    {candidate.sourceUrl
+                                        .toLowerCase()
+                                        .includes(".pdf")
+                                        ? "PDF"
+                                        : "document"}
+                                </button>
+                            )}
                             {candidate.imageUrl && (
-                                <a
-                                    href={candidate.sourceUrl}
-                                    onClick={(e) => {
-                                        if (state.result?.sourceId) {
-                                            e.preventDefault()
-                                            void openSourceAttachment(
-                                                state.result.sourceId,
-                                            ).catch((e) =>
-                                                state.set({ error: e.message }),
-                                            )
-                                        }
-                                    }}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                                <button
+                                    type="button"
+                                    className="block w-full"
+                                    aria-label={`Enlarge ${candidate.title}`}
+                                    onClick={() => setPreview(candidate)}
                                 >
                                     {/* biome-ignore lint/performance/noImgElement: external research thumbnails are not passed through an image proxy */}
                                     <img
@@ -540,7 +537,7 @@ export function DeviceResearchPanel() {
                                         loading="lazy"
                                         className="max-h-36 max-w-full rounded bg-white object-contain"
                                     />
-                                </a>
+                                </button>
                             )}
                             <a
                                 href={candidate.sourceUrl}

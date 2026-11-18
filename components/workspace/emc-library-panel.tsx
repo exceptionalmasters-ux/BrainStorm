@@ -4,9 +4,12 @@ import { SymbolPreview } from "@/components/chat/device-research"
 import { Input } from "@/components/ui/input"
 import { insertEmcSymbol } from "@/lib/drawio/editor-bridge"
 import type { EmcSymbol, LibrarySymbol } from "@/lib/emc-symbols"
+import { validateEmcSymbol } from "@/lib/emc-symbols"
+import { type ManualSymbol, validateManualSymbol } from "@/lib/manual-symbol"
 import { getOperationsContext, isOperationsMode } from "@/lib/operations-bridge"
 import { useCanvasStore } from "@/stores/canvas-store"
 import { emcAction, useDeviceResearch } from "@/stores/device-research-store"
+import { ManualPreview } from "./manual-preview"
 
 /** Saved EMC symbols are canvas tools, independent of the assistant panel. */
 export function EmcLibraryPanel() {
@@ -147,20 +150,29 @@ function SymbolTile({
     disabled: boolean
     onError: (message: string) => void
 }) {
-    const [definition, setDefinition] = useState<EmcSymbol | null>(null)
+    const [definition, setDefinition] = useState<
+        EmcSymbol | ManualSymbol | null
+    >(null)
     const [loading, setLoading] = useState(false)
     const [dragging, setDragging] = useState(false)
     const dragged = useRef(false)
     const start = useRef<{ x: number; y: number } | null>(null)
     useEffect(() => {
         const controller = new AbortController()
-        void emcAction<{ symbol: EmcSymbol }>(
+        void emcAction<{ symbol: EmcSymbol | ManualSymbol }>(
             "symbol",
             { id: symbol.id },
             controller.signal,
         )
             .then((data) => {
-                if (!controller.signal.aborted) setDefinition(data.symbol)
+                if (!controller.signal.aborted) {
+                    if (
+                        !validateManualSymbol(data.symbol) &&
+                        !validateEmcSymbol(data.symbol)
+                    )
+                        throw Error("Invalid symbol definition")
+                    setDefinition(data.symbol)
+                }
             })
             .catch((e) => {
                 if (!controller.signal.aborted) onError(e.message)
@@ -183,7 +195,7 @@ function SymbolTile({
             <button
                 type="button"
                 disabled={disabled || !definition || loading}
-                className="inline-flex w-[calc(50%-4px)] touch-none flex-col items-center gap-1 rounded border p-2 align-top hover:border-primary disabled:opacity-40"
+                className="inline-flex w-[calc(25%-6px)] touch-none flex-col items-center gap-1 rounded border p-2 align-top hover:border-primary disabled:opacity-40"
                 title={`${symbol.name} · ${symbol.package}`}
                 aria-label={`Insert ${symbol.device || symbol.name}`}
                 onClick={insert}
@@ -226,9 +238,13 @@ function SymbolTile({
                     setDragging(false)
                 }}
             >
-                <span className="flex h-24 w-full items-center justify-center pointer-events-none">
+                <span className="flex h-14 w-full items-center justify-center pointer-events-none">
                     {definition ? (
-                        <SymbolPreview symbol={definition} />
+                        "kind" in definition ? (
+                            <ManualPreview symbol={definition} />
+                        ) : (
+                            <SymbolPreview symbol={definition} compact />
+                        )
                     ) : (
                         "Loading…"
                     )}

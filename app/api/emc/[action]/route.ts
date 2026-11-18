@@ -6,6 +6,7 @@ const actions = new Set([
     "research",
     "draft",
     "approve",
+    "manual-create",
     "library",
     "symbol",
     "source-create",
