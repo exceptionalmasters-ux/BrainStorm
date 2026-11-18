@@ -1,7 +1,6 @@
 "use client"
 import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { EMC_SUPABASE_PUBLIC_KEY, EMC_SUPABASE_URL } from "@/lib/emc-deployment"
 import { operationsAuthorization } from "@/lib/operations-bridge"
 import {
@@ -11,6 +10,7 @@ import {
     emcAction,
     useDeviceResearch,
 } from "@/stores/device-research-store"
+import { SymbolInstructions } from "./symbol-instructions"
 
 type Source = {
     id: string
@@ -39,8 +39,7 @@ export function SourceFiles({ readonly }: { readonly: boolean }) {
     const [files, setFiles] = useState<Source[]>([]),
         [trash, setTrash] = useState(false),
         [error, setError] = useState(""),
-        [busy, setBusy] = useState(false),
-        [hint, setHint] = useState("")
+        [busy, setBusy] = useState(false)
     const input = useRef<HTMLInputElement>(null),
         [purge, setPurge] = useState<Source | null>(null)
     const research = useDeviceResearch()
@@ -180,12 +179,7 @@ export function SourceFiles({ readonly }: { readonly: boolean }) {
                     if (file) void upload(file)
                 }}
             />
-            <Input
-                aria-label="Device in attached documentation"
-                placeholder="Device/model or clarification (optional)"
-                value={hint}
-                onChange={(e) => setHint(e.target.value)}
-            />
+            <SymbolInstructions disabled={busy || research.busy || readonly} />
             {error && (
                 <p role="alert" className="text-red-500">
                     {error}
@@ -230,7 +224,10 @@ export function SourceFiles({ readonly }: { readonly: boolean }) {
                                         }
                                         onClick={() => {
                                             disableDeviceWeb()
-                                            void analyseSource(row.id, hint)
+                                            void analyseSource(
+                                                row.id,
+                                                research.instructions,
+                                            )
                                         }}
                                     >
                                         Analyse file

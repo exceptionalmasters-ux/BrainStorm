@@ -6,6 +6,7 @@ export type SymbolBody = {
     outline?: [number, number][]
     pin1?: { x: number; y: number }
     labelsInside?: boolean
+    density?: "compact" | "standard" | "spacious"
     view?: "top" | "bottom" | "unspecified"
 }
 export function validSymbolBody(b: unknown): boolean {
@@ -24,6 +25,8 @@ export function validSymbolBody(b: unknown): boolean {
         (d.antennaHeight === undefined ||
             (unit(d.antennaHeight) && d.antennaHeight <= 0.5)) &&
         (d.labelsInside === undefined || typeof d.labelsInside === "boolean") &&
+        (d.density === undefined ||
+            ["compact", "standard", "spacious"].includes(d.density)) &&
         (d.view === undefined ||
             ["top", "bottom", "unspecified"].includes(d.view)) &&
         (d.pin1 === undefined ||

@@ -9,6 +9,7 @@ import type {
 let controller: AbortController | null = null
 let generation = 0
 export const useDeviceResearch = create<{
+    instructions: string
     webEnabled: boolean
     busy: boolean
     startedAt: number | null
@@ -26,6 +27,7 @@ export const useDeviceResearch = create<{
 }))
 function researchState() {
     return {
+        instructions: "",
         webEnabled: false,
         busy: false,
         startedAt: null as number | null,
@@ -64,6 +66,10 @@ export function disableDeviceWeb() {
     useDeviceResearch.setState({ webEnabled: false })
 }
 export async function researchDevice(query: string): Promise<DeviceResearch> {
+    if (useDeviceResearch.getState().draft)
+        throw Error(
+            "Save or discard the current symbol preview before starting new research.",
+        )
     if (!useDeviceResearch.getState().webEnabled)
         throw new Error("Enable Web before searching.")
     controller?.abort()
@@ -100,7 +106,7 @@ export async function researchDevice(query: string): Promise<DeviceResearch> {
 }
 export async function draftDevice(
     candidateId: string,
-    edits = "",
+    edits?: string,
     allowIncomplete = false,
 ) {
     const { webEnabled, result } = useDeviceResearch.getState()
@@ -124,7 +130,7 @@ export async function draftDevice(
             {
                 researchId: result.researchId,
                 candidateId,
-                edits,
+                edits: edits ?? useDeviceResearch.getState().instructions,
                 allowIncomplete,
                 webEnabled,
             },
@@ -147,6 +153,13 @@ export async function draftDevice(
 }
 
 export async function analyseSource(sourceId: string, query: string) {
+    if (useDeviceResearch.getState().draft)
+        throw Error(
+            "Save or discard the current symbol preview before analysing another file.",
+        )
+    useDeviceResearch.setState({
+        instructions: query || useDeviceResearch.getState().instructions,
+    })
     disableDeviceWeb()
     controller = new AbortController()
     const ticket = ++generation

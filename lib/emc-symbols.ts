@@ -1,4 +1,8 @@
 import {
+    insertStandardSymbolNative,
+    standardSymbolLayout,
+} from "./emc-standard-layout"
+import {
     distinctPinPositions,
     type SymbolBody,
     validSymbolBody,
@@ -93,6 +97,10 @@ export interface LibrarySymbol {
 }
 /** Shared coordinates for native ports and the approval preview. */
 export function symbolLayout(symbol: EmcSymbol) {
+    if (symbol.body?.labelsInside) return standardSymbolLayout(symbol)
+    return legacySymbolLayout(symbol)
+}
+function legacySymbolLayout(symbol: EmcSymbol) {
     const count = (side: string) =>
         symbol.pins.filter((p) => p.side === side).length
     const indexes: Record<string, number> = {}
@@ -166,6 +174,10 @@ export function symbolLayout(symbol: EmcSymbol) {
     return {
         width,
         height,
+        bodyFrame: { x: 0, y: 0, width, height },
+        leaders: [] as { id: string; points: { x: number; y: number }[] }[],
+        fontSize: 11,
+        header: false,
         pins,
         rich,
         outline:
@@ -254,6 +266,8 @@ export function insertEmcSymbolNative(
     const valid = validateEmcSymbol(symbol)
     const graph = ui?.editor?.graph
     if (!valid || !graph?.isEnabled?.() || !win?.mxPoint) return false
+    if (symbol.body?.labelsInside)
+        return insertStandardSymbolNative(ui, win, symbol, position)
     const layout = symbolLayout(symbol)
     const point = position || graph.getFreeInsertPoint()
     let root: any

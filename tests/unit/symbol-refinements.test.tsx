@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it } from "vitest"
 import { SymbolPreview } from "@/components/workspace/symbol-preview"
+import { standardSymbolLayout } from "@/lib/emc-standard-layout"
 import {
     type EmcSymbol,
     symbolLayout,
@@ -45,10 +46,15 @@ const s70: EmcSymbol = {
 describe("source geometry", () => {
     it("retains a chamfer and pin-1 marker, separates numbers/names and reserves label corridors", () => {
         expect(validateEmcSymbol(s70)).toBe(true)
-        const l = symbolLayout(s70)
+        const l = standardSymbolLayout(s70)
         expect(l.outline).toEqual(s70.body?.outline)
-        expect(l.width / l.height).toBe(1)
+        expect(l.bodyFrame.width / l.bodyFrame.height).toBe(1)
         expect(l.labels).toHaveLength(128)
+        expect(l.pitch).toBe(20)
+        for (const pin of l.pins) {
+            expect((pin.x * l.width) % 10).toBeCloseTo(0)
+            expect((pin.y * l.height) % 10).toBeCloseTo(0)
+        }
         // Each rotated text has a conservative bounding rectangle. No two labels may collide.
         const bounds = l.labels.map((v) => {
             const vert = v.rotation !== 0,
@@ -78,6 +84,50 @@ describe("source geometry", () => {
         expect(svg).toContain('preserveAspectRatio="xMidYMid meet"')
         expect(svg).toContain("polygon")
         expect(svg).toContain("PB7 (SWCLK)")
+    })
+    it("does not explode near a corner and preserves HC-05 aspect ratio across density presets", () => {
+        const module: EmcSymbol = {
+            ...s70,
+            name: "HC-05",
+            device: "HC-05",
+            package: "Bare module",
+            body: { width: 160, height: (160 * 27) / 12.7, labelsInside: true },
+            pins: Array.from({ length: 34 }, (_, i) => ({
+                number: String(i + 1),
+                name: i === 0 ? "UART_TX" : "PIO" + i,
+                side: i < 13 ? "left" : i < 21 ? "bottom" : "right",
+                position:
+                    i < 13
+                        ? 0.02 + i * 0.07
+                        : i < 21
+                          ? 0.06 + (i - 13) * 0.12
+                          : 0.02 + (i - 21) * 0.07,
+                sourceUrl,
+                evidence: "PDF page 2 drawing, pages 3–4 pin table",
+            })),
+        }
+        const standard = standardSymbolLayout(module)
+        expect(
+            standard.bodyFrame.width / standard.bodyFrame.height,
+        ).toBeCloseTo(12.7 / 27)
+        expect(standard.width).toBeLessThan(500)
+        expect(standard.height).toBeLessThan(1000)
+        expect(standard.pins).toHaveLength(34)
+        expect(standard.pins[0].sourceY).toBeCloseTo(
+            standard.bodyFrame.y + 0.02 * standard.bodyFrame.height,
+        )
+        const compact = standardSymbolLayout({
+            ...module,
+            body: { ...module.body!, density: "compact" },
+        })
+        const spacious = standardSymbolLayout({
+            ...module,
+            body: { ...module.body!, density: "spacious" },
+        })
+        expect(compact.fontSize).toBe(10)
+        expect(spacious.pitch).toBe(30)
+        expect(compact.height).toBeLessThanOrEqual(standard.height)
+        expect(spacious.height).toBeGreaterThan(standard.height)
     })
     it("rejects invalid source polygons before rendering", () => {
         expect(
