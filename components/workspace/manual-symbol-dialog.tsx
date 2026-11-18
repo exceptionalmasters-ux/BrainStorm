@@ -8,7 +8,8 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { registerManualLibrary } from "@/lib/drawio/editor-bridge"
+import { registerEmcLibrary } from "@/lib/drawio/editor-bridge"
+import { type EmcSymbol, insertEmcSymbolNative } from "@/lib/emc-symbols"
 import {
     captureManualLibrarySymbol,
     insertManualSymbolNative,
@@ -24,9 +25,38 @@ export function ManualSymbolDialog() {
         [saving, setSaving] = useState(false)
     useEffect(
         () =>
-            registerManualLibrary({
+            registerEmcLibrary({
                 capture: captureManualLibrarySymbol,
-                insert: insertManualSymbolNative,
+                styleChoice: (event) => {
+                    const keys = event.getProperty("keys") || [],
+                        values = event.getProperty("values") || []
+                    keys.forEach((key: string, index: number) => {
+                        if (
+                            ["fillColor", "strokeColor"].includes(key) &&
+                            typeof values[index] === "string"
+                        )
+                            window.dispatchEvent(
+                                new CustomEvent("emc-colour-applied", {
+                                    detail: {
+                                        kind:
+                                            key === "fillColor"
+                                                ? "fill"
+                                                : "line",
+                                        value: values[index],
+                                    },
+                                }),
+                            )
+                    })
+                },
+                insert: (ui, win, symbol, position) =>
+                    "kind" in symbol && symbol.kind === "manual"
+                        ? insertManualSymbolNative(ui, win, symbol, position)
+                        : insertEmcSymbolNative(
+                              ui,
+                              win,
+                              symbol as EmcSymbol,
+                              position,
+                          ),
             }),
         [],
     )

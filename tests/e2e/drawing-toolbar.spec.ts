@@ -60,6 +60,9 @@ test("format shortcuts reveal native Style, Text and Arrange tabs for the select
         })
     await expect.poll(savedXml).toContain("fillcolor=#ff0000")
     await expect(colors).toBeHidden()
+    await expect(page.getByTestId("last-fill-colour")).toHaveAccessibleName(
+        "Apply last fill colour #FF0000",
+    )
     await page.getByTestId("editor-undo").click()
     await expect.poll(savedXml).not.toContain("fillcolor=#ff0000")
     await page.getByTestId("editor-redo").click()

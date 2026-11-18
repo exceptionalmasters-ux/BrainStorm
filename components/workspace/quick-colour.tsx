@@ -60,6 +60,21 @@ export function QuickColour({
         } catch {}
     }, [storageKey])
     useEffect(() => {
+        const chosen = (event: Event) => {
+            const detail = (event as CustomEvent).detail
+            if (detail?.kind !== kind) return
+            const colour = normalizeHex(detail.value || "")
+            if (!colour) return
+            setLast(colour)
+            setHex(colour)
+            try {
+                localStorage.setItem(storageKey, colour)
+            } catch {}
+        }
+        window.addEventListener("emc-colour-applied", chosen)
+        return () => window.removeEventListener("emc-colour-applied", chosen)
+    }, [kind, storageKey])
+    useEffect(() => {
         if (disabled) setAnchor(null)
     }, [disabled])
     const apply = (value: string, close = true) => {

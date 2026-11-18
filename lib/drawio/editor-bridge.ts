@@ -32,7 +32,7 @@ import {
     type ShapeGroup,
     type ToolboxLabels,
 } from "@/lib/drawio/shape-toolbox"
-import { type EmcSymbol, insertEmcSymbolNative } from "@/lib/emc-symbols"
+import type { EmcSymbol } from "@/lib/emc-symbols"
 import type { ManualSymbol } from "@/lib/manual-symbol"
 import { getOperationsContext } from "@/lib/operations-bridge"
 import { hasCells } from "@/packages/mcp-server/src/pages.ts"
@@ -46,21 +46,20 @@ let ui: EditorUi | null = null
 let win: FrameWindow | null = null
 
 // The full EMC library is web-only; the reusable canvas shell stays lightweight.
-let manualLibrary: {
+let emcLibrary: {
     capture: (ui: any, win: any) => Promise<ManualSymbol>
+    styleChoice?: (event: any) => void
     insert: (
         ui: any,
         win: any,
-        symbol: ManualSymbol,
+        symbol: ManualSymbol | EmcSymbol,
         position?: { x: number; y: number },
     ) => boolean
 } | null = null
-export function registerManualLibrary(
-    handlers: NonNullable<typeof manualLibrary>,
-) {
-    manualLibrary = handlers
+export function registerEmcLibrary(handlers: NonNullable<typeof emcLibrary>) {
+    emcLibrary = handlers
     return () => {
-        if (manualLibrary === handlers) manualLibrary = null
+        if (emcLibrary === handlers) emcLibrary = null
     }
 }
 export function insertEmcSymbol(
@@ -100,10 +99,7 @@ export function insertEmcSymbol(
                 graph.view.translate.y,
         }
     }
-    const inserted =
-        "kind" in symbol && symbol.kind === "manual"
-            ? (manualLibrary?.insert(ui, win, symbol, position) ?? false)
-            : insertEmcSymbolNative(ui, win, symbol as EmcSymbol, position)
+    const inserted = emcLibrary?.insert(ui, win, symbol, position) ?? false
     syncAll()
     return inserted
 }
@@ -206,19 +202,7 @@ export function setSelectedColour(kind: "fill" | "line", colour: string) {
     return true
 }
 export function openEditorLineSection() {
-    const opened = openEditorFormatTab("style")
-    if (!opened) return false
-    // The native Style tab owns the complete line controls; expand its line section if collapsed.
-    const title = win?.mxResources?.get?.("line") || "Line"
-    const headings = ui?.format?.container?.querySelectorAll?.("div") || []
-    const heading = Array.from(headings).find(
-        (node: any) =>
-            node.textContent?.trim() === title &&
-            node.querySelector?.("img.geSprite"),
-    ) as HTMLElement | undefined
-    heading?.scrollIntoView?.({ block: "nearest" })
-    syncAll()
-    return true
+    return openEditorFormatTab("style")
 }
 
 export function editorMenuAvailable(name: string) {
@@ -1377,7 +1361,7 @@ function installListeners(): () => void {
         menus.createPopupMenu = function (menu: any, cell: any, evt: any) {
             originalPopup.call(this, menu, cell, evt)
             if (
-                manualLibrary &&
+                emcLibrary &&
                 getOperationsContext() &&
                 !getOperationsContext()?.readOnly &&
                 !g.isSelectionEmpty() &&
@@ -1389,10 +1373,7 @@ function installListeners(): () => void {
                         window.dispatchEvent(
                             new CustomEvent("emc-manual-symbol", {
                                 detail: {
-                                    symbol: await manualLibrary?.capture(
-                                        ui,
-                                        win,
-                                    ),
+                                    symbol: await emcLibrary?.capture(ui, win),
                                 },
                             }),
                         )
@@ -1425,7 +1406,11 @@ function installListeners(): () => void {
         win?.document?.removeEventListener("click", formatClick),
     )
 
-    const listen = (source: any, name: string, handler: () => void) => {
+    const listen = (
+        source: any,
+        name: string,
+        handler: (...args: any[]) => void,
+    ) => {
         if (!source?.addListener) return
         source.addListener(name, handler)
         cleanups.push(() => source.removeListener(handler))
@@ -1433,6 +1418,10 @@ function installListeners(): () => void {
 
     // Any user action ends the "what the AI just changed" highlight: a
     // click on the canvas, a selection, another page
+    // Native More colors / Style > Line choices also update the independent quick swatches.
+    listen(ui, "styleChanged", (_sender: any, event: any) =>
+        emcLibrary?.styleChoice?.(event),
+    )
     const onSelection = () => {
         clearHighlights()
         syncAll()
