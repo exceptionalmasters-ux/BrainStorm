@@ -52,7 +52,8 @@ export function SharedBoardCanvas() {
         lastXml = useRef(""),
         localStroke = useRef<BoardStroke | null>(null),
         lastView = useRef(""),
-        lastLaser = useRef(0)
+        lastLaser = useRef(0),
+        pendingView = useRef<BoardView | undefined>(undefined)
     const parentOrigin =
         process.env.NEXT_PUBLIC_EMC_OPERATIONS_ORIGIN ||
         "https://exceptionalmasters.co.uk"
@@ -90,6 +91,11 @@ export function SharedBoardCanvas() {
                 })
                 return
             }
+            pendingView.current = !next.editable
+                ? next.follow
+                    ? next.viewport
+                    : tools.current?.readView()
+                : undefined
             suppress.current = true
             lastXml.current = xml
             applied.current = true
@@ -184,12 +190,10 @@ export function SharedBoardCanvas() {
             return () => {}
         })
         suppress.current = false
-        if (
-            current.current?.follow &&
-            current.current.viewport &&
-            !current.current.editable
-        )
-            tools.current?.applyView(current.current.viewport)
+        const state = current.current
+        const target = state?.follow ? state.viewport : pendingView.current
+        if (state && !state.editable && target) tools.current?.applyView(target)
+        pendingView.current = undefined
         send("ready")
     }
     const pointer = (event: React.PointerEvent): BoardPoint | null => {

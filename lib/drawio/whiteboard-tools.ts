@@ -57,13 +57,26 @@ export function createWhiteboardTools(ui: any, win: any) {
             if (!validBoardView(view)) return
             const page = ui.getPageById?.(view.pageId)
             if (page && page !== ui.currentPage) ui.selectPage(page, true)
-            graph.view.scaleAndTranslate(
-                view.scale,
-                graph.container.clientWidth / (2 * view.scale) - view.center.x,
-                graph.container.clientHeight / (2 * view.scale) - view.center.y,
-            )
-            graph.container.scrollLeft = 0
-            graph.container.scrollTop = 0
+            const container = graph.container
+            if (graph.scrollbars === false) {
+                graph.view.scaleAndTranslate(
+                    view.scale,
+                    container.clientWidth / (2 * view.scale) - view.center.x,
+                    container.clientHeight / (2 * view.scale) - view.center.y,
+                )
+            } else {
+                // draw.io owns the page translation and can change it while
+                // validating scale. Position the scrollbars using that final
+                // translation instead of resetting them to the page origin.
+                graph.view.setScale(view.scale)
+                const translate = graph.view.translate
+                container.scrollLeft =
+                    (view.center.x + translate.x) * view.scale -
+                    container.clientWidth / 2
+                container.scrollTop =
+                    (view.center.y + translate.y) * view.scale -
+                    container.clientHeight / 2
+            }
         },
         exportAnnotated: (strokes: BoardStroke[]) => {
             const bounds = graph.getGraphBounds(),

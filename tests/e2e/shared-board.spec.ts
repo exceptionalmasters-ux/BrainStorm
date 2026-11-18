@@ -132,3 +132,110 @@ test("shared canvas fences edits, imports only for its current editor and separa
             ),
     ).toBe(true)
 })
+
+test("following and leaving the presenter never hide the shared drawing", async ({
+    page,
+    context,
+    baseURL,
+}) => {
+    await context.grantPermissions(["local-network-access"], {
+        origin: "https://exceptionalmasters.co.uk",
+    })
+    const src = new URL("/en/whiteboard", baseURL).href
+    await context.route(
+        "https://exceptionalmasters.co.uk/__follow-fixture",
+        (r) =>
+            r.fulfill({
+                contentType: "text/html",
+                body: `<iframe id="board" style="position:fixed;inset:0;width:100%;height:100%" src="${src}"></iframe><script>window.ready=false;addEventListener('message',e=>{if(e.source===document.getElementById('board').contentWindow&&e.data.type==='ready')window.ready=true})</script>`,
+            }),
+    )
+    await page.goto("https://exceptionalmasters.co.uk/__follow-fixture")
+    await expect
+        .poll(() => page.evaluate(() => (window as any).ready), {
+            timeout: 60000,
+        })
+        .toBe(true)
+    const native = page.frameLocator("#board").frameLocator("iframe")
+    const state = {
+        editable: false,
+        epoch: 1,
+        revision: 1,
+        xml,
+        follow: true,
+        viewport: { pageId: "shared", scale: 1.25, center: { x: 170, y: 150 } },
+        annotations: [],
+        lasers: [],
+        actorId: "observer",
+        tool: "select",
+        canAnnotate: false,
+    }
+    const send = async (value: typeof state) =>
+        page.evaluate(
+            ({ state, origin, protocol }) => {
+                ;(
+                    document.querySelector("#board") as HTMLIFrameElement
+                ).contentWindow!.postMessage(
+                    { protocol, type: "state", state },
+                    origin,
+                )
+            },
+            { state: value, origin: new URL(src).origin, protocol },
+        )
+    const visible = async (label = "Shared module") => {
+        await expect
+            .poll(
+                async () => {
+                    const object = await native
+                        .getByText(label, { exact: true })
+                        .boundingBox()
+                    const area = await native
+                        .locator(".geDiagramContainer")
+                        .boundingBox()
+                    return (
+                        !!object &&
+                        !!area &&
+                        object.x >= area.x &&
+                        object.y >= area.y &&
+                        object.x + object.width <= area.x + area.width &&
+                        object.y + object.height <= area.y + area.height
+                    )
+                },
+                { timeout: 15000 },
+            )
+            .toBe(true)
+    }
+    await send(state)
+    await visible()
+    // No new document change from the presenter is needed after a toggle.
+    for (let i = 0; i < 3; i++) {
+        await send({ ...state, follow: false })
+        await visible()
+        await send(state)
+        await visible()
+    }
+    await page.setViewportSize({ width: 520, height: 740 })
+    await send({ ...state, viewport: { ...state.viewport, scale: 2 } })
+    await visible()
+    // Document loads must reapply the latest presenter view after native load.
+    const updated = {
+        ...state,
+        revision: 2,
+        xml: xml
+            .replace('x="120" y="120"', 'x="520" y="500"')
+            .replace("Shared module", "Updated module"),
+        viewport: { ...state.viewport, center: { x: 570, y: 530 } },
+    }
+    await send(updated)
+    await visible("Updated module")
+    // Independent viewing keeps its local camera on later document updates.
+    await send({ ...updated, follow: false })
+    await send({
+        ...updated,
+        follow: false,
+        revision: 3,
+        xml: updated.xml.replace("Updated module", "Independent module"),
+        viewport: { ...state.viewport, center: { x: 5000, y: 5000 } },
+    })
+    await visible("Independent module")
+})
