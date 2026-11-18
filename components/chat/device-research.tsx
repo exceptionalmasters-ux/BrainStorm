@@ -310,6 +310,19 @@ export function DeviceResearchPanel() {
                             className="max-h-[65vh] w-full bg-white object-contain"
                         />
                     )}
+                    {preview &&
+                        !preview.imageUrl &&
+                        preview.sourceUrl
+                            .split(/[?#]/)[0]
+                            .toLowerCase()
+                            .endsWith(".pdf") && (
+                            <iframe
+                                title={`${preview.title} PDF preview`}
+                                src={`${preview.sourceUrl}#page=1&view=FitH`}
+                                className="h-[60vh] w-full bg-white"
+                                referrerPolicy="no-referrer"
+                            />
+                        )}
                     <p className="text-sm">{preview?.description}</p>
                     <div className="flex gap-2">
                         <a

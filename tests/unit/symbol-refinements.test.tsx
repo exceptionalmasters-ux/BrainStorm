@@ -7,6 +7,8 @@ import {
     validateEmcSymbol,
 } from "@/lib/emc-symbols"
 import {
+    captureManualSymbol,
+    insertManualSymbolNative,
     type ManualSymbol,
     safeManualStyle,
     validateManualSymbol,
@@ -167,4 +169,113 @@ describe("manual symbols", () => {
             false,
         )
     })
+})
+
+it("captures resolved native function styles and reinserts the original internal terminals", () => {
+    const a: any = {
+            vertex: true,
+            value: "A",
+            style: "",
+            isConnectable: () => true,
+        },
+        b: any = {
+            vertex: true,
+            value: "B",
+            style: "",
+            isConnectable: () => true,
+        },
+        edge: any = {
+            edge: true,
+            value: "Wire",
+            style: "",
+            source: a,
+            target: b,
+            isConnectable: () => true,
+        }
+    const cells = [a, b, edge],
+        perimeter = () => null
+    for (const [i, c] of cells.entries())
+        c.geometry = {
+            x: 100 + i * 100,
+            y: 80,
+            width: c.edge ? 0 : 40,
+            height: c.edge ? 0 : 20,
+            relative: !!c.edge,
+            clone() {
+                return { ...this }
+            },
+        }
+    const model: any = {
+        getTopmostCells: (c: any) => c,
+        getChildCount: () => 0,
+        getParent: () => null,
+        getTerminal: (c: any, start: boolean) => (start ? c.source : c.target),
+    }
+    const graph: any = {
+        model,
+        getSelectionCells: () => cells,
+        getBoundingBoxFromGeometry: () => ({
+            x: 100,
+            y: 80,
+            width: 240,
+            height: 20,
+        }),
+        getCellStyle: (c: any) =>
+            c.edge
+                ? { edgeStyle: perimeter, endArrow: "classic" }
+                : { perimeter, fillColor: "#ffffff" },
+    }
+    const win: any = {
+        mxStyleRegistry: { getName: () => "rectanglePerimeter" },
+        mxUtils: { getTextContent: () => "" },
+    }
+    const result = captureManualSymbol({ editor: { graph } }, win)
+    expect(result.cells[0].style).toContain("perimeter=rectanglePerimeter")
+    expect(result.cells[0].geometry.x).toBe(0)
+    expect(result.cells[1].geometry.x).toBe(100)
+    expect(result.cells[2].source).toBe(0)
+    expect(result.cells[2].target).toBe(1)
+    const inserted: any[] = [],
+        bindings: any[] = []
+    win.mxGeometry = class {
+        constructor(
+            public x: number,
+            public y: number,
+            public width: number,
+            public height: number,
+        ) {}
+    }
+    win.mxCell = class {
+        constructor(
+            public value: string,
+            public geometry: any,
+            public style: string,
+        ) {}
+        setVertex(v: boolean) {}
+        setEdge(v: boolean) {}
+        setConnectable(v: boolean) {}
+    }
+    Object.assign(model, {
+        beginUpdate: () => {},
+        endUpdate: () => {},
+        setTerminal: (c: any, t: any, source: boolean) =>
+            bindings.push([c, t, source]),
+    })
+    Object.assign(graph, {
+        isEnabled: () => true,
+        getFreeInsertPoint: () => ({ x: 0, y: 0 }),
+        getDefaultParent: () => null,
+        stopEditing: () => {},
+        insertVertex: () => ({ setConnectable: () => {} }),
+        addCell: (c: any) => inserted.push(c),
+        setSelectionCell: () => {},
+        scrollCellToVisible: () => {},
+    })
+    expect(insertManualSymbolNative({ editor: { graph } }, win, result)).toBe(
+        true,
+    )
+    expect(bindings).toEqual([
+        [inserted[2], inserted[0], true],
+        [inserted[2], inserted[1], false],
+    ])
 })

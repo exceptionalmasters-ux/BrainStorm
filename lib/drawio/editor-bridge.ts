@@ -47,7 +47,7 @@ let win: FrameWindow | null = null
 
 // The full EMC library is web-only; the reusable canvas shell stays lightweight.
 let manualLibrary: {
-    capture: (ui: any, win: any) => ManualSymbol
+    capture: (ui: any, win: any) => Promise<ManualSymbol>
     insert: (
         ui: any,
         win: any,
@@ -1349,12 +1349,15 @@ function installListeners(): () => void {
                 !useCanvasStore.getState().isBusy
             ) {
                 menu.addSeparator()
-                menu.addItem("Add to EMC library", null, () => {
+                menu.addItem("Add to EMC library", null, async () => {
                     try {
                         window.dispatchEvent(
                             new CustomEvent("emc-manual-symbol", {
                                 detail: {
-                                    symbol: manualLibrary?.capture(ui, win),
+                                    symbol: await manualLibrary?.capture(
+                                        ui,
+                                        win,
+                                    ),
                                 },
                             }),
                         )

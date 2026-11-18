@@ -17,6 +17,14 @@ export function ManualPreview({ symbol: s }: { symbol: ManualSymbol }) {
                 (g.offset?.y || 0),
         }
     }
+    if (s.previewPng)
+        return (
+            <img
+                src={s.previewPng}
+                alt={`${s.name} preview`}
+                className="h-full w-full object-contain bg-white"
+            />
+        )
     return (
         <svg
             role="img"

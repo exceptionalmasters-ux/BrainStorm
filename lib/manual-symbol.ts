@@ -24,6 +24,7 @@ export type ManualCell = {
 }
 type Point = { x: number; y: number }
 export type ManualSymbol = {
+    previewPng?: string
     kind: "manual"
     name: string
     device: string
@@ -57,6 +58,40 @@ export function safeManualStyle(style: unknown): boolean {
             return true
         })
 }
+/** Raster thumbnails have a bounded PNG header; editable cells remain the source of truth. */
+export function validManualPreview(value: unknown) {
+    if (value === undefined) return true
+    if (
+        typeof value !== "string" ||
+        value.length > 120000 ||
+        !/^data:image\/png;base64,iVBORw0KGgo[A-Za-z0-9+/]*={0,2}$/.test(value)
+    )
+        return false
+    const alphabet =
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",
+        raw = value.slice(22)
+    const bytes: number[] = []
+    for (let i = 0; i < 32; i += 4) {
+        const n =
+            (alphabet.indexOf(raw[i]) << 18) |
+            (alphabet.indexOf(raw[i + 1]) << 12) |
+            (alphabet.indexOf(raw[i + 2]) << 6) |
+            alphabet.indexOf(raw[i + 3])
+        bytes.push((n >>> 16) & 255, (n >>> 8) & 255, n & 255)
+    }
+    const u32 = (i: number) =>
+        bytes[i] * 16777216 +
+        bytes[i + 1] * 65536 +
+        bytes[i + 2] * 256 +
+        bytes[i + 3]
+    return (
+        String.fromCharCode(...bytes.slice(12, 16)) === "IHDR" &&
+        u32(16) > 0 &&
+        u32(16) <= 512 &&
+        u32(20) > 0 &&
+        u32(20) <= 512
+    )
+}
 export function validateManualSymbol(value: unknown): value is ManualSymbol {
     if (!value || typeof value !== "object") return false
     const s = value as ManualSymbol,
@@ -64,6 +99,7 @@ export function validateManualSymbol(value: unknown): value is ManualSymbol {
             typeof v === "number" && Number.isFinite(v) && Math.abs(v) <= 100000
     const point = (p: any) => p && num(p.x) && num(p.y)
     if (
+        !validManualPreview(s.previewPng) ||
         s.kind !== "manual" ||
         typeof s.name !== "string" ||
         !s.name.trim() ||
@@ -201,7 +237,10 @@ export function captureManualSymbol(ui: any, win: any): ManualSymbol {
         const serialized =
             Object.entries(style)
                 .filter(([k]) => keys.has(k))
-                .map(([k, v]) => `${k}=${v}`)
+                .map(
+                    ([k, v]) =>
+                        `${k}=${typeof v === "function" ? win.mxStyleRegistry?.getName(v) : v}`,
+                )
                 .join(";") + ";html=0;"
         if (!safeManualStyle(serialized))
             throw Error(
@@ -356,4 +395,56 @@ export function insertManualSymbolNative(
     graph.setSelectionCell(root)
     graph.scrollCellToVisible(root)
     return true
+}
+
+export async function captureManualLibrarySymbol(
+    ui: any,
+    win: any,
+): Promise<ManualSymbol> {
+    const symbol = captureManualSymbol(ui, win),
+        graph = ui.editor.graph
+    try {
+        const svg = graph.getSvg("#ffffff", 1, 8, false, true, false, true)
+        // Native labels may contain foreignObject. Use their plain SVG text alternatives.
+        svg.querySelectorAll("foreignObject,script,style,image").forEach(
+            (n: Element) => {
+                n.remove()
+            },
+        )
+        svg.querySelectorAll("a").forEach((n: Element) => {
+            n.removeAttribute("href")
+            n.removeAttribute("xlink:href")
+        })
+        const w = Number(svg.getAttribute("width")),
+            h = Number(svg.getAttribute("height"))
+        const scale = Math.min(1, 512 / Math.max(w, h)),
+            width = Math.max(1, Math.ceil(w * scale)),
+            height = Math.max(1, Math.ceil(h * scale))
+        const blob = new Blob([new XMLSerializer().serializeToString(svg)], {
+            type: "image/svg+xml",
+        })
+        const url = URL.createObjectURL(blob)
+        try {
+            const image = new Image()
+            await new Promise<void>((resolve, reject) => {
+                image.onload = () => resolve()
+                image.onerror = () => reject(Error("Thumbnail unavailable"))
+                image.src = url
+            })
+            const canvas = document.createElement("canvas")
+            canvas.width = width
+            canvas.height = height
+            const ctx = canvas.getContext("2d")
+            if (ctx) {
+                ctx.drawImage(image, 0, 0, width, height)
+                const png = canvas.toDataURL("image/png")
+                if (validManualPreview(png)) symbol.previewPng = png
+            }
+        } finally {
+            URL.revokeObjectURL(url)
+        }
+    } catch {
+        /* Bounded vector preview remains available if native raster export is unavailable. */
+    }
+    return symbol
 }

@@ -10,7 +10,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { registerManualLibrary } from "@/lib/drawio/editor-bridge"
 import {
-    captureManualSymbol,
+    captureManualLibrarySymbol,
     insertManualSymbolNative,
     type ManualSymbol,
 } from "@/lib/manual-symbol"
@@ -25,7 +25,7 @@ export function ManualSymbolDialog() {
     useEffect(
         () =>
             registerManualLibrary({
-                capture: captureManualSymbol,
+                capture: captureManualLibrarySymbol,
                 insert: insertManualSymbolNative,
             }),
         [],
@@ -94,21 +94,29 @@ export function ManualSymbolDialog() {
                             setSaving(true)
                             setError("")
                             try {
-                                await emcAction("manual-create", {
-                                    approved: true,
-                                    symbol: {
-                                        ...symbol,
-                                        name: name.trim(),
-                                        device: name.trim(),
+                                const saved = await emcAction<{ id: string }>(
+                                    "manual-create",
+                                    {
+                                        approved: true,
+                                        symbol: {
+                                            ...symbol,
+                                            name: name.trim(),
+                                            device: name.trim(),
+                                        },
                                     },
-                                })
-                                const data = await emcAction<{
-                                    symbols: ReturnType<
-                                        typeof useDeviceResearch.getState
-                                    >["library"]
-                                }>("library", {})
+                                )
                                 useDeviceResearch.setState({
-                                    library: data.symbols,
+                                    library: [
+                                        {
+                                            id: saved.id,
+                                            name: name.trim(),
+                                            device: name.trim(),
+                                            package: "Manual drawing",
+                                            version: 1,
+                                            sources: [],
+                                        },
+                                        ...useDeviceResearch.getState().library,
+                                    ],
                                 })
                                 toast.success("Symbol saved to EMC library")
                                 setOpen(false)
