@@ -8,6 +8,10 @@ test("shared canvas fences edits, imports only for its current editor and separa
     context,
     baseURL,
 }) => {
+    // The HTTPS EMC fixture embeds the local CI server. Chromium requires loopback consent.
+    await context.grantPermissions(["local-network-access"], {
+        origin: "https://exceptionalmasters.co.uk",
+    })
     const src = new URL("/en/whiteboard", baseURL).href
     await context.route(
         "https://exceptionalmasters.co.uk/__shared-fixture",
