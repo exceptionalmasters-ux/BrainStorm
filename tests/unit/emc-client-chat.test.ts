@@ -118,6 +118,26 @@ describe("EMC browser drawing transport", () => {
             ).toBe(true)
         }
     })
+    it("forces a fresh Web lookup on three successive user turns", async () => {
+        const payloads: any[] = []
+        vi.stubGlobal(
+            "fetch",
+            vi.fn(async (_url, init) => {
+                payloads.push(JSON.parse(init.body))
+                return streamResponse()
+            }),
+        )
+        for (let turn = 0; turn < 3; turn++) {
+            const response = await emcClientChat(request(true))
+            await response.text()
+        }
+        expect(payloads).toHaveLength(3)
+        for (const payload of payloads)
+            expect(payload.tool_choice).toMatchObject({
+                type: "function",
+                name: "search_device",
+            })
+    })
     it("retains Web consent isolation and Stop cancellation", async () => {
         let modelSignal: AbortSignal | undefined
         let payload: any

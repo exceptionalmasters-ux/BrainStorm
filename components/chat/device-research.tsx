@@ -47,7 +47,6 @@ import {
 } from "@/stores/device-research-store"
 import { useChatEngine } from "./chat-engine"
 import { openSourceAttachment, SourceFiles } from "./source-files"
-import { SymbolInstructions } from "./symbol-instructions"
 
 function ApprovalDialog() {
     const {
@@ -657,9 +656,6 @@ export function DeviceResearchPanel() {
                     </Button>
                 )}
             </div>
-            {!fileMode && (
-                <SymbolInstructions disabled={state.busy || !!readonly} />
-            )}
             {fileMode && <SourceFiles readonly={!!readonly} />}
             {(expanded || state.busy || state.result || state.error) && (
                 <div

@@ -102,6 +102,7 @@ export function ChatPanel({
 }) {
     const dict = useDictionary()
     const fileMode = useDeviceResearch((s) => s.fileMode)
+    const selectedSource = useDeviceResearch((s) => s.selectedSource)
     const webEnabled = useDeviceResearch((s) => s.webEnabled)
     const engine = useChatEngine()
     const { loadDiagram, isDrawioReady } = useDiagram()
@@ -145,6 +146,9 @@ export function ChatPanel({
         >
             <header className="@container flex h-[52px] shrink-0 items-center gap-1 pr-12 pl-3">
                 <BrandMark />
+                <strong className="min-w-0 truncate pl-1 text-[13px] font-semibold">
+                    AI Assistant
+                </strong>
                 <div className="ml-auto flex shrink-0 items-center">
                     {isDrawioReady && (
                         // The tooltip of the buttons next to it, also for
@@ -196,15 +200,21 @@ export function ChatPanel({
                     </IconButton>
                 </div>
             </header>
+            <p className="px-3 pb-2 text-xs leading-relaxed text-muted-foreground">
+                Draw diagrams and create symbols from web sources or
+                documentation.
+            </p>
             <DeviceResearchPanel />
 
             {fileMode ? (
-                <div
-                    className="shrink-0 px-4 pt-2 pb-3"
-                    data-testid="file-analysis-comments"
-                >
-                    <FileAnalysisComposer />
-                </div>
+                selectedSource && (
+                    <div
+                        className="shrink-0 px-4 pt-2 pb-3"
+                        data-testid="file-analysis-comments"
+                    >
+                        <FileAnalysisComposer />
+                    </div>
+                )
             ) : (
                 <>
                     <VersionStrip minVersions={hasCardless ? 1 : 2} />

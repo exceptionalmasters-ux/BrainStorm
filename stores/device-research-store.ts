@@ -1,5 +1,6 @@
 import { create } from "zustand"
 import { getApiEndpoint } from "@/lib/base-path"
+import { readEmcJson } from "@/lib/emc-errors"
 import {
     type DeviceResearch,
     type EmcSymbol,
@@ -62,9 +63,7 @@ export async function emcAction<T>(
         body: JSON.stringify(body),
         signal,
     })
-    const data = await response.json()
-    if (!response.ok) throw new Error(data.error || "EMC request failed")
-    return data
+    return readEmcJson<T>(response)
 }
 export function cancelDeviceResearch() {
     generation++
@@ -88,6 +87,7 @@ export async function researchDevice(query: string): Promise<DeviceResearch> {
     const ticket = ++generation
     useDeviceResearch.setState({
         busy: true,
+        result: null,
         error: "",
         startedAt: Date.now(),
         phase: "Searching cited pinouts and device views",

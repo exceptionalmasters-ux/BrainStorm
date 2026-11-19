@@ -16,6 +16,7 @@ vi.mock("@/stores/device-research-store", async (original) => ({
 beforeEach(() => {
     vi.clearAllMocks()
     useDeviceResearch.setState({
+        fileMode: true,
         selectedSource: null,
         instructions: "",
         sourceBusy: false,
@@ -45,7 +46,8 @@ it("disables analysis until an active file is selected and during file operation
                 name: "Analyse file",
             }) as HTMLButtonElement
         ).disabled
-    expect(disabled()).toBe(true)
+    expect(screen.queryByLabelText("Symbol instructions")).toBeNull()
+    expect(screen.queryByRole("button", { name: "Analyse file" })).toBeNull()
     useDeviceResearch.setState({
         selectedSource: { id: "source", name: "A.pdf" },
         sourceBusy: true,
@@ -55,4 +57,13 @@ it("disables analysis until an active file is selected and during file operation
     useDeviceResearch.setState({ sourceBusy: false })
     rerender(<FileAnalysisComposer />)
     expect(disabled()).toBe(false)
+})
+
+it("hides file instructions again after Cancel", () => {
+    useDeviceResearch.setState({
+        fileMode: false,
+        selectedSource: { id: "old", name: "Old.pdf" },
+    })
+    render(<FileAnalysisComposer />)
+    expect(screen.queryByLabelText("Symbol instructions")).toBeNull()
 })

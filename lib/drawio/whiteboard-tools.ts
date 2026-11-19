@@ -53,6 +53,25 @@ export function createWhiteboardTools(ui: any, win: any) {
         readView,
         toDocument,
         setEditable,
+        centerPage: () => {
+            ui.resetScrollbars?.()
+            const bounds = graph.view.backgroundPageShape?.bounds
+            const container = graph.container
+            if (!bounds || !container.clientWidth || !container.clientHeight)
+                return false
+            const dx = bounds.x + bounds.width / 2 - container.clientWidth / 2
+            const dy = bounds.y + bounds.height / 2 - container.clientHeight / 2
+            if (graph.scrollbars === false) {
+                graph.view.setTranslate(
+                    graph.view.translate.x - dx / graph.view.scale,
+                    graph.view.translate.y - dy / graph.view.scale,
+                )
+            } else {
+                container.scrollLeft = Math.max(0, dx)
+                container.scrollTop = Math.max(0, dy)
+            }
+            return true
+        },
         applyView: (view: BoardView) => {
             if (!validBoardView(view)) return
             const page = ui.getPageById?.(view.pageId)
