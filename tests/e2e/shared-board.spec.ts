@@ -143,19 +143,20 @@ test("shared canvas fences edits, imports only for its current editor and separa
                 ),
         )
         .toBe(true)
+    await native.locator(".geSidebar .geItem:visible").first().hover()
     await expect
         .poll(() =>
             native
-                .locator(".emc-shape-overlay svg [stroke]")
+                .locator(".geSidebar .geItem:visible svg [stroke]")
                 .evaluateAll((nodes) =>
-                    nodes.some(
-                        (node) =>
-                            getComputedStyle(node).stroke ===
-                            "rgb(255, 255, 255)",
+                    Array.from(
+                        new Set(
+                            nodes.map((node) => getComputedStyle(node).stroke),
+                        ),
                     ),
                 ),
         )
-        .toBe(true)
+        .toContain("rgb(255, 255, 255)")
     await expect(
         native.getByText("Shared module", { exact: true }),
     ).toBeVisible()
