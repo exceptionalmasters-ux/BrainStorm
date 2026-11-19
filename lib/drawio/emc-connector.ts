@@ -198,14 +198,180 @@ export function installEmcConnector(
                         edge.absolutePoints || [],
                         this.scale,
                         this.translate,
-                    ).map((p: any) => new win.mxPoint(p.x, p.y))
+                    ).map((p: any) =>
+                        p == null ? null : new win.mxPoint(p.x, p.y),
+                    )
                 }
                 return result
             },
     )
+    // Capture both mouse and touch before native selection/connection gestures.
+    // Hit testing uses screen pixels; the actual constraint remains exact.
+    type Anchor = { cell: any; constraint: any; x: number; y: number }
+    let selected: Anchor | null = null
+    let pressed: {
+        anchor: Anchor | null
+        x: number
+        y: number
+        id: number
+    } | null = null
+    let marker: any = null
+    const clearAnchor = () => {
+        selected = null
+        marker?.remove()
+        marker = null
+    }
+    const anchorAt = (event: PointerEvent, source: boolean): Anchor | null => {
+        const rect = graph.container.getBoundingClientRect()
+        const radius = event.pointerType === "touch" ? 26 : 16
+        let best: Anchor | null = null,
+            distance = radius * radius
+        for (const cell of Object.values(graph.model.cells || {}) as any[]) {
+            if (graph.model.isEdge(cell) || !graph.isCellConnectable(cell))
+                continue
+            const state = graph.view.getState(cell)
+            if (!state) continue
+            for (const constraint of graph.getAllConnectionConstraints(
+                state,
+                source,
+            ) || []) {
+                if (!constraint?.point) continue
+                const point = graph.getConnectionPoint(state, constraint)
+                if (!point) continue
+                const x = rect.left + point.x - graph.container.scrollLeft
+                const y = rect.top + point.y - graph.container.scrollTop
+                const d = (x - event.clientX) ** 2 + (y - event.clientY) ** 2
+                if (d < distance) {
+                    distance = d
+                    best = { cell, constraint, x, y }
+                }
+            }
+        }
+        return best
+    }
+    const markAnchor = (anchor: Anchor) => {
+        clearAnchor()
+        selected = anchor
+        marker = win.document.createElement("div")
+        marker.setAttribute("aria-hidden", "true")
+        marker.style.cssText = `position:fixed;left:${anchor.x - 7}px;top:${anchor.y - 7}px;width:14px;height:14px;border:2px solid #efbf54;border-radius:50%;background:#efbf5455;pointer-events:none;z-index:100000;box-sizing:border-box`
+        win.document.body.appendChild(marker)
+    }
+    const connectAnchors = (source: Anchor, target: Anchor) => {
+        if (
+            !allowed() ||
+            !fixed(source.cell, source.constraint, true) ||
+            !fixed(target.cell, target.constraint, false)
+        )
+            return
+        graph.model.beginUpdate()
+        try {
+            const edge = graph.insertEdge(
+                graph.getDefaultParent(),
+                null,
+                "",
+                source.cell,
+                target.cell,
+                connectorStyle(ends),
+            )
+            graph.setConnectionConstraint(
+                edge,
+                source.cell,
+                true,
+                source.constraint,
+            )
+            graph.setConnectionConstraint(
+                edge,
+                target.cell,
+                false,
+                target.constraint,
+            )
+            graph.setSelectionCell(edge)
+        } finally {
+            graph.model.endUpdate()
+            clearAnchor()
+        }
+    }
+    const down = (event: PointerEvent) => {
+        if (
+            !active ||
+            !allowed() ||
+            event.isPrimary === false ||
+            event.button > 0
+        )
+            return
+        event.preventDefault()
+        event.stopImmediatePropagation()
+        handler.reset()
+        pressed = {
+            anchor: anchorAt(event, !selected),
+            x: event.clientX,
+            y: event.clientY,
+            id: event.pointerId,
+        }
+        graph.container.setPointerCapture?.(event.pointerId)
+    }
+    const move = (event: PointerEvent) => {
+        if (!active || !pressed) return
+        event.preventDefault()
+        event.stopImmediatePropagation()
+    }
+    const up = (event: PointerEvent) => {
+        if (!active || !pressed || event.pointerId !== pressed.id) return
+        event.preventDefault()
+        event.stopImmediatePropagation()
+        const start = pressed
+        pressed = null
+        graph.container.releasePointerCapture?.(event.pointerId)
+        if (!allowed()) {
+            clearAnchor()
+            return
+        }
+        const target = anchorAt(event, false)
+        const dragged =
+            Math.hypot(event.clientX - start.x, event.clientY - start.y) > 6
+        if (dragged) {
+            if (
+                start.anchor &&
+                target &&
+                (start.anchor.cell !== target.cell ||
+                    start.anchor.constraint !== target.constraint)
+            )
+                connectAnchors(start.anchor, target)
+            else clearAnchor()
+        } else if (!target) clearAnchor()
+        else if (selected) {
+            if (
+                selected.cell === target.cell &&
+                selected.constraint.point.x === target.constraint.point.x &&
+                selected.constraint.point.y === target.constraint.point.y
+            )
+                clearAnchor()
+            else connectAnchors(selected, target)
+        } else markAnchor(anchorAt(event, true) || target)
+    }
+    const cancel = () => {
+        pressed = null
+        clearAnchor()
+    }
+    if (graph.container.addEventListener) {
+        for (const [name, listener] of [
+            ["pointerdown", down],
+            ["pointermove", move],
+            ["pointerup", up],
+            ["pointercancel", cancel],
+        ] as const) {
+            graph.container.addEventListener(name, listener, true)
+            cleanup.push(() =>
+                graph.container.removeEventListener(name, listener, true),
+            )
+        }
+        cleanup.push(cancel)
+    }
     const setActive = (value: boolean) => {
         if (value === active || (value && !allowed())) return false
         handler.reset()
+        cancel()
         if (value) {
             graph.freehand?.stopDrawing?.()
             saved = {
@@ -214,24 +380,42 @@ export function installEmcConnector(
                 connectable: graph.isConnectable(),
                 waypoints: handler.waypointsEnabled,
                 cursor: graph.container.style.cursor,
+                touchAction: graph.container.style.touchAction,
             }
             graph.setGridEnabled(true)
             graph.gridSize = 10
             graph.setConnectable(true)
             handler.waypointsEnabled = false
             graph.container.style.cursor = "crosshair"
+            graph.container.style.touchAction = "none"
         } else if (saved) {
             graph.setGridEnabled(saved.grid)
             graph.gridSize = saved.size
             graph.setConnectable(saved.connectable)
             handler.waypointsEnabled = saved.waypoints
             graph.container.style.cursor = saved.cursor
+            graph.container.style.touchAction = saved.touchAction
         }
         active = value
         graph.container.focus?.()
         changed(active, ends)
         return true
     }
+    const selectedWires = () =>
+        (graph.getSelectionCells?.() || []).filter(owned)
+    const selectionChanged = () => {
+        const edge = selectedWires()[0]
+        if (edge) {
+            const style = graph.getCellStyle(edge)
+            const start = style.startArrow && style.startArrow !== "none"
+            const end = style.endArrow && style.endArrow !== "none"
+            ends = start ? (end ? "both" : "start") : end ? "end" : "none"
+        }
+        changed(active, ends)
+    }
+    const selection = graph.getSelectionModel?.()
+    selection?.addListener(win.mxEvent.CHANGE, selectionChanged)
+    cleanup.push(() => selection?.removeListener(selectionChanged))
     const onEscape = () => setActive(false)
     graph.addListener(win.mxEvent.ESCAPE, onEscape)
     cleanup.push(() => graph.removeListener(onEscape))
@@ -239,7 +423,30 @@ export function installEmcConnector(
         setActive,
         isActive: () => active,
         setEnds: (value: ConnectorEnds) => {
+            if (!allowed()) return
             ends = value
+            const edges = selectedWires()
+            if (edges.length) {
+                graph.model.beginUpdate()
+                try {
+                    graph.setCellStyles(
+                        "startArrow",
+                        value === "start" || value === "both"
+                            ? "classic"
+                            : "none",
+                        edges,
+                    )
+                    graph.setCellStyles(
+                        "endArrow",
+                        value === "end" || value === "both"
+                            ? "classic"
+                            : "none",
+                        edges,
+                    )
+                } finally {
+                    graph.model.endUpdate()
+                }
+            }
             changed(active, ends)
         },
         dispose: () => {

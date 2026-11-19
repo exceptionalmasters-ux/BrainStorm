@@ -97,6 +97,13 @@ describe("EMC wires", () => {
                 () => true,
                 () => {},
             )!
+        const unfinished = {
+            style: { emcWire: 1 },
+            absolutePoints: [null, { x: 10, y: 20 }, null],
+        }
+        expect(() => graph.view.updatePoints(unfinished)).not.toThrow()
+        expect(unfinished.absolutePoints[0]).toBeNull()
+        expect(unfinished.absolutePoints[2]).toBeNull()
         tool.setActive(true)
         expect(graph.gridSize).toBe(10)
         handler.connect(cell, cell)
@@ -118,4 +125,129 @@ describe("EMC wires", () => {
         expect(graph.gridEnabled).toBe(false)
         expect(listeners.size).toBe(0)
     })
+})
+
+it("connects by two touch taps or dragging, cancels on blank space, and preserves exact anchors", () => {
+    const listeners = new Map<string, any>(),
+        edges: any[] = [],
+        constraints: any[] = []
+    const cells = [{ id: "a" }, { id: "b" }],
+        pin = { point: { x: 0.5, y: 0.5 }, perimeter: false }
+    const container: any = {
+        style: {},
+        scrollLeft: 0,
+        scrollTop: 0,
+        focus() {},
+        getBoundingClientRect: () => ({ left: 0, top: 0 }),
+        addEventListener: (n: string, f: any) => listeners.set(n, f),
+        removeEventListener: (n: string) => listeners.delete(n),
+        setPointerCapture() {},
+        releasePointerCapture() {},
+    }
+    const graph: any = {
+        container,
+        connectionHandler: {
+            reset() {},
+            isStartEvent() {},
+            createEdgeState() {},
+            isCreateTarget() {},
+            isOutlineConnectEvent() {},
+            connect() {},
+            constraintHandler: {},
+        },
+        model: { cells, isEdge: () => false, beginUpdate() {}, endUpdate() {} },
+        view: {
+            getState: (cell: any) => ({ cell }),
+            updatePoints() {},
+            scale: 1,
+            translate: { x: 0, y: 0 },
+        },
+        isCellConnectable: () => true,
+        getAllConnectionConstraints: () => [pin],
+        getConnectionPoint: (s: any) => ({
+            x: s.cell === cells[0] ? 100 : 200,
+            y: 100,
+        }),
+        isConnectable: () => true,
+        setConnectable() {},
+        setGridEnabled() {},
+        connectCell() {},
+        getEdgeValidationError() {},
+        addListener() {},
+        removeListener() {},
+        getDefaultParent: () => null,
+        getSelectionCells: () => edges,
+        setCellStyles: (key: string, value: string, selected: any[]) => {
+            for (const edge of selected) edge[key] = value
+        },
+        insertEdge: (...args: any[]) => {
+            const edge = { args, style: "emcWire=1;" }
+            edges.push(edge)
+            return edge
+        },
+        setConnectionConstraint: (...args: any[]) => constraints.push(args),
+        setSelectionCell() {},
+    }
+    const marker = { style: {}, setAttribute() {}, remove() {} }
+    const tool = installEmcConnector(
+        { editor: { graph } },
+        {
+            mxCellState: class {},
+            mxPoint: class {},
+            mxEvent: { ESCAPE: "escape" },
+            document: {
+                createElement: () => marker,
+                body: { appendChild() {} },
+            },
+        },
+        () => true,
+        () => {},
+    )!
+    tool.setActive(true)
+    const event = (x: number, y: number) => ({
+        clientX: x,
+        clientY: y,
+        pointerId: 1,
+        pointerType: "touch",
+        button: 0,
+        preventDefault() {},
+        stopImmediatePropagation() {},
+    })
+    const tap = (x: number, y: number) => {
+        listeners.get("pointerdown")(event(x, y))
+        listeners.get("pointerup")(event(x, y))
+    }
+    tap(118, 100)
+    expect(edges).toHaveLength(0)
+    tap(218, 100)
+    expect(edges).toHaveLength(1)
+    expect(constraints[0][3]).toBe(pin)
+    expect(constraints[1][3]).toBe(pin)
+    tap(100, 100)
+    tap(400, 400)
+    tap(200, 100)
+    expect(edges).toHaveLength(1)
+    tap(100, 100)
+    expect(edges).toHaveLength(2)
+    listeners.get("pointerdown")(event(100, 100))
+    listeners.get("pointermove")(event(190, 100))
+    listeners.get("pointerup")(event(200, 100))
+    expect(edges).toHaveLength(3)
+    tool.setEnds("both")
+    expect(
+        edges.every(
+            (edge) =>
+                edge.startArrow === "classic" && edge.endArrow === "classic",
+        ),
+    ).toBe(true)
+    tool.setEnds("start")
+    expect(
+        edges.every(
+            (edge) => edge.startArrow === "classic" && edge.endArrow === "none",
+        ),
+    ).toBe(true)
+    expect(edges).toHaveLength(3)
+    tool.dispose()
+    expect(listeners.size).toBe(0)
+    expect(container.style.touchAction).toBeUndefined()
 })
