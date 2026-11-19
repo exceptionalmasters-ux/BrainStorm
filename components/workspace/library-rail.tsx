@@ -141,6 +141,19 @@ export function LibraryRail({
         setEmOpen(false)
         extension?.close()
     }, [ids])
+    useEffect(() => {
+        if (!emOpen) return
+        const close = () => setEmOpen(false)
+        const escape = (event: KeyboardEvent) => {
+            if (event.key === "Escape") close()
+        }
+        window.addEventListener("emc-close-toolbox", close)
+        document.addEventListener("keydown", escape)
+        return () => {
+            window.removeEventListener("emc-close-toolbox", close)
+            document.removeEventListener("keydown", escape)
+        }
+    }, [emOpen])
     const loadPresets = async () => {
         const requestedUser = user
         setPresetBusy(true)
@@ -253,6 +266,7 @@ export function LibraryRail({
         setEmOpen((value) => !value)
         if (emOpen || !loadEM) return
         setEmBusy(true)
+        setEmFilter("")
         try {
             const data = await loadEM("library", {})
             setEmItems(data.symbols || [])
