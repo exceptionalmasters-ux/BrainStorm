@@ -16,6 +16,24 @@ import { useDictionary } from "@/hooks/use-dictionary"
 import { connectShapeToolbox } from "@/lib/drawio/editor-bridge"
 import type { ShapeGroup, ShapeToolbox } from "@/lib/drawio/shape-toolbox"
 
+const railButtonClass =
+    "flex size-10 shrink-0 items-center justify-center rounded-lg"
+
+export const TOOLBOX_GROUPS = [
+    ["basic", Shapes],
+    ["arrows", ArrowUpRight],
+    ["diagrams", Workflow],
+    ["technical", CircuitBoard],
+    ["network", Network],
+    ["search", Search],
+    ["recent", Clock3],
+] as const
+
+export interface ShapeToolboxSelection {
+    groups: readonly (typeof TOOLBOX_GROUPS)[number][]
+    entries: Partial<Record<ShapeGroup, string>>
+}
+
 export interface ShapeToolboxExtension {
     button: (closeNative: () => void) => ReactNode
     panel: ReactNode
@@ -25,8 +43,10 @@ export interface ShapeToolboxExtension {
 export function ShapeToolboxRail({
     extension,
     settings,
+    selection,
 }: {
     settings?: ReactNode
+    selection?: ShapeToolboxSelection
     extension?: ShapeToolboxExtension
 }) {
     const t = useDictionary().toolbox
@@ -65,15 +85,6 @@ export function ShapeToolboxRail({
             controller.current = null
         }
     }, [t])
-    const groups = [
-        ["basic", Shapes],
-        ["arrows", ArrowUpRight],
-        ["diagrams", Workflow],
-        ["technical", CircuitBoard],
-        ["network", Network],
-        ["search", Search],
-        ["recent", Clock3],
-    ] as const
     return (
         <>
             <aside
@@ -82,13 +93,12 @@ export function ShapeToolboxRail({
                 data-testid="shape-toolbox"
                 className="absolute inset-y-0 left-0 z-20 flex w-[52px] flex-col items-center gap-1 overflow-y-auto border-r border-primary/25 bg-card py-2 text-foreground"
             >
-                {settings || (
-                    <Blocks
-                        aria-hidden="true"
-                        className="mb-2 size-6 shrink-0 text-primary"
-                    />
-                )}
-                {groups.map(([group, Icon]) => (
+                <Blocks
+                    aria-hidden="true"
+                    className="mb-2 size-6 shrink-0 text-primary"
+                />
+                {settings}
+                {(selection?.groups || TOOLBOX_GROUPS).map(([group, Icon]) => (
                     <button
                         key={group}
                         type="button"
@@ -100,9 +110,14 @@ export function ShapeToolboxRail({
                         onClick={() => {
                             extension?.close()
                             if (active === group) controller.current?.close()
-                            else controller.current?.open(group, t[group])
+                            else
+                                controller.current?.open(
+                                    group,
+                                    t[group],
+                                    selection?.entries[group],
+                                )
                         }}
-                        className={`relative flex size-10 shrink-0 items-center justify-center rounded-lg border transition-colors hover:border-primary hover:text-primary disabled:opacity-40 ${active === group ? "border-primary bg-primary/10 text-primary" : "border-transparent"}`}
+                        className={`relative ${railButtonClass} border transition-colors hover:border-primary hover:text-primary disabled:opacity-40 ${active === group ? "border-primary bg-primary/10 text-primary" : "border-transparent"}`}
                     >
                         <Icon aria-hidden="true" className="size-5" />
                         <span
@@ -127,7 +142,7 @@ export function ShapeToolboxRail({
                             controller.current?.open("search", t.search)
                         controller.current?.catalog()
                     }}
-                    className="flex size-10 shrink-0 items-center justify-center rounded-lg hover:bg-primary/10 hover:text-primary disabled:opacity-40"
+                    className={`${railButtonClass} hover:bg-primary/10 hover:text-primary disabled:opacity-40`}
                 >
                     <LibraryBig aria-hidden="true" className="size-5" />
                 </button>

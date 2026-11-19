@@ -9,7 +9,17 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest"
 import { LibraryRail } from "../../components/workspace/library-rail"
 
 const fixture = vi.hoisted(() => ({
-    labels: {},
+    labels: {
+        title: "Shape libraries",
+        basic: "Basic shapes",
+        arrows: "Lines and arrows",
+        diagrams: "Diagrams",
+        technical: "Technical libraries",
+        network: "Networks",
+        search: "Search",
+        recent: "Recent",
+        allLibraries: "All libraries",
+    },
     close: vi.fn(),
     open: vi.fn(),
     dispose: vi.fn(),
@@ -22,11 +32,6 @@ vi.mock("@/stores/canvas-store", () => ({
 }))
 vi.mock("@/lib/operations-bridge", () => ({
     getOperationsContext: () => ({ userId: "alice" }),
-}))
-vi.mock("@/components/canvas/shape-toolbox-rail", () => ({
-    ShapeToolboxRail: ({ settings }: any) => (
-        <aside data-testid="default-rail">{settings}</aside>
-    ),
 }))
 vi.mock("@/lib/drawio/editor-bridge", () => ({
     attachNativeTool: (fn: any) =>
@@ -54,7 +59,7 @@ beforeEach(() => {
     vi.clearAllMocks()
 })
 afterEach(cleanup)
-it("loads account presets in another browser without restoring session libraries", async () => {
+it("keeps original normal defaults while loading account presets in another browser", async () => {
     let saved: any[] = []
     const request = vi.fn(async (action: string, body: any) => {
         if (action === "presets-save")
@@ -62,12 +67,13 @@ it("loads account presets in another browser without restoring session libraries
         return [...saved]
     })
     const view = render(<LibraryRail presetRequest={request} />)
-    expect(screen.queryByRole("button", { name: "Electrical" })).toBe(null)
+    expect(screen.getByRole("button", { name: "Basic shapes" })).toBeTruthy()
     fireEvent.click(
         screen.getByRole("button", { name: "Libraries and presets" }),
     )
     await waitFor(() => expect(screen.queryByRole("status")).toBe(null))
     expect(screen.getByRole("button", { name: "Clear selection" })).toBeTruthy()
+    fireEvent.click(screen.getByRole("button", { name: "Clear selection" }))
     fireEvent.click(screen.getByLabelText(/Electrical/))
     fireEvent.change(screen.getByLabelText("Preset name"), {
         target: { value: "Electronics" },
@@ -78,13 +84,16 @@ it("loads account presets in another browser without restoring session libraries
             screen.getByRole("option", { name: "Electronics" }),
         ).toBeTruthy(),
     )
-    expect(screen.queryByRole("button", { name: "Electrical" })).toBe(null)
+    expect(screen.getByRole("button", { name: "Basic shapes" })).toBeTruthy()
     fireEvent.click(screen.getByRole("button", { name: "Apply" }))
-    expect(screen.getByRole("button", { name: "Electrical" })).toBeTruthy()
+    expect(screen.queryByRole("button", { name: "Basic shapes" })).toBe(null)
+    expect(
+        screen.getByRole("button", { name: "Technical libraries" }),
+    ).toBeTruthy()
     view.unmount()
     localStorage.clear()
     render(<LibraryRail presetRequest={request} />)
-    expect(screen.queryByRole("button", { name: "Electrical" })).toBe(null)
+    expect(screen.getByRole("button", { name: "Basic shapes" })).toBeTruthy()
     fireEvent.click(
         screen.getByRole("button", { name: "Libraries and presets" }),
     )
@@ -188,10 +197,10 @@ it("starts shared boards empty, fences observer application and applies editor s
             onChange={apply}
         />,
     )
-    fireEvent.click(screen.getByRole("button", { name: "Electrical" }))
+    fireEvent.click(screen.getByRole("button", { name: "Technical libraries" }))
     expect(fixture.open).toHaveBeenCalledWith(
-        "search",
-        "Electrical",
+        "technical",
+        "Technical libraries",
         "electrical",
     )
     const closes = fixture.close.mock.calls.length
@@ -205,4 +214,51 @@ it("starts shared boards empty, fences observer application and applies editor s
         />,
     )
     expect(fixture.close.mock.calls.length).toBe(closes)
+})
+
+it("shares the exact original group icons and colors between normal and selected shared rails", () => {
+    const request = async () => []
+    const view = render(<LibraryRail presetRequest={request} />)
+    const ids = [
+        "basic",
+        "arrows",
+        "diagrams",
+        "technical",
+        "network",
+        "search",
+        "recent",
+    ]
+    const original = ids.map((id) => {
+        const button = screen.getByTestId(`toolbox-${id}`)
+        return {
+            svg: button.querySelector("svg")?.outerHTML,
+            classes: button.className,
+        }
+    })
+    expect(new Set(original.map((icon) => icon.svg)).size).toBe(7)
+    view.unmount()
+    const shared = render(
+        <LibraryRail shared presetRequest={request} libraries={[]} />,
+    )
+    expect(
+        screen.getByTestId("shape-toolbox").querySelectorAll("button").length,
+    ).toBe(1)
+    shared.rerender(
+        <LibraryRail
+            shared
+            presetRequest={request}
+            libraries={[
+                "general",
+                "arrows2",
+                "flowchart",
+                "electrical",
+                "network",
+            ]}
+        />,
+    )
+    ids.forEach((id, index) => {
+        const button = screen.getByTestId(`toolbox-${id}`)
+        expect(button.querySelector("svg")?.outerHTML).toBe(original[index].svg)
+        expect(button.className).toBe(original[index].classes)
+    })
 })

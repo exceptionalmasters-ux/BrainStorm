@@ -324,13 +324,13 @@
 }
 
 /* EMC library and account preset panels share the Operations button palette. */
-.emc-library-panel {
+.emc-library-settings {
     background: #080b09;
     border-color: #765c2d;
     color: #f5f4f0;
     border-radius: 4px;
 }
-.emc-library-panel button {
+.emc-library-settings button {
     border: 1px solid #765c2d;
     border-radius: 3px;
     background: linear-gradient(120deg, #17140e, #0b100c);
@@ -339,43 +339,29 @@
     font-size: 0.875rem;
     font-weight: 600;
 }
-.emc-library-panel button:hover:not(:disabled) {
+.emc-library-settings button:hover:not(:disabled) {
     border-color: #f0c66c;
     background: #352919;
 }
-.emc-library-panel button[data-emc-primary] {
+.emc-library-settings button[data-emc-primary] {
     background: linear-gradient(100deg, #c89534, #f0ca76);
     border-color: #e0b45e;
     color: #080808;
 }
-.emc-library-panel button:focus-visible,
-.emc-library-panel input:focus-visible,
-.emc-library-panel select:focus-visible {
+.emc-library-settings button:focus-visible,
+.emc-library-settings input:focus-visible,
+.emc-library-settings select:focus-visible {
     outline: 2px solid #f0c66c;
     outline-offset: 3px;
 }
-.emc-library-panel button:disabled {
+.emc-library-settings button:disabled {
     opacity: 0.4;
     cursor: not-allowed;
 }
-.emc-library-panel input:not([type="checkbox"]),
-.emc-library-panel select {
+.emc-library-settings input:not([type="checkbox"]),
+.emc-library-settings select {
     border-color: #765c2d;
     border-radius: 3px;
     background-color: #101510;
     color: #f5f4f0;
-}
-.emc-library-gear,
-.emc-library-rail button {
-    border-radius: 3px;
-    color: #f0c66c;
-}
-.emc-library-gear {
-    border-color: #765c2d;
-    background: linear-gradient(120deg, #17140e, #0b100c);
-}
-.emc-library-rail button:hover,
-.emc-library-rail button[aria-pressed="true"] {
-    border-color: #e0b45e;
-    background: #352919;
 }
