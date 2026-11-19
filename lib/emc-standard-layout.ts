@@ -416,7 +416,7 @@ export function insertStandardSymbolNative(
                 cy - 7,
                 label.width,
                 14,
-                `shape=text;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=${label.fontSize};whiteSpace=nowrap;overflow=visible;rotation=${label.rotation};`,
+                `shape=text;strokeColor=none;fillColor=none;align=${vertical && label.anchor === "end" ? "right;spacing=0" : "center"};verticalAlign=middle;fontSize=${label.fontSize};whiteSpace=nowrap;overflow=visible;rotation=${label.rotation};`,
             )
         }
         const used = new Set(

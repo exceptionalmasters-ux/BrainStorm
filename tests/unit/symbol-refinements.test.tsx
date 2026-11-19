@@ -1,7 +1,10 @@
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it } from "vitest"
 import { SymbolPreview } from "@/components/workspace/symbol-preview"
-import { standardSymbolLayout } from "@/lib/emc-standard-layout"
+import {
+    insertStandardSymbolNative,
+    standardSymbolLayout,
+} from "@/lib/emc-standard-layout"
 import {
     type EmcSymbol,
     symbolLayout,
@@ -389,4 +392,43 @@ it("captures resolved native function styles and reinserts the original internal
         [inserted[2], inserted[0], true],
         [inserted[2], inserted[1], false],
     ])
+})
+
+it("anchors native top labels to their actual text end rather than an estimated centred width", () => {
+    const cells: any[][] = []
+    const cell = (...args: any[]) => {
+        cells.push(args)
+        return { setConnectable() {}, geometry: { clone: () => ({}) } }
+    }
+    const graph = {
+        stopEditing() {},
+        getDefaultParent: () => "layer",
+        getFreeInsertPoint: () => ({ x: 0, y: 0 }),
+        model: { beginUpdate() {}, endUpdate() {}, setGeometry() {} },
+        insertVertex: cell,
+        insertEdge: cell,
+        setSelectionCell() {},
+        scrollCellToVisible() {},
+    }
+    insertStandardSymbolNative(
+        { editor: { graph } },
+        {
+            mxPoint: class {
+                constructor(
+                    public x: number,
+                    public y: number,
+                ) {}
+            },
+        },
+        s70,
+    )
+    const layout = standardSymbolLayout(s70)
+    for (const pin of s70.pins.filter((pin) => pin.side === "top")) {
+        const native = cells.find((args) => args[2] === pin.name)
+        const label = layout.labels.find(
+            (label) => label.id === `${pin.number}:name`,
+        )
+        expect(native[7]).toContain("align=right;spacing=0")
+        expect(native[4] + native[6] / 2 - native[5] / 2).toBeCloseTo(label.y)
+    }
 })
