@@ -144,14 +144,14 @@ export function LibraryRail({
     useEffect(() => {
         if (!emOpen) return
         const close = () => setEmOpen(false)
-        const escape = (event: KeyboardEvent) => {
+        const handleEscape = (event: KeyboardEvent) => {
             if (event.key === "Escape") close()
         }
         window.addEventListener("emc-close-toolbox", close)
-        document.addEventListener("keydown", escape)
+        document.addEventListener("keydown", handleEscape)
         return () => {
             window.removeEventListener("emc-close-toolbox", close)
-            document.removeEventListener("keydown", escape)
+            document.removeEventListener("keydown", handleEscape)
         }
     }, [emOpen])
     const loadPresets = async () => {
