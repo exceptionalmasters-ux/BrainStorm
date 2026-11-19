@@ -176,8 +176,12 @@ it("connects by two touch taps or dragging, cancels on blank space, and preserve
         addListener() {},
         removeListener() {},
         getDefaultParent: () => null,
+        getSelectionCells: () => edges,
+        setCellStyles: (key: string, value: string, selected: any[]) => {
+            for (const edge of selected) edge[key] = value
+        },
         insertEdge: (...args: any[]) => {
-            const edge = { args }
+            const edge = { args, style: "emcWire=1;" }
             edges.push(edge)
             return edge
         },
@@ -228,6 +232,20 @@ it("connects by two touch taps or dragging, cancels on blank space, and preserve
     listeners.get("pointerdown")(event(100, 100))
     listeners.get("pointermove")(event(190, 100))
     listeners.get("pointerup")(event(200, 100))
+    expect(edges).toHaveLength(3)
+    tool.setEnds("both")
+    expect(
+        edges.every(
+            (edge) =>
+                edge.startArrow === "classic" && edge.endArrow === "classic",
+        ),
+    ).toBe(true)
+    tool.setEnds("start")
+    expect(
+        edges.every(
+            (edge) => edge.startArrow === "classic" && edge.endArrow === "none",
+        ),
+    ).toBe(true)
     expect(edges).toHaveLength(3)
     tool.dispose()
     expect(listeners.size).toBe(0)

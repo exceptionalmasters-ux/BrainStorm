@@ -13,6 +13,7 @@ export function EmcConnectorTool() {
     const busy = useCanvasStore((s) => s.isBusy)
     const active = useCanvasStore((s) => s.isConnector)
     const [ends, setEnds] = useState<ConnectorEnds>("none")
+    const [hasSelection, setHasSelection] = useState(false)
     const tool = useRef<ReturnType<typeof installEmcConnector>>(null)
     useEffect(() => {
         if (!ready) return
@@ -27,6 +28,14 @@ export function EmcConnectorTool() {
                 (enabled, value) => {
                     useCanvasStore.setState({ isConnector: enabled })
                     setEnds(value)
+                    setHasSelection(
+                        (ui.editor.graph.getSelectionCells?.() || []).some(
+                            (cell: any) =>
+                                /(?:^|;)emcWire=1(?:;|$)/.test(
+                                    cell.style || "",
+                                ),
+                        ),
+                    )
                 },
             )
             return () => {
@@ -62,9 +71,12 @@ export function EmcConnectorTool() {
                     <circle cx="21" cy="6" r="2" />
                 </svg>
             </button>
-            {active && (
+            {(active || hasSelection) && (
                 <select
                     aria-label="Connector arrowheads"
+                    disabled={
+                        !ready || busy || !!getOperationsContext()?.readOnly
+                    }
                     data-testid="emc-connector-ends"
                     value={ends}
                     onChange={(event) =>

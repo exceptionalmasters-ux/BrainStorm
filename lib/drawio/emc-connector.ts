@@ -401,6 +401,21 @@ export function installEmcConnector(
         changed(active, ends)
         return true
     }
+    const selectedWires = () =>
+        (graph.getSelectionCells?.() || []).filter(owned)
+    const selectionChanged = () => {
+        const edge = selectedWires()[0]
+        if (edge) {
+            const style = graph.getCellStyle(edge)
+            const start = style.startArrow && style.startArrow !== "none"
+            const end = style.endArrow && style.endArrow !== "none"
+            ends = start ? (end ? "both" : "start") : end ? "end" : "none"
+        }
+        changed(active, ends)
+    }
+    const selection = graph.getSelectionModel?.()
+    selection?.addListener(win.mxEvent.CHANGE, selectionChanged)
+    cleanup.push(() => selection?.removeListener(selectionChanged))
     const onEscape = () => setActive(false)
     graph.addListener(win.mxEvent.ESCAPE, onEscape)
     cleanup.push(() => graph.removeListener(onEscape))
@@ -408,7 +423,30 @@ export function installEmcConnector(
         setActive,
         isActive: () => active,
         setEnds: (value: ConnectorEnds) => {
+            if (!allowed()) return
             ends = value
+            const edges = selectedWires()
+            if (edges.length) {
+                graph.model.beginUpdate()
+                try {
+                    graph.setCellStyles(
+                        "startArrow",
+                        value === "start" || value === "both"
+                            ? "classic"
+                            : "none",
+                        edges,
+                    )
+                    graph.setCellStyles(
+                        "endArrow",
+                        value === "end" || value === "both"
+                            ? "classic"
+                            : "none",
+                        edges,
+                    )
+                } finally {
+                    graph.model.endUpdate()
+                }
+            }
             changed(active, ends)
         },
         dispose: () => {
