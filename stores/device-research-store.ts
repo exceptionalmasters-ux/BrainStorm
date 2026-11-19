@@ -9,6 +9,7 @@ import type {
 let controller: AbortController | null = null
 let generation = 0
 export const useDeviceResearch = create<{
+    fileMode: boolean
     instructions: string
     webEnabled: boolean
     busy: boolean
@@ -27,6 +28,7 @@ export const useDeviceResearch = create<{
 }))
 function researchState() {
     return {
+        fileMode: false,
         instructions: "",
         webEnabled: false,
         busy: false,

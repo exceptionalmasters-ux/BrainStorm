@@ -44,3 +44,9 @@ Cancel, X, Escape and outside clicks request confirmation before discarding an u
 ## Validation limits
 
 Automated fixtures verify PDF forwarding, page instructions, variant handling, validation, geometry, native connection constraints and preview controls. They do not establish that an AI model correctly reads every real datasheet. A real HC-05 generation still needs inspection against pages 2–4, especially all 34 pin names/numbers and the viewing orientation.
+
+## File generation workspace and vertical labels
+
+The file/sparkles toolbar button opens a dedicated file generation view. Drawing chat is hidden without clearing its messages or prompt. File instructions sit below the analysis results in the composer area. Cancel stops the active research and returns to drawing chat, preserving instructions for the next file analysis.
+
+On the top and bottom sides, pin names both read bottom-to-top (270 degrees). Upright pin numbers sit between the vertical stems with a dedicated column pitch that reserves their text width plus clearance. Left/right pin rows retain their existing spacing. The preview and native insertion share these exact coordinates. Previously inserted drawing cells are not rewritten.

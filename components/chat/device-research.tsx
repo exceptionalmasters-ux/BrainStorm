@@ -3,7 +3,7 @@ import { SymbolPreview } from "@/components/workspace/symbol-preview"
 
 export { SymbolPreview } from "@/components/workspace/symbol-preview"
 
-import { Globe, Loader2 } from "lucide-react"
+import { FileInput, Globe, Loader2, Sparkles } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import {
@@ -37,6 +37,7 @@ import {
 import { getOperationsContext, isOperationsMode } from "@/lib/operations-bridge"
 import { useCanvasStore } from "@/stores/canvas-store"
 import {
+    cancelDeviceResearch,
     disableDeviceWeb,
     draftDevice,
     emcAction,
@@ -397,7 +398,7 @@ function ApprovalDialog() {
 export function DeviceResearchPanel() {
     const state = useDeviceResearch()
     const engine = useChatEngine()
-    const [fileMode, setFileMode] = useState(false)
+    const fileMode = state.fileMode
     const [warning, setWarning] = useState(false)
     const [expanded, setExpanded] = useState(false)
     const [query, setQuery] = useState("")
@@ -419,7 +420,11 @@ export function DeviceResearchPanel() {
     if (!isOperationsMode()) return null
     return (
         <div
-            className="max-h-[45vh] shrink-0 overflow-y-auto border-b px-3 py-2 text-xs"
+            className={
+                fileMode
+                    ? "min-h-0 flex-1 overflow-y-auto border-b px-3 py-2 text-xs"
+                    : "max-h-[45vh] shrink-0 overflow-y-auto border-b px-3 py-2 text-xs"
+            }
             data-testid="device-research"
         >
             <Dialog
@@ -514,25 +519,51 @@ export function DeviceResearchPanel() {
                     Research
                 </button>
             </div>
-            <button
-                type="button"
-                className="mt-2 rounded border px-2 py-1"
-                onClick={() => {
-                    setFileMode(!fileMode)
-                    if (!fileMode) {
+            <div className="mt-2 flex items-center gap-2">
+                <button
+                    type="button"
+                    title="Create symbol from file"
+                    aria-label="Create symbol from file"
+                    aria-pressed={fileMode}
+                    disabled={engine.isBusy || !!readonly}
+                    className="relative flex size-9 items-center justify-center rounded-lg border hover:border-primary hover:text-primary disabled:opacity-40"
+                    onClick={() => {
                         disableDeviceWeb()
+                        state.set({ fileMode: true })
                         setExpanded(false)
-                    }
-                }}
-            >
-                Create symbol from file
-            </button>
+                    }}
+                >
+                    <FileInput aria-hidden="true" className="size-5" />
+                    <Sparkles
+                        aria-hidden="true"
+                        className="absolute top-0.5 right-0.5 size-3 bg-card text-primary"
+                    />
+                </button>
+                {fileMode && (
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                            cancelDeviceResearch()
+                            state.set({ fileMode: false })
+                        }}
+                    >
+                        Cancel
+                    </Button>
+                )}
+            </div>
             {!fileMode && (
                 <SymbolInstructions disabled={state.busy || !!readonly} />
             )}
             {fileMode && <SourceFiles readonly={!!readonly} />}
             {(expanded || state.busy || state.result || state.error) && (
-                <div className="mt-2 max-h-[35vh] space-y-2 overflow-y-auto">
+                <div
+                    className={
+                        fileMode
+                            ? "mt-2 space-y-2"
+                            : "mt-2 max-h-[35vh] space-y-2 overflow-y-auto"
+                    }
+                >
                     {!fileMode && (
                         <form
                             className="flex gap-1"

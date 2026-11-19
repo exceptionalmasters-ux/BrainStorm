@@ -1,6 +1,5 @@
 import {
     ArrowUpRight,
-    Blocks,
     CircuitBoard,
     Clock3,
     LibraryBig,
@@ -93,10 +92,6 @@ export function ShapeToolboxRail({
                 data-testid="shape-toolbox"
                 className="absolute inset-y-0 left-0 z-20 flex w-[52px] flex-col items-center gap-1 overflow-y-auto border-r border-primary/25 bg-card py-2 text-foreground"
             >
-                <Blocks
-                    aria-hidden="true"
-                    className="mb-2 size-6 shrink-0 text-primary"
-                />
                 {settings}
                 {(selection?.groups || TOOLBOX_GROUPS).map(([group, Icon]) => (
                     <button

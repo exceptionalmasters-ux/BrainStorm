@@ -52,8 +52,12 @@ describe("source geometry", () => {
         expect(l.labels).toHaveLength(128)
         expect(l.pitch).toBe(20)
         for (const pin of l.pins) {
-            expect((pin.x * l.width) % 10).toBeCloseTo(0)
-            expect((pin.y * l.height) % 10).toBeCloseTo(0)
+            expect((pin.x * l.width) / 10).toBeCloseTo(
+                Math.round((pin.x * l.width) / 10),
+            )
+            expect((pin.y * l.height) / 10).toBeCloseTo(
+                Math.round((pin.y * l.height) / 10),
+            )
         }
         // Each rotated text has a conservative bounding rectangle. No two labels may collide.
         const bounds = l.labels.map((v) => {
@@ -148,6 +152,33 @@ describe("source geometry", () => {
         expect(spacious.pitch).toBe(30)
         expect(compact.height).toBeLessThanOrEqual(standard.height)
         expect(spacious.height).toBeGreaterThan(standard.height)
+    })
+    it("reads both vertical pin-name rows upwards and keeps numbers clear of every stem", () => {
+        const layout = standardSymbolLayout(s70)
+        for (const side of ["top", "bottom"]) {
+            const pins = layout.pins.filter((p) => p.side === side)
+            for (const pin of pins) {
+                const name = layout.labels.find(
+                    (l) => l.id === `${pin.number}:name`,
+                )
+                const number = layout.labels.find(
+                    (l) => l.id === `${pin.number}:number`,
+                )
+                expect(name.rotation).toBe(270)
+                expect(name.y - name.width).toBeGreaterThanOrEqual(
+                    layout.bodyFrame.y + 19,
+                )
+                expect(name.y).toBeLessThanOrEqual(
+                    layout.bodyFrame.y + layout.bodyFrame.height - 19,
+                )
+                for (const stem of pins) {
+                    expect(
+                        Math.abs(number.x - stem.x * layout.width) -
+                            number.width / 2,
+                    ).toBeGreaterThanOrEqual(5)
+                }
+            }
+        }
     })
     it("rejects invalid source polygons before rendering", () => {
         expect(
