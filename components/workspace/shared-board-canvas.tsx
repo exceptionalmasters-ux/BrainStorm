@@ -286,6 +286,7 @@ export function SharedBoardCanvas() {
                 {state && (
                     <LibraryRail
                         shared
+                        presetRequest={loadEM}
                         userId={state.actorId}
                         libraries={state.libraryIds}
                         editable={state.editable}
