@@ -3077,7 +3077,7 @@ test.describe("Edge cases", () => {
             .replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;")
         await page
-            .locator('input[type="file"][accept^=".drawio"]')
+            .locator('input[type="file"][accept*=".drawio"]')
             .first()
             .setInputFiles({
                 name: "prefixed.drawio.svg",
@@ -3100,7 +3100,7 @@ test.describe("Edge cases", () => {
             .replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;")
         await page
-            .locator('input[type="file"][accept^=".drawio"]')
+            .locator('input[type="file"][accept*=".drawio"]')
             .first()
             .setInputFiles({
                 name: "entity.drawio.svg",
