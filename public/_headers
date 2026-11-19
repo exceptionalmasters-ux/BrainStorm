@@ -1,2 +1,11 @@
 /_next/static/*
   Cache-Control: public,max-age=31536000,immutable
+
+/brainstorm/_next/static/*
+  Cache-Control: public,max-age=31536000,immutable
+
+/drawio/*
+  Cache-Control: public,max-age=14400
+
+/brainstorm/drawio/*
+  Cache-Control: public,max-age=14400
