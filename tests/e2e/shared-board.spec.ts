@@ -18,7 +18,7 @@ test("shared canvas fences edits, imports only for its current editor and separa
         (r) =>
             r.fulfill({
                 contentType: "text/html",
-                body: `<iframe id="board" style="position:fixed;inset:0;width:100%;height:100%" src="${src}"></iframe><script>window.events=[];addEventListener('message',e=>{if(e.source===document.getElementById('board').contentWindow)events.push(e.data)})</script>`,
+                body: `<iframe id="board" style="position:fixed;inset:0;width:100%;height:100%" src="${src}"></iframe><script>window.events=[];window.presets=[];addEventListener('message',e=>{if(e.source!==document.getElementById('board').contentWindow)return;events.push(e.data);const d=e.data;if(d.type==='library-request'&&d.action.startsWith('presets-')){if(d.action==='presets-save')window.presets=[d.body];e.source.postMessage({protocol:'emc-whiteboard/v1',type:'library-result',requestId:d.requestId,result:window.presets},e.origin)}})</script>`,
             }),
     )
     await page.goto("https://exceptionalmasters.co.uk/__shared-fixture")
@@ -67,6 +67,22 @@ test("shared canvas fences edits, imports only for its current editor and separa
     await expect(
         canvas.getByRole("button", { name: "Apply", exact: true }),
     ).toBeDisabled()
+    await expect(canvas.getByRole("status")).toHaveCount(0)
+    await canvas
+        .getByRole("textbox", { name: "Preset name" })
+        .fill("Observer personal set")
+    await canvas.getByRole("button", { name: "Save new preset" }).click()
+    await expect(
+        canvas.getByRole("option", { name: "Observer personal set" }),
+    ).toHaveCount(1)
+    expect(
+        await page.evaluate(
+            () =>
+                (window as any).events.filter(
+                    (e: any) => e.type === "libraries",
+                ).length,
+        ),
+    ).toBe(0)
     await canvas.getByRole("button", { name: "Close library settings" }).click()
     await expect(
         native.getByText("Shared module", { exact: true }),

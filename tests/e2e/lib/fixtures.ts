@@ -393,3 +393,16 @@ export async function chunkedReplies(
 export function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms))
 }
+
+/** Explicit session selection; presets are never applied automatically. */
+export async function selectLibraries(page: Page, ids: string[]) {
+    await page.getByTestId("library-settings").click()
+    await page
+        .getByRole("button", { name: "Clear selection", exact: true })
+        .click()
+    for (const id of ids) {
+        await page.getByRole("textbox", { name: "Find library" }).fill(id)
+        await page.getByTestId(`library-choice-${id}`).check()
+    }
+    await page.getByRole("button", { name: "Apply", exact: true }).click()
+}

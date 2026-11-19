@@ -16,17 +16,21 @@ import {
 } from "@/components/canvas/shape-toolbox-rail"
 import { useDictionary } from "@/hooks/use-dictionary"
 import {
+    accountPresetRequest,
+    type PresetRequest,
+} from "@/lib/account-library-presets"
+import {
     attachNativeTool,
     connectShapeToolbox,
 } from "@/lib/drawio/editor-bridge"
 import type { ShapeToolbox } from "@/lib/drawio/shape-toolbox"
 import { insertEmcSymbolNative, validateEmcSymbol } from "@/lib/emc-symbols"
+import { expandLibraryPalette } from "@/lib/library-palettes"
 import {
     DEFAULT_LIBRARY_IDS,
     type LibraryPreset,
     readLibraryPreferences,
     validLibraryIds,
-    writeLibraryPreferences,
 } from "@/lib/library-presets"
 import {
     insertManualSymbolNative,
@@ -37,6 +41,7 @@ import { useCanvasStore } from "@/stores/canvas-store"
 
 type CatalogItem = { id: string; title: string; group: string }
 type Props = {
+    presetRequest?: PresetRequest
     shared?: boolean
     userId?: string
     libraries?: string[]
@@ -46,6 +51,7 @@ type Props = {
     loadEM?: (action: string, body: unknown) => Promise<any>
 }
 export function LibraryRail({
+    presetRequest = accountPresetRequest,
     shared = false,
     userId,
     libraries,
@@ -57,7 +63,7 @@ export function LibraryRail({
     const ready = useCanvasStore((s) => s.hasEditor),
         labels = useDictionary().toolbox,
         user = userId || getOperationsContext()?.userId || "local"
-    const [ids, setIds] = useState<string[] | null>(shared ? [] : null),
+    const [ids, setIds] = useState<string[] | null>([]),
         [catalog, setCatalog] = useState<CatalogItem[]>([]),
         [open, setOpen] = useState(false),
         [draft, setDraft] = useState<string[]>([]),
@@ -65,22 +71,25 @@ export function LibraryRail({
         [presets, setPresets] = useState<LibraryPreset[]>([]),
         [preset, setPreset] = useState(""),
         [name, setName] = useState(""),
-        [remember, setRemember] = useState(false),
+        [presetBusy, setPresetBusy] = useState(false),
+        [localPresets, setLocalPresets] = useState<LibraryPreset[]>([]),
         [error, setError] = useState(""),
         [active, setActive] = useState(""),
         [emOpen, setEmOpen] = useState(false),
         [emItems, setEmItems] = useState<any[]>([]),
         [emBusy, setEmBusy] = useState(false)
-    const tool = useRef<ShapeToolbox | null>(null),
-        normal = useRef<string[] | null>(null)
+    const tool = useRef<ShapeToolbox | null>(null)
+    const account = useRef(user)
+    account.current = user
     const canInsert = useRef(editable)
     canInsert.current = editable
     useEffect(() => {
-        const stored = readLibraryPreferences(user)
-        setPresets(stored.presets)
-        normal.current = stored.normal
-        if (!shared) setIds(stored.normal)
-    }, [user, shared])
+        setPresets([])
+        setPreset("")
+        setName("")
+        setOpen(false)
+        setLocalPresets(readLibraryPreferences(user).presets)
+    }, [user])
     useEffect(() => {
         if (shared) {
             const next = validLibraryIds(libraries) ? libraries : []
@@ -148,18 +157,18 @@ export function LibraryRail({
             extension?.close()
         }
     }, [ids])
-    const savePreferences = (
-        nextNormal: string[] | null,
-        nextPresets: LibraryPreset[],
-    ) => {
+    const loadPresets = async () => {
+        const requestedUser = user
+        setPresetBusy(true)
         try {
-            writeLibraryPreferences(user, nextNormal, nextPresets)
-            normal.current = nextNormal
-            setPresets(nextPresets)
-            return true
+            const rows = await presetRequest("presets-list", {})
+            if (account.current === requestedUser) setPresets(rows)
         } catch {
-            setError("Could not save these preferences in this browser.")
-            return false
+            setError(
+                "Could not load account presets. Reconnect to EMC and reopen this panel.",
+            )
+        } finally {
+            setPresetBusy(false)
         }
     }
     const settings = () => {
@@ -167,6 +176,7 @@ export function LibraryRail({
         setSearch("")
         setError("")
         setOpen(true)
+        void loadPresets()
         tool.current?.close()
         extension?.close()
         setEmOpen(false)
@@ -174,12 +184,11 @@ export function LibraryRail({
     const apply = () => {
         if (shared && !editable) return
         if (!validLibraryIds(draft)) return
-        if (remember && !shared && !savePreferences(draft, presets)) return
         setIds([...draft])
         onChange?.([...draft])
         setOpen(false)
     }
-    const savePreset = (update: boolean) => {
+    const savePreset = async (update: boolean) => {
         const title = name.trim()
         if (!title || title.length > 80) {
             setError("Enter a preset name (up to 80 characters).")
@@ -197,18 +206,49 @@ export function LibraryRail({
         }
         const id = update ? preset : crypto.randomUUID()
         if (!id) return
-        const rows = update
-            ? presets.map((p) =>
-                  p.id === id ? { id, name: title, libraries: [...draft] } : p,
-              )
-            : [...presets, { id, name: title, libraries: [...draft] }]
-        if (rows.length > 30) {
-            setError("You can save up to 30 presets.")
-            return
-        }
-        if (savePreferences(normal.current, rows)) {
+        setPresetBusy(true)
+        try {
+            const rows = await presetRequest("presets-save", {
+                id,
+                name: title,
+                libraries: [...draft],
+            })
+            if (account.current !== user) return
+            setPresets(rows)
             setPreset(id)
             setError("")
+        } catch (reason) {
+            setError(
+                (reason as Error).message || "Could not save account preset.",
+            )
+        } finally {
+            setPresetBusy(false)
+        }
+    }
+    const importLocal = async () => {
+        setPresetBusy(true)
+        try {
+            let rows = presets
+            for (const item of localPresets) {
+                if (account.current !== user) return
+                if (
+                    rows.some(
+                        (p) => p.name.toLowerCase() === item.name.toLowerCase(),
+                    )
+                )
+                    continue
+                rows = await presetRequest("presets-save", {
+                    ...item,
+                    id: crypto.randomUUID(),
+                })
+                setPresets(rows)
+            }
+            setLocalPresets([])
+            setError("")
+        } catch (reason) {
+            setError((reason as Error).message)
+        } finally {
+            setPresetBusy(false)
         }
     }
     const gear = (
@@ -218,7 +258,7 @@ export function LibraryRail({
             title="Libraries and presets"
             aria-label="Libraries and presets"
             data-testid="library-settings"
-            className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-amber-500/40 text-amber-300 hover:bg-amber-500/15"
+            className="emc-library-gear flex size-10 shrink-0 items-center justify-center rounded-lg border border-amber-500/40 text-amber-300 hover:bg-amber-500/15"
         >
             <Settings2 className="size-5" />
         </button>
@@ -247,6 +287,10 @@ export function LibraryRail({
             setActive("")
         } else {
             tool.current?.open("search", title, id)
+            attachNativeTool((ui) => {
+                expandLibraryPalette(ui.sidebar, id)
+                return () => {}
+            })
             setActive(id)
         }
     }
@@ -258,7 +302,7 @@ export function LibraryRail({
                 <aside
                     aria-label="Shape libraries"
                     data-testid="library-rail"
-                    className="absolute inset-y-0 left-0 z-30 flex w-[52px] flex-col items-center gap-1 overflow-y-auto border-r border-amber-500/25 bg-[#101310] py-2 text-white"
+                    className="emc-library-rail absolute inset-y-0 left-0 z-30 flex w-[52px] flex-col items-center gap-1 overflow-y-auto border-r border-amber-500/25 bg-[#101310] py-2 text-white"
                 >
                     {gear}
                     {(ids || []).map((id) => {
@@ -281,6 +325,7 @@ export function LibraryRail({
                             <button
                                 type="button"
                                 key={id}
+                                data-testid={`library-${id}`}
                                 title={item?.title || id}
                                 aria-label={item?.title || id}
                                 aria-pressed={
@@ -304,7 +349,7 @@ export function LibraryRail({
             )}
             {extension?.panel && ids?.includes("emc") && extension.panel}
             {emOpen && loadEM && (
-                <section className="absolute inset-y-0 left-[52px] z-40 w-[min(320px,calc(100%_-_52px))] overflow-auto border border-amber-500/40 bg-[#101310] p-3 text-white">
+                <section className="emc-library-panel absolute inset-y-0 left-[52px] z-40 w-[min(320px,calc(100%_-_52px))] overflow-auto border border-amber-500/40 bg-[#101310] p-3 text-white">
                     <header className="flex justify-between">
                         <strong>EM library</strong>
                         <button
@@ -407,9 +452,9 @@ export function LibraryRail({
                         role="dialog"
                         aria-modal="true"
                         aria-labelledby="library-settings-title"
-                        className="flex max-h-[90dvh] w-full max-w-xl flex-col rounded-xl border border-amber-500/50 bg-[#101310] text-white shadow-2xl"
+                        className="emc-library-panel flex max-h-[90dvh] w-full max-w-xl flex-col rounded-xl border border-amber-500/50 bg-[#101310] text-white shadow-2xl"
                     >
-                        <header className="flex items-center gap-3 border-b border-amber-500/25 p-4">
+                        <header className="flex shrink-0 items-center gap-3 border-b border-amber-500/25 p-4">
                             <Settings2 className="text-amber-300" />
                             <div className="flex-1">
                                 <h2
@@ -421,7 +466,7 @@ export function LibraryRail({
                                 <p className="text-xs text-white/60">
                                     {shared
                                         ? "The current editor applies this set to everyone on this board."
-                                        : "Customize your editor. Saved presets stay in this browser, under your account."}
+                                        : "Choose libraries for this session. Saved presets are available on your EMC account on every device."}
                                 </p>
                             </div>
                             <button
@@ -431,7 +476,7 @@ export function LibraryRail({
                                 <X />
                             </button>
                         </header>
-                        <div className="grid gap-3 overflow-auto p-4">
+                        <div className="flex min-h-0 flex-col gap-3 overflow-auto p-4 [&>*]:shrink-0">
                             <label className="grid gap-1 text-sm">
                                 Preset
                                 <select
@@ -481,6 +526,7 @@ export function LibraryRail({
                                         >
                                             <input
                                                 type="checkbox"
+                                                data-testid={`library-choice-${c.id}`}
                                                 checked={draft.includes(c.id)}
                                                 onChange={() =>
                                                     setDraft((current) =>
@@ -535,30 +581,37 @@ export function LibraryRail({
                             <div className="flex flex-wrap gap-2">
                                 <button
                                     className="rounded border border-amber-500/40 px-3 py-2 text-sm"
-                                    onClick={() => savePreset(false)}
+                                    disabled={presetBusy}
+                                    onClick={() => void savePreset(false)}
                                 >
                                     Save new preset
                                 </button>
                                 <button
-                                    disabled={!preset}
+                                    disabled={!preset || presetBusy}
                                     className="rounded border border-amber-500/40 px-3 py-2 text-sm disabled:opacity-40"
-                                    onClick={() => savePreset(true)}
+                                    onClick={() => void savePreset(true)}
                                 >
                                     Update preset
                                 </button>
                             </div>
-                            {!shared && (
-                                <label className="flex items-center gap-2 text-sm">
-                                    <input
-                                        type="checkbox"
-                                        checked={remember}
-                                        onChange={(e) =>
-                                            setRemember(e.target.checked)
-                                        }
-                                    />
-                                    Remember as my editor default
-                                </label>
+                            {presetBusy && (
+                                <p role="status">
+                                    Synchronizing account presets…
+                                </p>
                             )}
+                            {localPresets.length > 0 && (
+                                <button
+                                    disabled={presetBusy}
+                                    onClick={() => void importLocal()}
+                                >
+                                    Import presets from this browser
+                                </button>
+                            )}
+                            <p className="text-sm text-white/70">
+                                Presets belong to your account. Choose a preset
+                                again when opening a new board. Saving a preset
+                                does not apply it to this board.
+                            </p>
                             {shared && (
                                 <p className="text-xs text-white/60">
                                     Apply affects only this session. Save a
@@ -574,15 +627,13 @@ export function LibraryRail({
                                 </p>
                             )}
                         </div>
-                        <footer className="flex flex-wrap justify-between gap-2 border-t border-amber-500/25 p-4">
+                        <footer className="flex shrink-0 flex-wrap justify-between gap-2 border-t border-amber-500/25 p-4">
                             <button
                                 className="flex items-center gap-1 rounded border border-amber-500/40 px-3 py-2 text-sm"
-                                onClick={() =>
-                                    setDraft(shared ? [] : DEFAULT_LIBRARY_IDS)
-                                }
+                                onClick={() => setDraft([])}
                             >
                                 <RotateCcw className="size-4" />
-                                Defaults
+                                Clear selection
                             </button>
                             <div className="flex gap-2">
                                 <button
@@ -593,6 +644,7 @@ export function LibraryRail({
                                 </button>
                                 <button
                                     disabled={shared && !editable}
+                                    data-emc-primary="true"
                                     className="flex items-center gap-1 rounded bg-amber-400 px-4 py-2 font-semibold text-black disabled:opacity-40"
                                     onClick={apply}
                                 >
