@@ -59,13 +59,11 @@ it("keeps normal defaults, persists a named set and restores the remembered cust
     })
     fireEvent.click(screen.getByRole("button", { name: "Save new preset" }))
     fireEvent.click(screen.getByLabelText("Remember as my editor default"))
-    fireEvent.click(screen.getByRole("button", { name: "Apply", exact: true }))
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }))
     expect(screen.queryByTestId("default-rail")).toBe(null)
     view.unmount()
     render(<LibraryRail />)
-    expect(
-        screen.getByRole("button", { name: "Electrical", exact: true }),
-    ).toBeTruthy()
+    expect(screen.getByRole("button", { name: "Electrical" })).toBeTruthy()
     fireEvent.click(
         screen.getByRole("button", { name: "Libraries and presets" }),
     )
@@ -81,9 +79,7 @@ it("starts shared boards empty, fences observer application and applies editor s
                 onChange={apply}
             />,
         )
-    expect(
-        screen.queryByRole("button", { name: "Electrical", exact: true }),
-    ).toBe(null)
+    expect(screen.queryByRole("button", { name: "Electrical" })).toBe(null)
     fireEvent.click(
         screen.getByRole("button", { name: "Libraries and presets" }),
     )
@@ -92,7 +88,6 @@ it("starts shared boards empty, fences observer application and applies editor s
         (
             screen.getByRole("button", {
                 name: "Apply",
-                exact: true,
             }) as HTMLButtonElement
         ).disabled,
     ).toBe(true)
@@ -100,7 +95,7 @@ it("starts shared boards empty, fences observer application and applies editor s
     view.rerender(
         <LibraryRail shared userId="alice" editable onChange={apply} />,
     )
-    fireEvent.click(screen.getByRole("button", { name: "Apply", exact: true }))
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }))
     expect(apply).toHaveBeenCalledWith(["electrical"])
     view.rerender(
         <LibraryRail
@@ -111,9 +106,7 @@ it("starts shared boards empty, fences observer application and applies editor s
             onChange={apply}
         />,
     )
-    fireEvent.click(
-        screen.getByRole("button", { name: "Electrical", exact: true }),
-    )
+    fireEvent.click(screen.getByRole("button", { name: "Electrical" }))
     expect(fixture.open).toHaveBeenCalledWith(
         "search",
         "Electrical",
