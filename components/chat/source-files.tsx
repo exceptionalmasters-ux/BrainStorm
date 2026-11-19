@@ -19,7 +19,6 @@ import {
     emcAction,
     useDeviceResearch,
 } from "@/stores/device-research-store"
-import { SymbolInstructions } from "./symbol-instructions"
 
 type Source = {
     id: string
@@ -231,7 +230,6 @@ export function SourceFiles({ readonly }: { readonly: boolean }) {
                     if (file) void chooseFile(file)
                 }}
             />
-            <SymbolInstructions disabled={busy || research.busy || readonly} />
             {error && (
                 <p role="alert" className="text-red-500">
                     {error}

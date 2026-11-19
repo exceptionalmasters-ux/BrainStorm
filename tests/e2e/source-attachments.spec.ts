@@ -173,6 +173,8 @@ test("private PDF upload, no-Web symbol, trash/restore/purge and reconnect witho
     await popup
         .getByRole("button", { name: "Create symbol from file", exact: true })
         .click()
+    await expect(popup.getByTestId("chat-input")).toHaveCount(0)
+    await expect(popup.getByTestId("file-analysis-comments")).toBeVisible()
     await popup.getByLabel("Upload source documentation").setInputFiles({
         name: "Device.pdf",
         mimeType: "application/pdf",
@@ -298,6 +300,16 @@ test("private PDF upload, no-Web symbol, trash/restore/purge and reconnect witho
     ).toHaveCount(0)
     expect(purges).toBe(1)
     expect(actions).not.toContain("research")
+    const research = popup.getByTestId("device-research")
+    await research.getByRole("button", { name: "Cancel", exact: true }).click()
+    await expect(popup.getByTestId("chat-input")).toBeVisible()
+    await expect(popup.getByTestId("file-analysis-comments")).toHaveCount(0)
+    await research
+        .getByRole("button", { name: "Create symbol from file", exact: true })
+        .click()
+    await expect(
+        popup.getByLabel("Symbol instructions", { exact: true }),
+    ).toHaveValue("Drawing page 2; pin table pages 3–4")
     await page.close()
     await expect(popup.getByTestId("drawing-toolbar")).toBeVisible()
     await popup.getByTestId("emc-reconnect").click()

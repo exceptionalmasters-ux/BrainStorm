@@ -34,6 +34,7 @@ vi.mock("@/lib/operations-bridge", () => ({
     getOperationsContext: () => ({ userId: "alice" }),
 }))
 vi.mock("@/lib/drawio/editor-bridge", () => ({
+    insertEmcSymbol: vi.fn(),
     attachNativeTool: (fn: any) =>
         fn(
             {
@@ -261,4 +262,45 @@ it("shares the exact original group icons and colors between normal and selected
         expect(button.querySelector("svg")?.outerHTML).toBe(original[index].svg)
         expect(button.className).toBe(original[index].classes)
     })
+})
+
+it("shows real EM thumbnails and filters them using the same tile as the normal tool", async () => {
+    const symbol = {
+        name: "Device A",
+        device: "A",
+        package: "DIP",
+        pins: [
+            {
+                number: "1",
+                name: "VCC",
+                side: "left",
+                sourceUrl: "https://example.com/a.pdf",
+                evidence: "Pin table",
+            },
+        ],
+    }
+    const loadEM = vi.fn(async (action: string) =>
+        action === "library"
+            ? {
+                  symbols: [
+                      {
+                          id: "a",
+                          name: "Device A",
+                          device: "A",
+                          package: "DIP",
+                      },
+                  ],
+              }
+            : { symbol },
+    )
+    render(<LibraryRail shared libraries={["emc"]} loadEM={loadEM} />)
+    fireEvent.click(await screen.findByRole("button", { name: "EMC library" }))
+    expect(
+        await screen.findByRole("img", { name: "Symbol thumbnail" }),
+    ).toBeTruthy()
+    expect(screen.getByRole("button", { name: "Insert Device A" })).toBeTruthy()
+    fireEvent.change(screen.getByLabelText("Filter EMC symbols"), {
+        target: { value: "missing" },
+    })
+    expect(screen.queryByRole("button", { name: "Insert Device A" })).toBeNull()
 })

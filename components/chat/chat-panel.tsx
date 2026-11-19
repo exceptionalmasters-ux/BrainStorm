@@ -33,6 +33,7 @@ import { useChatEngine } from "./chat-engine"
 import { Composer } from "./composer"
 import { DeviceResearchPanel } from "./device-research"
 import { MessageList } from "./message-list"
+import { SymbolInstructions } from "./symbol-instructions"
 
 const DEBUG = process.env.NODE_ENV === "development"
 
@@ -100,6 +101,8 @@ export function ChatPanel({
     onOpenFile: () => void
 }) {
     const dict = useDictionary()
+    const fileMode = useDeviceResearch((s) => s.fileMode)
+    const researchBusy = useDeviceResearch((s) => s.busy)
     const webEnabled = useDeviceResearch((s) => s.webEnabled)
     const engine = useChatEngine()
     const { loadDiagram, isDrawioReady } = useDiagram()
@@ -196,29 +199,44 @@ export function ChatPanel({
             </header>
             <DeviceResearchPanel />
 
-            <VersionStrip minVersions={hasCardless ? 1 : 2} />
+            {fileMode ? (
+                <div
+                    className="shrink-0 px-4 pt-2 pb-3"
+                    data-testid="file-analysis-comments"
+                >
+                    <SymbolInstructions disabled={researchBusy} />
+                </div>
+            ) : (
+                <>
+                    <VersionStrip minVersions={hasCardless ? 1 : 2} />
 
-            <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin">
-                {engine.messages.length > 0 ? <MessageList /> : <EmptyThread />}
-            </div>
+                    <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin">
+                        {engine.messages.length > 0 ? (
+                            <MessageList />
+                        ) : (
+                            <EmptyThread />
+                        )}
+                    </div>
 
-            {DEBUG && (
-                <DevXmlSimulator
-                    setMessages={engine.setMessages as any}
-                    onDisplayChart={(xml) => loadDiagram(xml, true)}
-                />
+                    {DEBUG && (
+                        <DevXmlSimulator
+                            setMessages={engine.setMessages as any}
+                            onDisplayChart={(xml) => loadDiagram(xml, true)}
+                        />
+                    )}
+
+                    <div className="shrink-0 px-4 pt-1 pb-3">
+                        <Composer
+                            placeholder={
+                                engine.messages.length > 0 &&
+                                engine.chatSelection.length === 0
+                                    ? dict.chat.placeholderFollowUp
+                                    : undefined
+                            }
+                        />
+                    </div>
+                </>
             )}
-
-            <div className="shrink-0 px-4 pt-1 pb-3">
-                <Composer
-                    placeholder={
-                        engine.messages.length > 0 &&
-                        engine.chatSelection.length === 0
-                            ? dict.chat.placeholderFollowUp
-                            : undefined
-                    }
-                />
-            </div>
 
             {!mobile && <ResizeHandle />}
         </aside>

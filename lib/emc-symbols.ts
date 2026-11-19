@@ -228,7 +228,9 @@ function legacySymbolLayout(symbol: EmcSymbol) {
             const number = {
                 id: `${pin.number}:number`,
                 text: pin.number,
-                x: horizontal ? x + sign * 18 : x,
+                x: horizontal
+                    ? x + sign * 18
+                    : x + 12 + Math.max(20, pin.number.length * 7) / 2,
                 y: horizontal ? y : y + sign * 16,
                 width: Math.max(20, pin.number.length * 7),
                 rotation: 0,
@@ -238,9 +240,13 @@ function legacySymbolLayout(symbol: EmcSymbol) {
                 id: `${pin.number}:name`,
                 text: pin.name,
                 x: horizontal ? x + sign * (named ? 16 : 46) : x,
-                y: horizontal ? y : y + sign * (named ? 16 : 44),
+                y: horizontal
+                    ? y
+                    : y +
+                      sign * (named ? 16 : 44) +
+                      (side === "top" ? pin.name.length * 7 + 8 : 0),
                 width: pin.name.length * 7 + 8,
-                rotation: horizontal ? 0 : side === "top" ? 90 : 270,
+                rotation: horizontal ? 0 : 270,
                 anchor: horizontal
                     ? side === "left"
                         ? "start"

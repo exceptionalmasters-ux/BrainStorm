@@ -365,3 +365,17 @@
     background-color: #101510;
     color: #f5f4f0;
 }
+
+/* One contained focus border for the icon and input together. */
+.emc-library-search:focus-within {
+    border-color: #f0c66c;
+    box-shadow: inset 0 0 0 1px #f0c66c;
+}
+.emc-library-settings .emc-library-search input {
+    border: 0;
+    background: transparent;
+}
+.emc-library-settings .emc-library-search input:focus-visible {
+    outline: none;
+    box-shadow: none;
+}

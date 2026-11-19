@@ -37,6 +37,26 @@ export function standardSymbolLayout(symbol: EmcSymbol) {
             ),
         ),
     )
+    // Leave a corridor beside every vertical connector for its upright number.
+    const columnPitch = Math.max(
+        pitch,
+        round(
+            Math.max(
+                0,
+                ...symbol.pins
+                    .filter(
+                        (p) =>
+                            (p.side === "top" || p.side === "bottom") &&
+                            p.identifierKind !== "label",
+                    )
+                    .map(
+                        (p) =>
+                            textWidth(p.number, fontSize) +
+                            (density === "spacious" ? 22 : 12),
+                    ),
+            ),
+        ),
+    )
     const sidePins = (side: string) =>
         symbol.pins.filter((p) => p.side === side)
     const span = (side: string) =>
@@ -71,10 +91,10 @@ export function standardSymbolLayout(symbol: EmcSymbol) {
     )
     const minW = Math.max(
         120,
-        ((horizontalCount - 1) * pitch + 60) / (1 - cornerX),
+        ((horizontalCount - 1) * columnPitch + 60) / (1 - cornerX),
         span("left") + span("right") + 60,
         (Math.max(sidePins("top").length, sidePins("bottom").length) - 1) *
-            pitch +
+            columnPitch +
             40,
     )
     const minH = Math.max(
@@ -143,10 +163,15 @@ export function standardSymbolLayout(symbol: EmcSymbol) {
         }
         // Source position establishes order; regular schematic rows use one pitch.
         // Matching left/right rows (and top/bottom columns) share their first axis.
+        const sidePitch = horizontal ? columnPitch : pitch
         const count = horizontal ? horizontalCount : verticalCount
-        const first = Math.round((low + high - (count - 1) * pitch) / 20) * 10
-        const start = Math.max(low, Math.min(high - (count - 1) * pitch, first))
-        const slots = sorted.map((_pin, i) => start + i * pitch)
+        const first =
+            Math.round((low + high - (count - 1) * sidePitch) / 20) * 10
+        const start = Math.max(
+            low,
+            Math.min(high - (count - 1) * sidePitch, first),
+        )
+        const slots = sorted.map((_pin, i) => start + i * sidePitch)
         sorted.forEach((pin, i) => {
             const row = slots[i],
                 sx = horizontal
@@ -194,7 +219,7 @@ export function standardSymbolLayout(symbol: EmcSymbol) {
                     id: pin.number + ":number",
                     text: pin.number,
                     x: horizontal
-                        ? row + 8
+                        ? row + columnPitch / 2
                         : side === "left"
                           ? frame.x / 2
                           : (width + frame.x + bodyW) / 2,
@@ -205,7 +230,7 @@ export function standardSymbolLayout(symbol: EmcSymbol) {
                         : row - 9,
                     width: textWidth(pin.number, fontSize),
                     rotation: 0,
-                    anchor: horizontal ? "start" : "middle",
+                    anchor: "middle",
                     fontSize,
                 })
             labels.push({
@@ -218,11 +243,11 @@ export function standardSymbolLayout(symbol: EmcSymbol) {
                       : frame.x + bodyW - 12,
                 y: horizontal
                     ? side === "top"
-                        ? frame.y + 20
+                        ? frame.y + 20 + textWidth(pin.name, fontSize)
                         : frame.y + bodyH - 20
                     : row,
                 width: textWidth(pin.name, fontSize),
-                rotation: horizontal ? (side === "top" ? 90 : 270) : 0,
+                rotation: horizontal ? 270 : 0,
                 anchor: horizontal
                     ? "start"
                     : side === "left"

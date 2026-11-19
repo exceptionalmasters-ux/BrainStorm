@@ -1,5 +1,13 @@
 "use client"
-import { Check, RotateCcw, Search, Settings2, Shapes, X } from "lucide-react"
+import {
+    Check,
+    Library,
+    RotateCcw,
+    Search,
+    Settings2,
+    Shapes,
+    X,
+} from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import {
     type ShapeToolboxExtension,
@@ -7,13 +15,14 @@ import {
     type ShapeToolboxSelection,
     TOOLBOX_GROUPS,
 } from "@/components/canvas/shape-toolbox-rail"
+import { Input } from "@/components/ui/input"
 import {
     accountPresetRequest,
     type PresetRequest,
 } from "@/lib/account-library-presets"
 import { attachNativeTool } from "@/lib/drawio/editor-bridge"
 import { SHAPE_GROUPS, type ShapeGroup } from "@/lib/drawio/shape-toolbox"
-import { insertEmcSymbolNative, validateEmcSymbol } from "@/lib/emc-symbols"
+import { insertEmcSymbolNative } from "@/lib/emc-symbols"
 import {
     type LibraryPreset,
     readLibraryPreferences,
@@ -25,6 +34,7 @@ import {
 } from "@/lib/manual-symbol"
 import { getOperationsContext } from "@/lib/operations-bridge"
 import { useCanvasStore } from "@/stores/canvas-store"
+import { SymbolTile } from "./emc-symbol-tile"
 
 type CatalogItem = { id: string; title: string; group: string }
 type Props = {
@@ -62,7 +72,8 @@ export function LibraryRail({
         [error, setError] = useState(""),
         [emOpen, setEmOpen] = useState(false),
         [emItems, setEmItems] = useState<any[]>([]),
-        [emBusy, setEmBusy] = useState(false)
+        [emBusy, setEmBusy] = useState(false),
+        [emFilter, setEmFilter] = useState("")
     const account = useRef(user)
     account.current = user
     const canInsert = useRef(editable)
@@ -329,76 +340,124 @@ export function LibraryRail({
             {emOpen && loadEM && (
                 <section
                     id="shared-emc-library-panel"
-                    className="absolute inset-y-0 left-[52px] z-40 w-[min(360px,calc(100%_-_52px))] overflow-auto rounded-r-xl border border-primary/30 bg-card p-3 text-foreground shadow-xl"
+                    aria-label="EMC library"
+                    className="absolute inset-y-0 left-[52px] z-30 flex flex-col rounded-r-xl border border-primary/30 bg-card text-foreground shadow-xl"
+                    style={{ width: "min(360px, calc(100% - 52px))" }}
                 >
-                    <header className="flex justify-between">
-                        <strong>EM library</strong>
+                    <header className="flex shrink-0 items-center gap-2 border-b p-3">
+                        <Library
+                            aria-hidden="true"
+                            className="size-4 text-primary"
+                        />
+                        <h2 className="flex-1 text-sm font-semibold">
+                            EMC library
+                        </h2>
                         <button
+                            type="button"
                             onClick={() => setEmOpen(false)}
-                            aria-label="Close EM library"
+                            aria-label="Close EMC library"
+                            title="Close EMC library"
                             className="flex size-8 items-center justify-center rounded-lg hover:bg-accent"
                         >
-                            <X />
+                            <X aria-hidden="true" className="size-4" />
                         </button>
                     </header>
-                    {emBusy && <p>Loading…</p>}
-                    {error && <p role="alert">{error}</p>}
-                    <div className="grid grid-cols-3 gap-2">
-                        {emItems.map((item) => (
-                            <button
-                                disabled={!editable || emBusy}
-                                title={item.name}
-                                key={item.id}
-                                className="overflow-hidden rounded border border-primary/25 p-2 text-xs disabled:opacity-50"
-                                onClick={() => {
-                                    setEmBusy(true)
-                                    void loadEM("symbol", { id: item.id })
-                                        .then((data) => {
+                    <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3 text-xs">
+                        <Input
+                            aria-label="Filter EMC symbols"
+                            placeholder="Find a saved symbol…"
+                            value={emFilter}
+                            onChange={(e) => setEmFilter(e.target.value)}
+                        />
+                        {emBusy && <p>Loading EMC library…</p>}
+                        {error && (
+                            <p role="alert" className="text-red-500">
+                                {error}
+                            </p>
+                        )}
+                        {!emBusy && !emItems.length && (
+                            <p>No approved symbols yet.</p>
+                        )}
+                        {emItems
+                            .filter((item) =>
+                                `${item.name} ${item.device} ${item.package}`
+                                    .toLowerCase()
+                                    .includes(emFilter.toLowerCase()),
+                            )
+                            .map((item) => (
+                                <SymbolTile
+                                    key={item.id}
+                                    symbol={item}
+                                    disabled={!editable || !ready}
+                                    onError={setError}
+                                    request={loadEM}
+                                    insertSymbol={(definition, position) => {
+                                        if (!canInsert.current) return false
+                                        let inserted = false
+                                        attachNativeTool((ui, win) => {
                                             if (
-                                                !validateEmcSymbol(
-                                                    data.symbol,
-                                                ) &&
-                                                !validateManualSymbol(
-                                                    data.symbol,
-                                                )
+                                                !canInsert.current ||
+                                                useCanvasStore.getState().isBusy
                                             )
-                                                throw Error("Invalid symbol")
-                                            if (!canInsert.current)
-                                                throw Error(
-                                                    "Editing control changed",
-                                                )
-                                            attachNativeTool((ui, win) => {
-                                                if (
-                                                    validateManualSymbol(
-                                                        data.symbol,
-                                                    )
-                                                )
-                                                    insertManualSymbolNative(
-                                                        ui,
-                                                        win,
-                                                        data.symbol,
-                                                    )
-                                                else
-                                                    insertEmcSymbolNative(
-                                                        ui,
-                                                        win,
-                                                        data.symbol,
-                                                    )
                                                 return () => {}
-                                            })
+                                            const graph = ui.editor.graph
+                                            let point:
+                                                | { x: number; y: number }
+                                                | undefined
+                                            if (position) {
+                                                const frame =
+                                                    win.frameElement.getBoundingClientRect()
+                                                if (
+                                                    position.x < frame.left ||
+                                                    position.x > frame.right ||
+                                                    position.y < frame.top ||
+                                                    position.y > frame.bottom
+                                                )
+                                                    return () => {}
+                                                const rect =
+                                                    graph.container.getBoundingClientRect()
+                                                point = {
+                                                    x:
+                                                        (position.x -
+                                                            frame.left -
+                                                            rect.left +
+                                                            graph.container
+                                                                .scrollLeft) /
+                                                            graph.view.scale -
+                                                        graph.view.translate.x,
+                                                    y:
+                                                        (position.y -
+                                                            frame.top -
+                                                            rect.top +
+                                                            graph.container
+                                                                .scrollTop) /
+                                                            graph.view.scale -
+                                                        graph.view.translate.y,
+                                                }
+                                            }
+                                            if (
+                                                validateManualSymbol(definition)
+                                            )
+                                                insertManualSymbolNative(
+                                                    ui,
+                                                    win,
+                                                    definition,
+                                                    point,
+                                                )
+                                            else
+                                                insertEmcSymbolNative(
+                                                    ui,
+                                                    win,
+                                                    definition,
+                                                    point,
+                                                )
+                                            inserted = true
+                                            return () => {}
                                         })
-                                        .catch((reason) =>
-                                            setError(reason.message),
-                                        )
-                                        .finally(() => setEmBusy(false))
-                                }}
-                            >
-                                <Shapes className="mx-auto size-6 text-primary" />
-                                <span className="block truncate">
-                                    {item.name}
-                                </span>
-                            </button>
-                        ))}
+                                        return inserted
+                                    }}
+                                />
+                            ))}
                     </div>
                 </section>
             )}
@@ -483,7 +542,7 @@ export function LibraryRail({
                                     ))}
                                 </select>
                             </label>
-                            <div className="flex items-center gap-2 rounded border border-amber-500/35 px-3">
+                            <div className="emc-library-search flex min-w-0 items-center gap-2 rounded border border-amber-500/35 px-3">
                                 <Search className="size-4" />
                                 <input
                                     autoFocus
@@ -491,7 +550,7 @@ export function LibraryRail({
                                     placeholder="Find a library…"
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
-                                    className="w-full bg-transparent py-2 outline-none"
+                                    className="min-w-0 flex-1 bg-transparent py-2 outline-none"
                                 />
                             </div>
                             <div className="max-h-[32dvh] overflow-auto rounded border border-amber-500/20">
