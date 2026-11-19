@@ -336,6 +336,7 @@ export function LibraryRail({
                         <button
                             onClick={() => setEmOpen(false)}
                             aria-label="Close EM library"
+                            className="flex size-8 items-center justify-center rounded-lg hover:bg-accent"
                         >
                             <X />
                         </button>
@@ -348,7 +349,7 @@ export function LibraryRail({
                                 disabled={!editable || emBusy}
                                 title={item.name}
                                 key={item.id}
-                                className="overflow-hidden rounded border border-amber-500/25 p-2 text-xs disabled:opacity-50"
+                                className="overflow-hidden rounded border border-primary/25 p-2 text-xs disabled:opacity-50"
                                 onClick={() => {
                                     setEmBusy(true)
                                     void loadEM("symbol", { id: item.id })
@@ -392,7 +393,7 @@ export function LibraryRail({
                                         .finally(() => setEmBusy(false))
                                 }}
                             >
-                                <Shapes className="mx-auto size-6 text-amber-300" />
+                                <Shapes className="mx-auto size-6 text-primary" />
                                 <span className="block truncate">
                                     {item.name}
                                 </span>
