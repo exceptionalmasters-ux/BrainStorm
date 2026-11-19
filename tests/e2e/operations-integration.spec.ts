@@ -189,7 +189,7 @@ for (const withBrief of [true, false]) {
         if (withBrief) {
             await expect(prompt).toHaveValue(/OBJECTIVE: Integration concept/)
             await expect(popup.getByTestId("editor-file-title")).toHaveText(
-                "Drawing from brief.drawio",
+                "Drawing from brief.storm",
             )
         } else {
             await expect(popup.getByTestId("chat-panel")).toBeVisible()
@@ -451,7 +451,7 @@ for (const withBrief of [true, false]) {
         await saveAs.getByRole("button", { name: "Save", exact: true }).click()
         await expect(saveAs).toHaveCount(0)
         await expect(popup.getByTestId("editor-file-title")).toHaveText(
-            "Integration copy.drawio",
+            "Integration copy.storm",
         )
         await expect
             .poll(() => page.evaluate(() => (window as any).records.size))

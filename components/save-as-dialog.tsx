@@ -41,7 +41,7 @@ export function SaveAsDialog({
         if (saving) return
         const title = name
             .trim()
-            .replace(/\.drawio$/i, "")
+            .replace(/\.(?:storm|drawio)$/i, "")
             .trim()
         if (!title || title.length > 100) {
             setError("Enter a drawing name (up to 100 characters).")
@@ -95,7 +95,7 @@ export function SaveAsDialog({
                             maxLength={107}
                         />
                         <span className="text-xs text-muted-foreground">
-                            .drawio
+                            .storm
                         </span>
                     </div>
                     {error && (

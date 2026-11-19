@@ -1,7 +1,10 @@
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it } from "vitest"
 import { SymbolPreview } from "@/components/workspace/symbol-preview"
-import { standardSymbolLayout } from "@/lib/emc-standard-layout"
+import {
+    insertStandardSymbolNative,
+    standardSymbolLayout,
+} from "@/lib/emc-standard-layout"
 import {
     type EmcSymbol,
     symbolLayout,
@@ -70,7 +73,10 @@ describe("source geometry", () => {
                           : v.anchor === "end"
                             ? v.width
                             : 0),
-                y = vert ? v.y - (v.rotation === 270 ? v.width : 0) : v.y - 7
+                y = vert
+                    ? v.y -
+                      (v.rotation === 270 && v.anchor !== "end" ? v.width : 0)
+                    : v.y - 7
             return { x, y, w: vert ? 14 : v.width, h: vert ? v.width : 14 }
         })
         const dot = {
@@ -165,11 +171,18 @@ describe("source geometry", () => {
                     (l) => l.id === `${pin.number}:number`,
                 )
                 expect(name.rotation).toBe(270)
-                expect(name.y - name.width).toBeGreaterThanOrEqual(
-                    layout.bodyFrame.y + 19,
-                )
-                expect(name.y).toBeLessThanOrEqual(
+                const top = name.anchor === "end" ? name.y : name.y - name.width
+                const bottom =
+                    name.anchor === "end" ? name.y + name.width : name.y
+                expect(top).toBeGreaterThanOrEqual(layout.bodyFrame.y + 19)
+                expect(bottom).toBeLessThanOrEqual(
                     layout.bodyFrame.y + layout.bodyFrame.height - 19,
+                )
+                expect(name.anchor).toBe(side === "top" ? "end" : "start")
+                expect(name.y).toBe(
+                    side === "top"
+                        ? layout.bodyFrame.y + 20
+                        : layout.bodyFrame.y + layout.bodyFrame.height - 20,
                 )
                 for (const stem of pins) {
                     expect(
@@ -379,4 +392,44 @@ it("captures resolved native function styles and reinserts the original internal
         [inserted[2], inserted[0], true],
         [inserted[2], inserted[1], false],
     ])
+})
+
+it("anchors native top labels to their actual text end rather than an estimated centred width", () => {
+    const cells: any[][] = []
+    const cell = (...args: any[]) => {
+        cells.push(args)
+        return { setConnectable() {}, geometry: { clone: () => ({}) } }
+    }
+    const graph = {
+        stopEditing() {},
+        getDefaultParent: () => "layer",
+        getFreeInsertPoint: () => ({ x: 0, y: 0 }),
+        model: { beginUpdate() {}, endUpdate() {}, setGeometry() {} },
+        insertVertex: cell,
+        insertEdge: cell,
+        setSelectionCell() {},
+        scrollCellToVisible() {},
+    }
+    insertStandardSymbolNative(
+        { editor: { graph } },
+        {
+            mxPoint: class {
+                constructor(
+                    public x: number,
+                    public y: number,
+                ) {}
+            },
+        },
+        s70,
+    )
+    const layout = standardSymbolLayout(s70)
+    for (const pin of s70.pins.filter((pin) => pin.side === "top")) {
+        const native = cells.find((args) => args[2] === pin.name)
+        const label = layout.labels.find(
+            (label) => label.id === `${pin.number}:name`,
+        )
+        if (!native) throw new Error(`Missing native label for ${pin.number}`)
+        expect(native[7]).toContain("align=right;spacing=0")
+        expect(native[4] + native[6] / 2 - native[5] / 2).toBeCloseTo(label.y)
+    }
 })

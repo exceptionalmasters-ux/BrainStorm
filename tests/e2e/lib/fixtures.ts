@@ -40,7 +40,7 @@ export function getIframeContent(page: Page) {
 /** Open a .drawio file through the app's file picker */
 export async function openDrawioFile(page: Page, name: string, xml: string) {
     await page
-        .locator('input[type="file"][accept^=".drawio"]')
+        .locator('input[type="file"][accept^=".storm"]')
         .first()
         .setInputFiles({
             name,

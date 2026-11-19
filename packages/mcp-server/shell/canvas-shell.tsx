@@ -241,7 +241,7 @@ export function CanvasShell({ config }: { config: ShellConfig }) {
                     // (.drawio, .drawio.svg); a diagram in no file is named
                     // by the date
                     defaultFilename={
-                        fileName?.replace(/(\.drawio)?\.\w+$/, "") ||
+                        fileName?.replace(/(\.(?:storm|drawio))?\.\w+$/, "") ||
                         `diagram-${new Date().toLocaleDateString("sv-SE")}`
                     }
                 />

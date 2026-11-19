@@ -1,14 +1,17 @@
 import { create } from "zustand"
 import { getApiEndpoint } from "@/lib/base-path"
-import type {
-    DeviceResearch,
-    EmcSymbol,
-    LibrarySymbol,
+import {
+    type DeviceResearch,
+    type EmcSymbol,
+    type LibrarySymbol,
+    validateEmcSymbol,
 } from "@/lib/emc-symbols"
 
 let controller: AbortController | null = null
 let generation = 0
 export const useDeviceResearch = create<{
+    selectedSource: { id: string; name: string } | null
+    sourceBusy: boolean
     fileMode: boolean
     instructions: string
     webEnabled: boolean
@@ -18,6 +21,8 @@ export const useDeviceResearch = create<{
     error: string
     result: DeviceResearch | null
     incompleteCandidateId: string | null
+    draftCandidateId: string | null
+    previousDraft: EmcSymbol | null
     draft: EmcSymbol | null
     library: LibrarySymbol[]
     libraryOpen: boolean
@@ -28,6 +33,8 @@ export const useDeviceResearch = create<{
 }))
 function researchState() {
     return {
+        selectedSource: null as { id: string; name: string } | null,
+        sourceBusy: false,
         fileMode: false,
         instructions: "",
         webEnabled: false,
@@ -37,6 +44,8 @@ function researchState() {
         error: "",
         result: null as DeviceResearch | null,
         incompleteCandidateId: null as string | null,
+        draftCandidateId: null as string | null,
+        previousDraft: null as EmcSymbol | null,
         draft: null as EmcSymbol | null,
         library: [] as LibrarySymbol[],
         libraryOpen: false,
@@ -110,6 +119,7 @@ export async function draftDevice(
     candidateId: string,
     edits?: string,
     allowIncomplete = false,
+    revision?: { symbol: EmcSymbol; allowPinRemoval: boolean },
 ) {
     const { webEnabled, result } = useDeviceResearch.getState()
     if (!result || (!webEnabled && !result.sourceId))
@@ -135,12 +145,45 @@ export async function draftDevice(
                 edits: edits ?? useDeviceResearch.getState().instructions,
                 allowIncomplete,
                 webEnabled,
+                ...(revision
+                    ? {
+                          previousSymbol: revision.symbol,
+                          sourceInstructions:
+                              useDeviceResearch.getState().instructions,
+                          allowPinRemoval: revision.allowPinRemoval,
+                      }
+                    : {}),
             },
             controller.signal,
         )
         if (generation !== ticket) return
+        if (revision) {
+            if (!response.symbol)
+                throw Error(
+                    response.questions.join("\n") ||
+                        "No corrected proposal returned. Your current symbol is retained.",
+                )
+            if (!validateEmcSymbol(response.symbol))
+                throw Error(
+                    "Invalid corrected proposal. Your current symbol is retained.",
+                )
+            const identifiers = new Set(
+                response.symbol.pins.map((pin) => pin.number),
+            )
+            const missing = revision.symbol.pins.filter(
+                (pin) => !identifiers.has(pin.number),
+            )
+            if (missing.length && !revision.allowPinRemoval)
+                throw Error(
+                    `Correction omitted pins ${missing.map((pin) => pin.number).join(", ")}. Your current symbol is retained. Allow pin removal only if intentional.`,
+                )
+            if (revision.symbol.body?.density && response.symbol.body)
+                response.symbol.body.density = revision.symbol.body.density
+        }
         useDeviceResearch.setState({
             draft: response.symbol,
+            draftCandidateId: response.symbol ? candidateId : null,
+            previousDraft: revision?.symbol || null,
             incompleteCandidateId: response.symbol ? null : candidateId,
             error: response.questions.join("\n"),
         })
@@ -193,4 +236,37 @@ export async function analyseSource(sourceId: string, query: string) {
     } finally {
         if (generation === ticket) useDeviceResearch.setState({ busy: false })
     }
+}
+
+/** Refine the open proposal in place; failed/cancelled retries never erase it. */
+export async function regenerateDraft(
+    correction: string,
+    allowPinRemoval = false,
+) {
+    const state = useDeviceResearch.getState()
+    const text = correction.trim()
+    if (!state.draft || state.busy || !text || text.length > 1500) return
+    if (!validateEmcSymbol(state.draft)) {
+        state.set({
+            error: "Check the current pin names, sides and positions before requesting a correction.",
+        })
+        return
+    }
+    const candidateId =
+        state.draftCandidateId ||
+        state.result?.candidates.find(
+            (candidate) =>
+                candidate.device === state.draft?.device &&
+                candidate.package === state.draft?.package,
+        )?.id
+    if (!candidateId) {
+        state.set({
+            error: "The source for this proposal is unavailable. Your current symbol is retained.",
+        })
+        return
+    }
+    await draftDevice(candidateId, text, !!state.draft.incomplete, {
+        symbol: structuredClone(state.draft),
+        allowPinRemoval,
+    })
 }

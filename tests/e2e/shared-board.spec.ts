@@ -132,6 +132,35 @@ test("shared canvas fences edits, imports only for its current editor and separa
     await expect(
         native.locator('[data-testid="shape-flyout-header"]'),
     ).toBeVisible()
+    // The dark gallery must use the native dark palette, like the main tool.
+    // Merely painting its background dark leaves black-on-dark thumbnails.
+    await expect
+        .poll(() =>
+            native
+                .locator("body")
+                .evaluate((body) =>
+                    (body.ownerDocument.defaultView as any).Editor.isDarkMode(),
+                ),
+        )
+        .toBe(true)
+    await native
+        .locator(".geTitle")
+        .filter({ hasText: /^Flowchart$/ })
+        .click()
+    await native.locator(".geSidebar .geItem:visible").first().hover()
+    await expect
+        .poll(() =>
+            native
+                .locator(".geSidebar .geItem:visible svg [stroke]")
+                .evaluateAll((nodes) =>
+                    Array.from(
+                        new Set(
+                            nodes.map((node) => getComputedStyle(node).stroke),
+                        ),
+                    ),
+                ),
+        )
+        .toContain("rgb(255, 255, 255)")
     await expect(
         native.getByText("Shared module", { exact: true }),
     ).toBeVisible()

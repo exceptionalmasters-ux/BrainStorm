@@ -26,6 +26,7 @@ import {
     validBoardView,
 } from "@/lib/shared-board"
 import { validateAndFixXml } from "@/packages/mcp-server/src/xml-validation"
+import { useSettingsStore } from "@/stores/settings-store"
 import { LibraryRail } from "./library-rail"
 
 type State = {
@@ -44,6 +45,7 @@ type State = {
     canAnnotate: boolean
 }
 export function SharedBoardCanvas() {
+    const isDark = useSettingsStore((s) => s.isDark)
     const frame = useRef<DrawioFrameHandle>(null),
         tools = useRef<ReturnType<typeof createWhiteboardTools> | null>(null)
     const [src, setSrc] = useState(""),
@@ -80,7 +82,10 @@ export function SharedBoardCanvas() {
     }
     useEffect(() => {
         const url = new URL(
-            getDrawioSrc(webDrawioSource("en"), false),
+            getDrawioSrc(
+                webDrawioSource("en"),
+                document.documentElement.classList.contains("dark"),
+            ),
             window.location.href,
         )
         url.searchParams.set("libs", "none")
@@ -309,7 +314,7 @@ export function SharedBoardCanvas() {
                             ref={frame}
                             src={src}
                             css={DRAWIO_CSS}
-                            dark={false}
+                            dark={isDark}
                             unifiedToolbar
                             libraryDefaults="none"
                             onLoad={ready}

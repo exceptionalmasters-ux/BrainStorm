@@ -19,6 +19,7 @@ import {
     cancelDeviceResearch,
     disableDeviceWeb,
     draftDevice,
+    regenerateDraft,
     researchDevice,
     useDeviceResearch,
 } from "@/stores/device-research-store"
@@ -60,7 +61,12 @@ const symbol: EmcSymbol = {
 }
 afterEach(() => {
     disableDeviceWeb()
-    useDeviceResearch.setState({ result: null, draft: null })
+    useDeviceResearch.setState({
+        result: null,
+        draft: null,
+        draftCandidateId: null,
+        previousDraft: null,
+    })
     vi.unstubAllGlobals()
     vi.unstubAllEnvs()
 })
@@ -446,4 +452,112 @@ it("limits Web lookup only, preserving unbounded drafting and user cancellation"
     await callEmcGateway(request, "research", {})
     expect(timeout).toHaveBeenCalledWith(125000)
     timeout.mockRestore()
+})
+
+describe("corrections to the open symbol proposal", () => {
+    const setup = () =>
+        useDeviceResearch.setState({
+            draft: structuredClone(symbol),
+            draftCandidateId: "candidate",
+            previousDraft: null,
+            result: {
+                researchId: "research",
+                sourceId: "source",
+                questions: [],
+                candidates: [],
+            },
+            webEnabled: false,
+            busy: false,
+            instructions: "Use page 2 pin table",
+        })
+    it("sends the current edited pin map with the correction and keeps it until the reply", async () => {
+        setup()
+        let resolve!: (response: Response) => void
+        vi.stubGlobal(
+            "fetch",
+            vi.fn((_url, options) => {
+                const body = JSON.parse(options.body)
+                expect(body.previousSymbol.pins).toEqual(symbol.pins)
+                expect(body.edits).toBe("Restore the missing ground pin")
+                expect(body.sourceInstructions).toBe("Use page 2 pin table")
+                expect(body.allowPinRemoval).toBe(false)
+                return new Promise<Response>((done) => {
+                    resolve = done
+                })
+            }),
+        )
+        const pending = regenerateDraft("Restore the missing ground pin")
+        expect(useDeviceResearch.getState().draft).toEqual(symbol)
+        const revised = { ...symbol, name: "Corrected module" }
+        resolve(Response.json({ symbol: revised, questions: [] }))
+        await pending
+        expect(useDeviceResearch.getState().draft).toEqual(revised)
+        expect(useDeviceResearch.getState().previousDraft).toEqual(symbol)
+    })
+    it("retains every existing pin when the model accidentally drops one", async () => {
+        setup()
+        vi.stubGlobal(
+            "fetch",
+            vi.fn().mockResolvedValue(
+                Response.json({
+                    symbol: { ...symbol, pins: symbol.pins.slice(1) },
+                    questions: [],
+                }),
+            ),
+        )
+        await regenerateDraft("Align the top labels")
+        expect(useDeviceResearch.getState().draft).toEqual(symbol)
+        expect(useDeviceResearch.getState().error).toContain("omitted pins 1")
+    })
+    it("allows explicitly requested pin removal", async () => {
+        setup()
+        const revised = { ...symbol, pins: symbol.pins.slice(1) }
+        vi.stubGlobal(
+            "fetch",
+            vi
+                .fn()
+                .mockResolvedValue(
+                    Response.json({ symbol: revised, questions: [] }),
+                ),
+        )
+        await regenerateDraft("Remove the incorrectly identified pin 1", true)
+        expect(useDeviceResearch.getState().draft).toEqual(revised)
+    })
+    it("retains manual edits after cancellation or an unreadable reply", async () => {
+        setup()
+        let resolve!: (response: Response) => void
+        vi.stubGlobal(
+            "fetch",
+            vi.fn(
+                () =>
+                    new Promise<Response>((done) => {
+                        resolve = done
+                    }),
+            ),
+        )
+        const pending = regenerateDraft("Correct the pinout")
+        cancelDeviceResearch()
+        resolve(
+            Response.json({
+                symbol: { ...symbol, name: "Late reply" },
+                questions: [],
+            }),
+        )
+        await pending
+        expect(useDeviceResearch.getState().draft).toEqual(symbol)
+        vi.stubGlobal(
+            "fetch",
+            vi.fn().mockResolvedValue(
+                Response.json({
+                    symbol: null,
+                    questions: ["Unreadable pin table"],
+                }),
+            ),
+        )
+        await regenerateDraft("Use page 3")
+        expect(useDeviceResearch.getState().draft).toEqual(symbol)
+        expect(useDeviceResearch.getState().error).toContain(
+            "Unreadable pin table",
+        )
+    })
 })

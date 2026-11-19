@@ -162,7 +162,7 @@
         "filename": "ファイル名",
         "filenamePlaceholder": "ファイル名を入力",
         "formats": {
-            "drawio": "draw.io ファイル",
+            "drawio": "Storm ファイル",
             "png": "PNG 画像",
             "svg": "SVG 画像",
             "xmlsvg": "編集できる SVG"
@@ -632,7 +632,7 @@
     },
     "workspace": {
         "export": "エクスポート",
-        "openFile": ".drawio ファイルを開く",
+        "openFile": ".storm ファイルを開く",
         "canvasLoading": "キャンバスを読み込み中…",
         "askAi": "ここを AI に直してもらう",
         "editStyle": "スタイルを変更",

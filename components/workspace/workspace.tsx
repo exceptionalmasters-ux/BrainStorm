@@ -52,8 +52,9 @@ import { useSettingsStore } from "@/stores/settings-store"
 import { useUiStore } from "@/stores/ui-store"
 import { LibraryRail } from "./library-rail"
 
-/** File types the "Open .drawio file" picker accepts */
-const DIAGRAM_FILE_ACCEPT = ".drawio,.xml,.svg,application/xml,image/svg+xml"
+/** File types the "Open .storm" picker accepts */
+const DIAGRAM_FILE_ACCEPT =
+    ".storm,.drawio,.xml,.svg,application/xml,image/svg+xml"
 
 // Tablets keep the canvas beside the assistant; only narrow phones switch views.
 const MOBILE_BREAKPOINT = 600

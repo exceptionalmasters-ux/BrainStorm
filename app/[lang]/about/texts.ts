@@ -94,7 +94,7 @@ export const TEXTS: Record<Locale, LandingTexts> = {
             },
             {
                 title: "Keep it in draw.io",
-                text: "Save a .drawio file to keep editing in draw.io, or export PNG and SVG.",
+                text: "Save a .storm file to keep editing in draw.io, or export PNG and SVG.",
             },
             {
                 title: "Host it yourself",
@@ -167,7 +167,7 @@ export const TEXTS: Record<Locale, LandingTexts> = {
             },
             {
                 title: "继续在 draw.io 里用",
-                text: "保存为 .drawio 文件后可以继续在 draw.io 里编辑，也可以导出 PNG 和 SVG。",
+                text: "保存为 .storm 文件后可以继续在 draw.io 里编辑，也可以导出 PNG 和 SVG。",
             },
             {
                 title: "自己部署",
@@ -240,7 +240,7 @@ export const TEXTS: Record<Locale, LandingTexts> = {
             },
             {
                 title: "draw.io でそのまま使える",
-                text: ".drawio ファイルとして保存すれば draw.io で編集を続けられます。PNG や SVG にも書き出せます。",
+                text: ".storm ファイルとして保存すれば draw.io で編集を続けられます。PNG や SVG にも書き出せます。",
             },
             {
                 title: "自分でホストする",
@@ -313,7 +313,7 @@ export const TEXTS: Record<Locale, LandingTexts> = {
             },
             {
                 title: "繼續在 draw.io 裡用",
-                text: "儲存為 .drawio 檔案後可以繼續在 draw.io 裡編輯，也可以匯出 PNG 和 SVG。",
+                text: "儲存為 .storm 檔案後可以繼續在 draw.io 裡編輯，也可以匯出 PNG 和 SVG。",
             },
             {
                 title: "自行架設",
