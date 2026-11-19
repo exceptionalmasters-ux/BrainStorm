@@ -105,9 +105,7 @@ for (const withBrief of [true, false]) {
                                   ),
                               }
                 if (action === "draft") {
-                    expect(body.edits).toBe(
-                        "Drawing page 2; pin table pages 3–4",
-                    )
+                    expect(body.edits).toBe("")
                     data = { questions: [], symbol: fixtureSymbol }
                 }
                 if (action === "approve") {
@@ -348,9 +346,9 @@ for (const withBrief of [true, false]) {
                     exact: true,
                 }),
             ).toBeVisible()
-            await popup
-                .getByLabel("Symbol instructions", { exact: true })
-                .fill("Drawing page 2; pin table pages 3–4")
+            await expect(
+                popup.getByLabel("Symbol instructions", { exact: true }),
+            ).toHaveCount(0)
             await search.fill("Fixture DIP-2")
             await popup
                 .getByRole("button", { name: "Search", exact: true })
@@ -487,3 +485,36 @@ for (const withBrief of [true, false]) {
         }
     })
 }
+
+test("Toolbox start shows the original three drawing options and Open file", async ({
+    page,
+    context,
+    baseURL,
+}) => {
+    await context.grantPermissions(["local-network-access"], {
+        origin: "https://exceptionalmasters.co.uk",
+    })
+    await mockOperationsStorage(context, { token: "mock-home-token" })
+    const editor = new URL("/en?operations=1&home=1", baseURL).href
+    await context.route("**/api/**", (route) =>
+        route.fulfill({
+            json: { models: [], providers: [], accessCodeRequired: false },
+        }),
+    )
+    await context.route(
+        "https://exceptionalmasters.co.uk/__toolbox-home",
+        (route) =>
+            route.fulfill({
+                contentType: "text/html",
+                body: `<iframe id="tool" style="width:100vw;height:100vh" src="${editor}"></iframe><script>addEventListener('message',e=>{const d=e.data;if(e.source!==document.querySelector('#tool').contentWindow||d?.protocol!=='emc-brainstorm/v1'||d.kind!=='request')return;let result;if(d.method==='context')result={userId:'fixture',label:'Personal workspace',readOnly:false,brief:'',authorization:{accessToken:'mock-home-token',contextType:'project',contextId:'00000000-0000-4000-8000-000000000001',expiresAt:Date.now()+600000}};else if(d.method==='list')result=[];else if(d.method==='authorize')result={accessToken:'mock-home-token',contextType:'project',contextId:'00000000-0000-4000-8000-000000000001'};e.source.postMessage({protocol:d.protocol,kind:'response',requestId:d.requestId,result},e.origin)})</script>`,
+            }),
+    )
+    await page.goto("https://exceptionalmasters.co.uk/__toolbox-home")
+    const tool = page.frameLocator("#tool")
+    await expect(tool.getByTestId("lobby-hero")).toBeVisible()
+    await expect(tool.getByTestId("draw-manually")).toBeVisible()
+    await expect(tool.getByTestId("open-file")).toBeVisible()
+    await expect(
+        tool.getByTestId("lobby-hero").locator('img[alt="BrainStorm"]'),
+    ).toBeVisible()
+})

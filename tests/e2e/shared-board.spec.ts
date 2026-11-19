@@ -68,6 +68,24 @@ test("shared canvas fences edits, imports only for its current editor and separa
         "color-scheme",
         "light",
     )
+    // The page is centred even for an initial observer, before any libraries load.
+    await expect
+        .poll(async () => {
+            const page = await native
+                .locator(".geBackgroundPage")
+                .first()
+                .boundingBox()
+            const area = await native
+                .locator(".geDiagramContainer")
+                .first()
+                .boundingBox()
+            if (!page || !area) return Infinity
+            return Math.max(
+                Math.abs(page.x + page.width / 2 - area.x - area.width / 2),
+                Math.abs(page.y + page.height / 2 - area.y - area.height / 2),
+            )
+        })
+        .toBeLessThan(8)
     await canvas.getByTestId("library-settings").click()
     await expect(
         canvas.getByRole("button", { name: "Apply", exact: true }),

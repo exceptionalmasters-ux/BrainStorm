@@ -119,7 +119,9 @@ export function SharedBoardCanvas() {
             pendingView.current = !next.editable
                 ? next.follow
                     ? next.viewport
-                    : tools.current?.readView()
+                    : centered.current
+                      ? tools.current?.readView()
+                      : undefined
                 : undefined
             suppress.current = true
             lastXml.current = xml
