@@ -67,6 +67,7 @@ it("loads account presets in another browser without restoring session libraries
         screen.getByRole("button", { name: "Libraries and presets" }),
     )
     await waitFor(() => expect(screen.queryByRole("status")).toBe(null))
+    expect(screen.getByRole("button", { name: "Clear selection" })).toBeTruthy()
     fireEvent.click(screen.getByLabelText(/Electrical/))
     fireEvent.change(screen.getByLabelText("Preset name"), {
         target: { value: "Electronics" },

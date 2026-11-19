@@ -628,7 +628,7 @@ export function LibraryRail({
                                 onClick={() => setDraft([])}
                             >
                                 <RotateCcw className="size-4" />
-                                Defaults
+                                Clear selection
                             </button>
                             <div className="flex gap-2">
                                 <button
