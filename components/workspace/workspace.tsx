@@ -50,6 +50,7 @@ import { cn, isRealDiagram } from "@/lib/utils"
 import { useDeviceResearch } from "@/stores/device-research-store"
 import { useSettingsStore } from "@/stores/settings-store"
 import { useUiStore } from "@/stores/ui-store"
+import { LibraryRail } from "./library-rail"
 
 /** File types the "Open .drawio file" picker accepts */
 const DIAGRAM_FILE_ACCEPT = ".drawio,.xml,.svg,application/xml,image/svg+xml"
@@ -465,16 +466,22 @@ function WorkspaceLayout() {
                             )}
                             waitForSavedLocale
                             toolbox
-                            toolboxExtension={{
-                                button: (closeNative) => (
-                                    <EmcLibraryButton onOpen={closeNative} />
-                                ),
-                                panel: <EmcLibraryPanel />,
-                                close: () =>
-                                    useDeviceResearch.setState({
-                                        libraryOpen: false,
-                                    }),
-                            }}
+                            toolboxRail={
+                                <LibraryRail
+                                    extension={{
+                                        button: (closeNative) => (
+                                            <EmcLibraryButton
+                                                onOpen={closeNative}
+                                            />
+                                        ),
+                                        panel: <EmcLibraryPanel />,
+                                        close: () =>
+                                            useDeviceResearch.setState({
+                                                libraryOpen: false,
+                                            }),
+                                    }}
+                                />
+                            }
                         />
                         <ManualSymbolDialog />
                     </div>

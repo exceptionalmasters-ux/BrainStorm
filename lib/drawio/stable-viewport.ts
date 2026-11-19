@@ -52,15 +52,7 @@ export function withStableViewport(ui: any, change: () => void) {
                 view.translate.y - Math.min(0, y) / before.scale,
             )
         }
-        container.scrollLeft =
-            before.scrollLeft +
-            after.left -
-            before.left +
-            (view.translate.x - before.x) * before.scale
-        container.scrollTop =
-            before.scrollTop +
-            after.top -
-            before.top +
-            (view.translate.y - before.y) * before.scale
+        container.scrollLeft = Math.max(0, x)
+        container.scrollTop = Math.max(0, y)
     }
 }

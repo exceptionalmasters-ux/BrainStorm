@@ -61,6 +61,14 @@ test("shared canvas fences edits, imports only for its current editor and separa
     }
     await send("state", { state })
     await expect(
+        canvas.getByTestId("library-rail").getByRole("button"),
+    ).toHaveCount(1)
+    await canvas.getByTestId("library-settings").click()
+    await expect(
+        canvas.getByRole("button", { name: "Apply", exact: true }),
+    ).toBeDisabled()
+    await canvas.getByRole("button", { name: "Close library settings" }).click()
+    await expect(
         native.getByText("Shared module", { exact: true }),
     ).toBeVisible()
     await send("import", {
@@ -72,6 +80,55 @@ test("shared canvas fences edits, imports only for its current editor and separa
     ).toHaveCount(0)
     await send("state", { state: { ...state, editable: true, epoch: 2 } })
     await expect(canvas.getByTestId("drawing-tool-emc-connector")).toBeEnabled()
+    await canvas.getByTestId("library-settings").click()
+    await canvas
+        .getByRole("textbox", { name: "Find library" })
+        .fill("flowchart")
+    await canvas.getByRole("checkbox").first().check()
+    await canvas.getByRole("button", { name: "Apply", exact: true }).click()
+    await expect
+        .poll(() =>
+            page.evaluate(() =>
+                ((window as any).events || []).some(
+                    (e: any) =>
+                        e.type === "libraries" &&
+                        e.libraryIds.includes("flowchart") &&
+                        e.epoch === 2,
+                ),
+            ),
+        )
+        .toBe(true)
+    await send("state", {
+        state: {
+            ...state,
+            editable: true,
+            epoch: 2,
+            libraryIds: ["flowchart"],
+        },
+    })
+    await expect(
+        canvas.getByTestId("library-rail").getByRole("button"),
+    ).toHaveCount(2)
+    await canvas
+        .getByTestId("library-rail")
+        .getByRole("button", { name: "Flowchart", exact: true })
+        .click()
+    await expect(
+        native.locator('[data-testid="shape-flyout-header"]'),
+    ).toBeVisible()
+    await expect(
+        native.getByText("Shared module", { exact: true }),
+    ).toBeVisible()
+    await canvas.getByTestId("library-settings").click()
+    await canvas
+        .getByRole("textbox", { name: "Find library" })
+        .fill("flowchart")
+    await canvas.getByRole("checkbox").first().uncheck()
+    await canvas.getByRole("button", { name: "Apply", exact: true }).click()
+    await expect(
+        native.getByText("Shared module", { exact: true }),
+    ).toBeVisible()
+
     await send("import", {
         xml: xml.replace("Shared module", "Accepted import"),
         epoch: 1,

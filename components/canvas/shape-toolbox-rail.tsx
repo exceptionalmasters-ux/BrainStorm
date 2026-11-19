@@ -24,7 +24,9 @@ export interface ShapeToolboxExtension {
 
 export function ShapeToolboxRail({
     extension,
+    settings,
 }: {
+    settings?: ReactNode
     extension?: ShapeToolboxExtension
 }) {
     const t = useDictionary().toolbox
@@ -80,10 +82,12 @@ export function ShapeToolboxRail({
                 data-testid="shape-toolbox"
                 className="absolute inset-y-0 left-0 z-20 flex w-[52px] flex-col items-center gap-1 overflow-y-auto border-r border-primary/25 bg-card py-2 text-foreground"
             >
-                <Blocks
-                    aria-hidden="true"
-                    className="mb-2 size-6 shrink-0 text-primary"
-                />
+                {settings || (
+                    <Blocks
+                        aria-hidden="true"
+                        className="mb-2 size-6 shrink-0 text-primary"
+                    />
+                )}
                 {groups.map(([group, Icon]) => (
                     <button
                         key={group}

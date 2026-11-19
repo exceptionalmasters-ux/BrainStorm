@@ -13,6 +13,7 @@ import {
 } from "@/lib/drawio/drawio-config"
 import { attachNativeTool } from "@/lib/drawio/editor-bridge"
 import { createWhiteboardTools } from "@/lib/drawio/whiteboard-tools"
+import { validLibraryIds } from "@/lib/library-presets"
 import {
     type BoardLaser,
     type BoardPoint,
@@ -25,8 +26,11 @@ import {
     validBoardView,
 } from "@/lib/shared-board"
 import { validateAndFixXml } from "@/packages/mcp-server/src/xml-validation"
+import { LibraryRail } from "./library-rail"
 
 type State = {
+    emLibrary?: boolean
+    libraryIds?: string[]
     editable: boolean
     epoch: number
     revision: number
@@ -53,7 +57,17 @@ export function SharedBoardCanvas() {
         localStroke = useRef<BoardStroke | null>(null),
         lastView = useRef(""),
         lastLaser = useRef(0),
-        pendingView = useRef<BoardView | undefined>(undefined)
+        pendingView = useRef<BoardView | undefined>(undefined),
+        requests = useRef(
+            new Map<
+                string,
+                {
+                    resolve: (data: any) => void
+                    reject: (error: Error) => void
+                    timer: ReturnType<typeof setTimeout>
+                }
+            >(),
+        )
     const parentOrigin =
         process.env.NEXT_PUBLIC_EMC_OPERATIONS_ORIGIN ||
         "https://exceptionalmasters.co.uk"
@@ -65,7 +79,12 @@ export function SharedBoardCanvas() {
             )
     }
     useEffect(() => {
-        setSrc(getDrawioSrc(webDrawioSource("en"), false))
+        const url = new URL(
+            getDrawioSrc(webDrawioSource("en"), false),
+            window.location.href,
+        )
+        url.searchParams.set("libs", "none")
+        setSrc(url.href)
     }, [])
     const apply = (next: State) => {
         const before = current.current
@@ -113,12 +132,30 @@ export function SharedBoardCanvas() {
                 return
             const data = event.data
             if (
+                data.type === "library-result" &&
+                typeof data.requestId === "string"
+            ) {
+                const pending = requests.current.get(data.requestId)
+                if (pending) {
+                    clearTimeout(pending.timer)
+                    requests.current.delete(data.requestId)
+                    if (data.error) pending.reject(Error(String(data.error)))
+                    else pending.resolve(data.result)
+                }
+                return
+            }
+            if (
                 data.type === "state" &&
                 data.state &&
                 Number.isSafeInteger(data.state.epoch) &&
                 Number.isSafeInteger(data.state.revision)
             ) {
                 const s = data.state
+                if (
+                    s.libraryIds !== undefined &&
+                    !validLibraryIds(s.libraryIds)
+                )
+                    return
                 if (
                     !Array.isArray(s.annotations) ||
                     !s.annotations.every(validBoardStroke) ||
@@ -196,6 +233,26 @@ export function SharedBoardCanvas() {
         pendingView.current = undefined
         send("ready")
     }
+    const loadEM = (action: string, body: unknown) =>
+        new Promise<any>((resolve, reject) => {
+            const requestId = crypto.randomUUID()
+            const timer = setTimeout(() => {
+                requests.current.delete(requestId)
+                reject(Error("EM library request timed out"))
+            }, 20000)
+            requests.current.set(requestId, { resolve, reject, timer })
+            send("library-request", { requestId, action, body })
+        })
+    useEffect(
+        () => () => {
+            for (const request of requests.current.values()) {
+                clearTimeout(request.timer)
+                request.reject(Error("Board closed"))
+            }
+            requests.current.clear()
+        },
+        [],
+    )
     const pointer = (event: React.PointerEvent): BoardPoint | null => {
         if (!tools.current) return null
         const point = tools.current.toDocument({
@@ -225,33 +282,55 @@ export function SharedBoardCanvas() {
                     Open this shared board from EMC.
                 </div>
             )}
-            <div className="min-h-0 flex-1">
-                {src && (
-                    <DrawioFrame
-                        ref={frame}
-                        src={src}
-                        css={DRAWIO_CSS}
-                        dark={false}
-                        unifiedToolbar
-                        onLoad={ready}
-                        onAutoSave={(data) => {
-                            const s = current.current
-                            if (
-                                !s?.editable ||
-                                suppress.current ||
-                                typeof data.xml !== "string" ||
-                                data.xml.length > 2097152
-                            )
-                                return
-                            lastXml.current = data.xml
-                            send("document", {
-                                xml: data.xml,
-                                viewport: tools.current?.readView(),
-                                epoch: s.epoch,
-                            })
+            <div className="relative min-h-0 flex-1">
+                {state && (
+                    <LibraryRail
+                        shared
+                        userId={state.actorId}
+                        libraries={state.libraryIds}
+                        editable={state.editable}
+                        onChange={(ids) => {
+                            if (current.current?.editable)
+                                send("libraries", {
+                                    libraryIds: ids,
+                                    epoch: current.current.epoch,
+                                })
                         }}
+                        loadEM={state.emLibrary ? loadEM : undefined}
                     />
                 )}
+                <div
+                    className="absolute inset-y-0 right-0"
+                    style={{ left: state ? 52 : 0 }}
+                >
+                    {src && (
+                        <DrawioFrame
+                            ref={frame}
+                            src={src}
+                            css={DRAWIO_CSS}
+                            dark={false}
+                            unifiedToolbar
+                            libraryDefaults="none"
+                            onLoad={ready}
+                            onAutoSave={(data) => {
+                                const s = current.current
+                                if (
+                                    !s?.editable ||
+                                    suppress.current ||
+                                    typeof data.xml !== "string" ||
+                                    data.xml.length > 2097152
+                                )
+                                    return
+                                lastXml.current = data.xml
+                                send("document", {
+                                    xml: data.xml,
+                                    viewport: tools.current?.readView(),
+                                    epoch: s.epoch,
+                                })
+                            }}
+                        />
+                    )}
+                </div>
             </div>
             {view && (
                 <svg

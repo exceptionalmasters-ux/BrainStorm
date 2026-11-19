@@ -2,10 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import { DrawioFrame } from "@/components/canvas/drawio-frame"
 import { useLocale } from "@/components/canvas/locale-context"
 import { OutlineOffer } from "@/components/canvas/outline-offer"
-import {
-    type ShapeToolboxExtension,
-    ShapeToolboxRail,
-} from "@/components/canvas/shape-toolbox-rail"
+import { ShapeToolboxRail } from "@/components/canvas/shape-toolbox-rail"
 import { useDiagram } from "@/contexts/diagram-context"
 import { useDictionary } from "@/hooks/use-dictionary"
 import {
@@ -45,8 +42,9 @@ export function CanvasStage({
     drawioSource,
     waitForSavedLocale = false,
     toolbox = false,
-    toolboxExtension,
+    toolboxRail,
 }: {
+    toolboxRail?: React.ReactNode
     className?: string
     style?: React.CSSProperties
     /** Hide the overlay (e.g. while the start screen covers the canvas) */
@@ -63,7 +61,6 @@ export function CanvasStage({
     /** EMC controls are web-only; shared MCP canvas keeps its native layout. */
     toolbox?: boolean
     /** Operations can add tools without loading them in the shared MCP canvas. */
-    toolboxExtension?: ShapeToolboxExtension
 }) {
     const dict = useDictionary()
     const lang = useLocale()
@@ -172,7 +169,7 @@ export function CanvasStage({
                 }, 60)
             }}
         >
-            {showToolbox && <ShapeToolboxRail extension={toolboxExtension} />}
+            {showToolbox && (toolboxRail || <ShapeToolboxRail />)}
             <div
                 className="absolute inset-y-0 right-0"
                 style={{ left: showToolbox ? 52 : 0 }}
