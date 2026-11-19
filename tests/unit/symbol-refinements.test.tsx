@@ -428,6 +428,7 @@ it("anchors native top labels to their actual text end rather than an estimated 
         const label = layout.labels.find(
             (label) => label.id === `${pin.number}:name`,
         )
+        if (!native) throw new Error(`Missing native label for ${pin.number}`)
         expect(native[7]).toContain("align=right;spacing=0")
         expect(native[4] + native[6] / 2 - native[5] / 2).toBeCloseTo(label.y)
     }
