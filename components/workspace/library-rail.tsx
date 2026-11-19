@@ -320,6 +320,7 @@ export function LibraryRail({
                             <button
                                 type="button"
                                 key={id}
+                                data-testid={`library-${id}`}
                                 title={item?.title || id}
                                 aria-label={item?.title || id}
                                 aria-pressed={
@@ -520,6 +521,7 @@ export function LibraryRail({
                                         >
                                             <input
                                                 type="checkbox"
+                                                data-testid={`library-choice-${c.id}`}
                                                 checked={draft.includes(c.id)}
                                                 onChange={() =>
                                                     setDraft((current) =>

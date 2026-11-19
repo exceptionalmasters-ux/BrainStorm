@@ -3,6 +3,7 @@ import {
     getIframeContent,
     openApp,
     openDrawioFile,
+    selectLibraries,
     test,
 } from "./lib/fixtures"
 import { mockOperationsStorage } from "./lib/mock-operations-storage"
@@ -200,6 +201,7 @@ test("right-click saves an editable group with internal wires and compact librar
     await expect(dialog).toBeHidden()
     expect(saves).toBe(1)
     expect(saved.cells.filter((c: any) => c.edge)).toHaveLength(1)
+    await selectLibraries(popup, ["emc"])
     await popup.getByTestId("toolbox-emc-library").click()
     const tile = popup
         .getByTestId("emc-library-panel")

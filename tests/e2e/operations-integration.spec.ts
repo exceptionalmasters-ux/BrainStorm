@@ -1,5 +1,11 @@
 import { emcToolResponse } from "../fixtures/emc-response"
-import { expect, getIframeContent, sendMessage, test } from "./lib/fixtures"
+import {
+    expect,
+    getIframeContent,
+    selectLibraries,
+    sendMessage,
+    test,
+} from "./lib/fixtures"
 import { mockOperationsStorage } from "./lib/mock-operations-storage"
 
 /** Real cross-origin popup and native editor; the authenticated parent's transport is mocked.
@@ -412,6 +418,7 @@ for (const withBrief of [true, false]) {
             await popup.getByTestId("hide-chat-panel").click()
             await expect(popup.getByTestId("chat-panel")).not.toBeVisible()
             await popup.setViewportSize({ width: 600, height: 900 })
+            await selectLibraries(popup, ["emc"])
             await popup.getByTestId("toolbox-emc-library").click()
             const library = popup.getByTestId("emc-library-panel")
             await expect(library).toBeVisible()

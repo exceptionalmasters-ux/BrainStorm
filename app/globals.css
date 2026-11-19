@@ -324,13 +324,58 @@
 }
 
 /* EMC library and account preset panels share the Operations button palette. */
-.emc-library-panel { background: #080b09; border-color: #765c2d; color: #f5f4f0; border-radius: 4px; }
-.emc-library-panel button { border: 1px solid #765c2d; border-radius: 3px; background: linear-gradient(120deg,#17140e,#0b100c); color: #f0c66c; padding: .55rem .8rem; font-size: .875rem; font-weight: 600; }
-.emc-library-panel button:hover:not(:disabled) { border-color: #f0c66c; background: #352919; }
-.emc-library-panel button[data-emc-primary] { background: linear-gradient(100deg,#c89534,#f0ca76); border-color: #e0b45e; color: #080808; }
-.emc-library-panel button:focus-visible, .emc-library-panel input:focus-visible, .emc-library-panel select:focus-visible { outline: 2px solid #f0c66c; outline-offset: 3px; }
-.emc-library-panel button:disabled { opacity: .4; cursor: not-allowed; }
-.emc-library-panel input:not([type=checkbox]), .emc-library-panel select { border-color: #765c2d; border-radius: 3px; background-color: #101510; color: #f5f4f0; }
-.emc-library-gear, .emc-library-rail button { border-radius: 3px; color: #f0c66c; }
-.emc-library-gear { border-color: #765c2d; background: linear-gradient(120deg,#17140e,#0b100c); }
-.emc-library-rail button:hover, .emc-library-rail button[aria-pressed=true] { border-color: #e0b45e; background: #352919; }
+.emc-library-panel {
+    background: #080b09;
+    border-color: #765c2d;
+    color: #f5f4f0;
+    border-radius: 4px;
+}
+.emc-library-panel button {
+    border: 1px solid #765c2d;
+    border-radius: 3px;
+    background: linear-gradient(120deg, #17140e, #0b100c);
+    color: #f0c66c;
+    padding: 0.55rem 0.8rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+.emc-library-panel button:hover:not(:disabled) {
+    border-color: #f0c66c;
+    background: #352919;
+}
+.emc-library-panel button[data-emc-primary] {
+    background: linear-gradient(100deg, #c89534, #f0ca76);
+    border-color: #e0b45e;
+    color: #080808;
+}
+.emc-library-panel button:focus-visible,
+.emc-library-panel input:focus-visible,
+.emc-library-panel select:focus-visible {
+    outline: 2px solid #f0c66c;
+    outline-offset: 3px;
+}
+.emc-library-panel button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+.emc-library-panel input:not([type="checkbox"]),
+.emc-library-panel select {
+    border-color: #765c2d;
+    border-radius: 3px;
+    background-color: #101510;
+    color: #f5f4f0;
+}
+.emc-library-gear,
+.emc-library-rail button {
+    border-radius: 3px;
+    color: #f0c66c;
+}
+.emc-library-gear {
+    border-color: #765c2d;
+    background: linear-gradient(120deg, #17140e, #0b100c);
+}
+.emc-library-rail button:hover,
+.emc-library-rail button[aria-pressed="true"] {
+    border-color: #e0b45e;
+    background: #352919;
+}
