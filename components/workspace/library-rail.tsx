@@ -122,7 +122,12 @@ export function LibraryRail({
                         title: win.mxResources?.get(item.id) || item.id,
                         group: "Other libraries",
                     })
-            rows.push({ id: "emc", title: "EM · EMC library", group: "EMC" })
+            if (extension || loadEM)
+                rows.push({
+                    id: "emc",
+                    title: "EM · EMC library",
+                    group: "EMC",
+                })
             setCatalog(rows)
             return () => {}
         })

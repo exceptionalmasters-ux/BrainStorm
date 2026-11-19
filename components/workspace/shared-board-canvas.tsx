@@ -29,6 +29,7 @@ import { validateAndFixXml } from "@/packages/mcp-server/src/xml-validation"
 import { LibraryRail } from "./library-rail"
 
 type State = {
+    emLibrary?: boolean
     libraryIds?: string[]
     editable: boolean
     epoch: number
@@ -295,7 +296,7 @@ export function SharedBoardCanvas() {
                                     epoch: current.current.epoch,
                                 })
                         }}
-                        loadEM={loadEM}
+                        loadEM={state.emLibrary ? loadEM : undefined}
                     />
                 )}
                 <div
