@@ -25,6 +25,7 @@ import {
 } from "@/lib/drawio/editor-bridge"
 import type { ShapeToolbox } from "@/lib/drawio/shape-toolbox"
 import { insertEmcSymbolNative, validateEmcSymbol } from "@/lib/emc-symbols"
+import { expandLibraryPalette } from "@/lib/library-palettes"
 import {
     DEFAULT_LIBRARY_IDS,
     type LibraryPreset,
@@ -286,6 +287,10 @@ export function LibraryRail({
             setActive("")
         } else {
             tool.current?.open("search", title, id)
+            attachNativeTool((ui) => {
+                expandLibraryPalette(ui.sidebar, id)
+                return () => {}
+            })
             setActive(id)
         }
     }

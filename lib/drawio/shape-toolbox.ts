@@ -159,18 +159,6 @@ export function createShapeToolbox(
         sidebar.showEntries(entries ?? undefined, false, true)
         sidebar.showPalette?.("emcRecent", false)
         sidebar.showPalette?.("search", true)
-        if (library) {
-            // Opening a selected library expands its first native palette. Keep
-            // deferred initialization and the native folding handler intact.
-            const config = sidebar.configuration?.find(
-                (entry: any) => entry.id === library,
-            )
-            const paletteId =
-                (config?.prefix || "") + (config?.libs?.[0] || library)
-            const palette = sidebar.palettes?.[paletteId]
-            const contents = palette?.[1]?.querySelector?.(".geSidebar")
-            if (contents?.style.display === "none") palette?.[0]?.click?.()
-        }
         if (group === "recent") showRecent()
         withStableViewport(ui, () => {
             const panel = ui.sidebarContainer

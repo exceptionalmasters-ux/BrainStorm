@@ -123,24 +123,10 @@ describe("EMC shape toolbox", () => {
         await Promise.resolve()
         expect(document.querySelector(".emc-shape-header")).toBeNull()
     })
-    it("lazily expands the first selected native palette without stealing focus for search", () => {
-        const { controller, sidebar, search } = setup()
-        const title = document.createElement("button")
-        const wrapper = document.createElement("div")
-        const contents = document.createElement("div")
-        contents.className = "geSidebar"
-        contents.style.display = "none"
-        wrapper.append(contents)
-        const initialize = vi.fn(() => {
-            contents.style.display = "block"
-        })
-        title.addEventListener("click", initialize)
-        Object.assign(sidebar, { palettes: { general: [title, wrapper] } })
+    it("does not steal focus for search when opening a selected library", () => {
+        const { controller, search } = setup()
         expect(controller.open("search", "General", "general")).toBe(true)
-        expect(initialize).toHaveBeenCalledOnce()
         expect(document.activeElement).not.toBe(search)
-        controller.open("search", "General", "general")
-        expect(initialize).toHaveBeenCalledOnce()
     })
     it("uses native search and the complete library chooser", () => {
         const { controller, search, shapes } = setup()
