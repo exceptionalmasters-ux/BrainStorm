@@ -11,6 +11,7 @@ export async function mockOperationsStorage(
 ) {
     const records = options.records || new Map<string, any>()
     const objects = new Map<string, string>()
+    const presets = new Map<string, any>()
     const contextId = "00000000-0000-4000-8000-000000000001"
     await context.route(
         "https://fzwiphplhspsoktugoqo.supabase.co/**",
@@ -51,6 +52,14 @@ export async function mockOperationsStorage(
             if (rpc === "brainstorm_name_available")
                 return route.fulfill({ json: true })
             const args = req.postDataJSON()
+            if (rpc === "brainstorm_library_presets") {
+                expect(["presets-list", "presets-save"]).toContain(
+                    args.p_action,
+                )
+                if (args.p_action === "presets-save")
+                    presets.set(args.p_payload.id, args.p_payload)
+                return route.fulfill({ json: [...presets.values()] })
+            }
             if (rpc === "brainstorm_context")
                 return route.fulfill({
                     json: {
