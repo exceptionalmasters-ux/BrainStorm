@@ -500,7 +500,7 @@ test("the download button saves the diagram as a file", async ({ page }) => {
     await dialog.getByRole("button", { name: "Export" }).click()
     const file = await download
     expect(file.suggestedFilename()).toMatch(
-        /^diagram-\d{4}-\d{2}-\d{2}\.drawio$/,
+        /^diagram-\d{4}-\d{2}-\d{2}\.storm$/,
     )
     // draw.io's own export of the document, its pages as plain XML (as
     // export_diagram writes them): a diff or another tool can read it
