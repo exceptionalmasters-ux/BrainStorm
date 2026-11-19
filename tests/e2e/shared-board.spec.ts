@@ -132,6 +132,30 @@ test("shared canvas fences edits, imports only for its current editor and separa
     await expect(
         native.locator('[data-testid="shape-flyout-header"]'),
     ).toBeVisible()
+    // The dark gallery must use the native dark palette, like the main tool.
+    // Merely painting its background dark leaves black-on-dark thumbnails.
+    await expect
+        .poll(() =>
+            native
+                .locator("body")
+                .evaluate((body) =>
+                    (body.ownerDocument.defaultView as any).Editor.isDarkMode(),
+                ),
+        )
+        .toBe(true)
+    await expect
+        .poll(() =>
+            native
+                .locator(".emc-shape-overlay svg [stroke]")
+                .evaluateAll((nodes) =>
+                    nodes.some(
+                        (node) =>
+                            getComputedStyle(node).stroke ===
+                            "rgb(255, 255, 255)",
+                    ),
+                ),
+        )
+        .toBe(true)
     await expect(
         native.getByText("Shared module", { exact: true }),
     ).toBeVisible()
