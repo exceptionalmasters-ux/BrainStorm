@@ -14,6 +14,33 @@ permissions:
   contents: read
 
 jobs:
+  cloudflare-panel:
+    name: Cloudflare panel build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: "npm"
+      - run: npm ci
+      - run: npx opennextjs-cloudflare build
+      - name: Check panel paths and static cache configuration
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+          const next = JSON.parse(fs.readFileSync('.next/required-server-files.json', 'utf8'));
+          assert.equal(next.config.basePath, '/brainstorm');
+          assert(fs.existsSync('.open-next/assets/brainstorm/drawio/index.html'));
+          assert(fs.existsSync('.open-next/assets/brainstorm/_next/static'));
+          const headers = fs.readFileSync('.open-next/assets/_headers','utf8');
+          assert(headers.includes('/brainstorm/drawio/*'));
+          assert(headers.includes('/brainstorm/_next/static/*'));
+          const routes = JSON.parse(fs.readFileSync('.next/routes-manifest.json','utf8'));
+          assert(routes.redirects.some(r => r.source === '/en/:path*' && r.destination === '/brainstorm/en/:path*'));
+          NODE
+
   lint-and-unit:
     name: Lint & Unit Tests
     runs-on: ubuntu-latest

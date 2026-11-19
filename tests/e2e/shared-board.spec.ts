@@ -63,6 +63,11 @@ test("shared canvas fences edits, imports only for its current editor and separa
     await expect(
         canvas.getByTestId("shape-toolbox").getByRole("button"),
     ).toHaveCount(1)
+    // An empty library selection must not turn the paper black in dark mode.
+    await expect(native.locator(".geDiagramContainer").first()).toHaveCSS(
+        "color-scheme",
+        "light",
+    )
     await canvas.getByTestId("library-settings").click()
     await expect(
         canvas.getByRole("button", { name: "Apply", exact: true }),

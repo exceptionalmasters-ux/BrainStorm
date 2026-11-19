@@ -76,7 +76,24 @@ const nextConfig: NextConfig = {
     // addresses without a language, which Google still has, go there in one
     // step instead of through the language redirect first.
     async redirects() {
+        const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ""
         return [
+            ...(basePath
+                ? [
+                      "/",
+                      "/en/:path*",
+                      "/zh/:path*",
+                      "/ja/:path*",
+                      "/zh-Hant/:path*",
+                      "/api/:path*",
+                      "/drawio/:path*",
+                  ].map((source) => ({
+                      source,
+                      destination: `${basePath}${source === "/" ? "/en" : source}`,
+                      permanent: false,
+                      basePath: false as const,
+                  }))
+                : []),
             { source: "/about/cn", destination: "/zh/about", permanent: true },
             { source: "/about/ja", destination: "/ja/about", permanent: true },
             {
