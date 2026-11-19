@@ -194,9 +194,7 @@ test("private PDF upload, no-Web symbol, trash/restore/purge and reconnect witho
     await expect(
         popup.getByRole("button", { name: "Create symbol", exact: true }),
     ).toBeEnabled()
-    const resultBox = await popup
-        .getByRole("button", { name: "Create symbol", exact: true })
-        .boundingBox()
+    const resultBox = await popup.getByTestId("device-research").boundingBox()
     const commentsBox = await popup
         .getByTestId("file-analysis-comments")
         .boundingBox()
