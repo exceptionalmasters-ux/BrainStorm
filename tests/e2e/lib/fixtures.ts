@@ -400,6 +400,9 @@ export async function selectLibraries(page: Page, ids: string[]) {
     await page
         .getByRole("button", { name: "Clear selection", exact: true })
         .click()
-    for (const id of ids) await page.getByTestId(`library-choice-${id}`).check()
+    for (const id of ids) {
+        await page.getByRole("textbox", { name: "Find library" }).fill(id)
+        await page.getByTestId(`library-choice-${id}`).check()
+    }
     await page.getByRole("button", { name: "Apply", exact: true }).click()
 }

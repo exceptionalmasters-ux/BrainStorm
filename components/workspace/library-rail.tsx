@@ -449,7 +449,7 @@ export function LibraryRail({
                         aria-labelledby="library-settings-title"
                         className="emc-library-panel flex max-h-[90dvh] w-full max-w-xl flex-col rounded-xl border border-amber-500/50 bg-[#101310] text-white shadow-2xl"
                     >
-                        <header className="flex items-center gap-3 border-b border-amber-500/25 p-4">
+                        <header className="flex shrink-0 items-center gap-3 border-b border-amber-500/25 p-4">
                             <Settings2 className="text-amber-300" />
                             <div className="flex-1">
                                 <h2
@@ -471,7 +471,7 @@ export function LibraryRail({
                                 <X />
                             </button>
                         </header>
-                        <div className="grid gap-3 overflow-auto p-4">
+                        <div className="flex min-h-0 flex-col gap-3 overflow-auto p-4 [&>*]:shrink-0">
                             <label className="grid gap-1 text-sm">
                                 Preset
                                 <select
@@ -622,7 +622,7 @@ export function LibraryRail({
                                 </p>
                             )}
                         </div>
-                        <footer className="flex flex-wrap justify-between gap-2 border-t border-amber-500/25 p-4">
+                        <footer className="flex shrink-0 flex-wrap justify-between gap-2 border-t border-amber-500/25 p-4">
                             <button
                                 className="flex items-center gap-1 rounded border border-amber-500/40 px-3 py-2 text-sm"
                                 onClick={() => setDraft([])}
