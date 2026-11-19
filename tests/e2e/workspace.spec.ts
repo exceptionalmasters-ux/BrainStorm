@@ -336,13 +336,10 @@ test.describe("Workspace", () => {
         const file = `<mxfile><diagram name="P" id="p"><mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/><mxCell id="a" value="From File" style="rounded=1;" vertex="1" parent="1"><mxGeometry x="40" y="40" width="120" height="60" as="geometry"/></mxCell></root></mxGraphModel></diagram></mxfile>`
         const [chooser] = await Promise.all([
             page.waitForEvent("filechooser"),
-            page
-                .getByRole("button", { name: "Open .drawio file" })
-                .first()
-                .click(),
+            page.getByRole("button", { name: "Open .storm" }).first().click(),
         ])
         await chooser.setFiles({
-            name: "order-flow.drawio",
+            name: "order-flow.storm",
             mimeType: "application/xml",
             buffer: Buffer.from(file),
         })
@@ -1332,10 +1329,7 @@ test.describe("Workspace", () => {
         await openApp(page, { startScreen: true })
         const [chooser] = await Promise.all([
             page.waitForEvent("filechooser"),
-            page
-                .getByRole("button", { name: "Open .drawio file" })
-                .first()
-                .click(),
+            page.getByRole("button", { name: "Open .storm" }).first().click(),
         ])
         await chooser.setFiles({
             name: "notes.xml",
@@ -2345,10 +2339,7 @@ test.describe("Workspace", () => {
         await openApp(page, { startScreen: true })
         const [chooser] = await Promise.all([
             page.waitForEvent("filechooser"),
-            page
-                .getByRole("button", { name: "Open .drawio file" })
-                .first()
-                .click(),
+            page.getByRole("button", { name: "Open .storm" }).first().click(),
         ])
         await chooser.setFiles({
             name: "blank.drawio",

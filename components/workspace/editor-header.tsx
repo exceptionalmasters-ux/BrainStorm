@@ -305,7 +305,7 @@ export function EditorHeader({
                             className="min-w-0 truncate"
                             data-testid="editor-file-title"
                         >
-                            {title}.drawio
+                            {title}.storm
                         </span>
                         <ChevronDown className="size-4 shrink-0" />
                     </button>

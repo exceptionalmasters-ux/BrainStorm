@@ -243,13 +243,15 @@ export function standardSymbolLayout(symbol: EmcSymbol) {
                       : frame.x + bodyW - 12,
                 y: horizontal
                     ? side === "top"
-                        ? frame.y + 20 + textWidth(pin.name, fontSize)
+                        ? frame.y + 20
                         : frame.y + bodyH - 20
                     : row,
                 width: textWidth(pin.name, fontSize),
                 rotation: horizontal ? 270 : 0,
                 anchor: horizontal
-                    ? "start"
+                    ? side === "top"
+                        ? "end"
+                        : "start"
                     : side === "left"
                       ? "start"
                       : "end",
@@ -400,9 +402,12 @@ export function insertStandardSymbolNative(
                 cy =
                     label.y +
                     (vertical
-                        ? label.rotation === 90
-                            ? label.width / 2
-                            : -label.width / 2
+                        ? (label.rotation === 90 ? 1 : -1) *
+                          (label.anchor === "end"
+                              ? -label.width / 2
+                              : label.anchor === "middle"
+                                ? 0
+                                : label.width / 2)
                         : 0)
             vertex(
                 root,

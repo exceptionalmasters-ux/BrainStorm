@@ -55,6 +55,7 @@ import {
     diagramForMessage,
 } from "@/lib/diagram-context"
 import { diffDiagrams, isSameDocument } from "@/lib/diagram-diff"
+import { diagramFileTitle } from "@/lib/diagram-file-format"
 import { pageModelXml, placeOnPage } from "@/lib/diagram-pages"
 import {
     composerStorageKey,
@@ -505,7 +506,7 @@ export function ChatEngineProvider({
         setPendingTitle(
             name
                 .trim()
-                .replace(/\.drawio$/i, "")
+                .replace(/\.(?:storm|drawio)$/i, "")
                 .slice(0, 100),
         )
         return true
@@ -2686,7 +2687,7 @@ export function ChatEngineProvider({
     const saveDocumentAs = async (title: string) => {
         const name = title
             .trim()
-            .replace(/\.drawio$/i, "")
+            .replace(/\.(?:storm|drawio)$/i, "")
             .trim()
         if (
             !name ||
@@ -2836,9 +2837,7 @@ export function ChatEngineProvider({
             // This empty chat is ours: the effect that follows session
             // changes must not clear the file it is about to show
             lastSyncedSessionIdRef.current = null
-            setPendingTitle(
-                file.name.replace(/\.(drawio\.svg|drawio|xml|svg)$/i, ""),
-            )
+            setPendingTitle(diagramFileTitle(file.name))
             onDisplayChart(xml, true)
             // The file is on screen, also one without shapes yet
             useUiStore.getState().setHeroDismissed(true)

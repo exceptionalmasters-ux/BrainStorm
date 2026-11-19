@@ -1,5 +1,5 @@
 "use client"
-import { Trash2 } from "lucide-react"
+import { Paperclip, RefreshCw, Trash2 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
@@ -13,9 +13,7 @@ import { UniqueNameStatus } from "@/components/workspace/unique-name-status"
 import { EMC_SUPABASE_PUBLIC_KEY, EMC_SUPABASE_URL } from "@/lib/emc-deployment"
 import { operationsAuthorization } from "@/lib/operations-bridge"
 import {
-    analyseSource,
     cancelDeviceResearch,
-    disableDeviceWeb,
     emcAction,
     useDeviceResearch,
 } from "@/stores/device-research-store"
@@ -54,10 +52,24 @@ export function SourceFiles({ readonly }: { readonly: boolean }) {
     const load = async () => {
         const data = await emcAction<{ sources: Source[] }>("source-list", {})
         setFiles(data.sources)
+        const current = useDeviceResearch.getState().selectedSource
+        const selected =
+            data.sources.find(
+                (row) => row.state === "active" && row.id === current?.id,
+            ) || data.sources.find((row) => row.state === "active")
+        research.set({
+            selectedSource: selected
+                ? { id: selected.id, name: selected.name }
+                : null,
+        })
     }
     useEffect(() => {
         void load().catch((e) => setError(e.message))
     }, [])
+    useEffect(() => {
+        research.set({ sourceBusy: busy })
+        return () => useDeviceResearch.setState({ sourceBusy: false })
+    }, [busy])
     const [pendingName, setPendingName] = useState<{
         file?: File
         row?: Source
@@ -139,6 +151,9 @@ export function SourceFiles({ readonly }: { readonly: boolean }) {
             await emcAction("source-complete", { id: prepared.id })
             setPendingName(null)
             await load()
+            research.set({
+                selectedSource: { id: prepared.id, name: file.name },
+            })
         } catch (e) {
             if (e instanceof Error && /name already exists/i.test(e.message)) {
                 setPendingName({ file })
@@ -195,28 +210,36 @@ export function SourceFiles({ readonly }: { readonly: boolean }) {
                     size="sm"
                     variant="outline"
                     disabled={readonly || busy || research.busy}
+                    aria-label="Add attachment"
+                    title="Add attachment"
                     onClick={() => input.current?.click()}
                 >
-                    Add attachment
+                    <Paperclip aria-hidden="true" className="size-4" />
                 </Button>
                 <Button
                     size="sm"
                     variant="outline"
+                    aria-label={trash ? "Active files" : "Trash"}
+                    title={trash ? "Active files" : "Trash"}
+                    aria-pressed={trash}
                     onClick={() => {
                         setTrash(!trash)
                         setPurge(null)
                     }}
                 >
-                    {trash ? "Active files" : "Trash"}
+                    <Trash2 aria-hidden="true" className="size-4" />
                 </Button>
                 <Button
                     size="sm"
                     variant="outline"
+                    aria-label="Refresh"
+                    title="Refresh"
+                    disabled={busy || research.busy}
                     onClick={() =>
                         void load().catch((e) => setError(e.message))
                     }
                 >
-                    Refresh
+                    <RefreshCw aria-hidden="true" className="size-4" />
                 </Button>
             </div>
             <input
@@ -244,6 +267,26 @@ export function SourceFiles({ readonly }: { readonly: boolean }) {
                     )
                     .map((row) => (
                         <li key={row.id} className="rounded border p-2">
+                            {row.state === "active" && (
+                                <input
+                                    type="radio"
+                                    name="analysis-source"
+                                    aria-label={`Use ${row.name} for analysis`}
+                                    className="mr-2 accent-primary"
+                                    checked={
+                                        research.selectedSource?.id === row.id
+                                    }
+                                    disabled={readonly || busy || research.busy}
+                                    onChange={() =>
+                                        research.set({
+                                            selectedSource: {
+                                                id: row.id,
+                                                name: row.name,
+                                            },
+                                        })
+                                    }
+                                />
+                            )}
                             <button
                                 className="text-amber-400 underline"
                                 disabled={row.state !== "active"}
@@ -263,24 +306,6 @@ export function SourceFiles({ readonly }: { readonly: boolean }) {
                                         }
                                     >
                                         Finish upload
-                                    </Button>
-                                )}
-                                {row.state === "active" && (
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        disabled={
-                                            readonly || busy || research.busy
-                                        }
-                                        onClick={() => {
-                                            disableDeviceWeb()
-                                            void analyseSource(
-                                                row.id,
-                                                research.instructions,
-                                            )
-                                        }}
-                                    >
-                                        Analyse file
                                     </Button>
                                 )}
                                 {["active", "pending"].includes(row.state) && (

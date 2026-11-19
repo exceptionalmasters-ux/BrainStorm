@@ -29,7 +29,7 @@ test("repeated tool flyouts preserve both the drawing and paper position", async
 }) => {
     await openApp(page, { startScreen: true })
     await page.getByTestId("draw-manually").click()
-    await openDrawioFile(page, "stable-view.drawio", BOX)
+    await openDrawioFile(page, "stable-view.storm", BOX)
     const frame = getIframeContent(page)
     const box = frame.getByText("Menu box", { exact: true })
     await expect(box).toBeVisible()
@@ -66,10 +66,10 @@ test("editor menus dispatch real duplicate, undo, redo and local save commands",
 }, testInfo) => {
     await openApp(page, { startScreen: true })
     await page.getByTestId("draw-manually").click()
-    await openDrawioFile(page, "menu-test.drawio", BOX)
+    await openDrawioFile(page, "menu-test.storm", BOX)
     const frame = getIframeContent(page)
     await expect(page.getByTestId("editor-file-title")).toContainText(
-        "menu-test.drawio",
+        "menu-test.storm",
     )
     for (const name of [
         "file",
@@ -106,7 +106,7 @@ test("editor menus dispatch real duplicate, undo, redo and local save commands",
         .getByTestId("editor-menu-popup")
         .getByRole("menuitem", { name: "Save file", exact: true })
         .click()
-    expect((await download).suggestedFilename()).toBe("menu-test.drawio")
+    expect((await download).suggestedFilename()).toBe("menu-test.storm")
     await testInfo.attach("editor-workbench", {
         body: await page.screenshot(),
         contentType: "image/png",

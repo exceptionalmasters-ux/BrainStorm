@@ -67,7 +67,7 @@ for (const mobile of [false, true]) {
         await page.keyboard.press("Escape")
         await openDrawioFile(
             page,
-            "manual-concept.drawio",
+            "manual-concept.storm",
             SINGLE_BOX_DRAWIO_FILE,
         )
         await expect(page.getByTestId("lobby-hero")).toHaveCount(0)

@@ -70,7 +70,10 @@ describe("source geometry", () => {
                           : v.anchor === "end"
                             ? v.width
                             : 0),
-                y = vert ? v.y - (v.rotation === 270 ? v.width : 0) : v.y - 7
+                y = vert
+                    ? v.y -
+                      (v.rotation === 270 && v.anchor !== "end" ? v.width : 0)
+                    : v.y - 7
             return { x, y, w: vert ? 14 : v.width, h: vert ? v.width : 14 }
         })
         const dot = {
@@ -165,11 +168,18 @@ describe("source geometry", () => {
                     (l) => l.id === `${pin.number}:number`,
                 )
                 expect(name.rotation).toBe(270)
-                expect(name.y - name.width).toBeGreaterThanOrEqual(
-                    layout.bodyFrame.y + 19,
-                )
-                expect(name.y).toBeLessThanOrEqual(
+                const top = name.anchor === "end" ? name.y : name.y - name.width
+                const bottom =
+                    name.anchor === "end" ? name.y + name.width : name.y
+                expect(top).toBeGreaterThanOrEqual(layout.bodyFrame.y + 19)
+                expect(bottom).toBeLessThanOrEqual(
                     layout.bodyFrame.y + layout.bodyFrame.height - 19,
+                )
+                expect(name.anchor).toBe(side === "top" ? "end" : "start")
+                expect(name.y).toBe(
+                    side === "top"
+                        ? layout.bodyFrame.y + 20
+                        : layout.bodyFrame.y + layout.bodyFrame.height - 20,
                 )
                 for (const stem of pins) {
                     expect(

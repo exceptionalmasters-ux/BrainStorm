@@ -33,7 +33,7 @@ import { useChatEngine } from "./chat-engine"
 import { Composer } from "./composer"
 import { DeviceResearchPanel } from "./device-research"
 import { MessageList } from "./message-list"
-import { SymbolInstructions } from "./symbol-instructions"
+import { FileAnalysisComposer } from "./symbol-instructions"
 
 const DEBUG = process.env.NODE_ENV === "development"
 
@@ -102,7 +102,6 @@ export function ChatPanel({
 }) {
     const dict = useDictionary()
     const fileMode = useDeviceResearch((s) => s.fileMode)
-    const researchBusy = useDeviceResearch((s) => s.busy)
     const webEnabled = useDeviceResearch((s) => s.webEnabled)
     const engine = useChatEngine()
     const { loadDiagram, isDrawioReady } = useDiagram()
@@ -204,7 +203,7 @@ export function ChatPanel({
                     className="shrink-0 px-4 pt-2 pb-3"
                     data-testid="file-analysis-comments"
                 >
-                    <SymbolInstructions disabled={researchBusy} />
+                    <FileAnalysisComposer />
                 </div>
             ) : (
                 <>

@@ -43,7 +43,7 @@ test("first autosave requests a name and stores the named drawing", async ({
         "Saved · Local",
     )
     await expect(page.getByTestId("editor-file-title")).toContainText(
-        "Daily plan.drawio",
+        "Daily plan.storm",
     )
 })
 
@@ -135,7 +135,7 @@ test("Save As names an unnamed drawing without opening an automatic name prompt 
     await dialog.getByRole("button", { name: "Save", exact: true }).click()
     await expect(dialog).toHaveCount(0)
     await expect(page.getByTestId("editor-file-title")).toHaveText(
-        "Named through Save As.drawio",
+        "Named through Save As.storm",
     )
     expect((await stored(page)).map((session) => session.title)).toEqual([
         "Named through Save As",

@@ -50,3 +50,9 @@ Automated fixtures verify PDF forwarding, page instructions, variant handling, v
 The file/sparkles toolbar button opens a dedicated file generation view. Drawing chat is hidden without clearing its messages or prompt. File instructions sit below the analysis results in the composer area. Cancel stops the active research and returns to drawing chat, preserving instructions for the next file analysis.
 
 On the top and bottom sides, pin names both read bottom-to-top (270 degrees). Upright pin numbers sit between the vertical stems with a dedicated column pitch that reserves their text width plus clearance. Left/right pin rows retain their existing spacing. The preview and native insertion share these exact coordinates. Previously inserted drawing cells are not rewritten.
+
+## Corrections without discarding the current proposal
+
+The approval preview includes a correction field and Regenerate with correction. A retry sends the full current symbol separately from the bounded correction text, preserving manual edits and the original file/page instructions. The open draft remains visible while running; errors, cancellation, invalid output or unapproved removal of existing pin identifiers retain it. Explicit pin removal requires its own checkbox. Undo correction restores the previous draft; approval is still required to save or insert. Missing source pins that were never extracted still need review against the original document.
+
+Top-side names use an end anchor on one common top baseline. Bottom-side names keep their start anchor on the common bottom baseline. Both remain rotated bottom-to-top; native cell centres account for the anchor in the same way as the SVG preview.

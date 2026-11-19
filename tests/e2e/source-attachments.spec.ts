@@ -99,9 +99,28 @@ test("private PDF upload, no-Web symbol, trash/restore/purge and reconnect witho
                 }
             }
             if (action === "draft") {
-                expect(body.edits).toBe("Drawing page 2; pin table pages 3–4")
+                if (body.previousSymbol) {
+                    expect(body.edits).toBe(
+                        "Preserve the RST pin and correct the name",
+                    )
+                    expect(body.previousSymbol.pins).toEqual(symbol.pins)
+                    expect(body.sourceInstructions).toBe(
+                        "Drawing page 2; pin table pages 3–4",
+                    )
+                    data = {
+                        questions: [],
+                        symbol: {
+                            ...body.previousSymbol,
+                            name: "Corrected module",
+                        },
+                    }
+                } else {
+                    expect(body.edits).toBe(
+                        "Drawing page 2; pin table pages 3–4",
+                    )
+                    data = { questions: [], symbol }
+                }
                 expect(body.webEnabled).toBe(false)
-                data = { questions: [], symbol }
             }
             if (action === "approve") {
                 expect(body.symbol.body.density).toBe("compact")
@@ -183,12 +202,12 @@ test("private PDF upload, no-Web symbol, trash/restore/purge and reconnect witho
     })
     const files = popup.getByRole("region", { name: "Source attachments" })
     await expect(
-        files.getByRole("button", { name: "Analyse file", exact: true }),
+        popup.getByRole("button", { name: "Analyse file", exact: true }),
     ).toBeEnabled()
     await popup
         .getByLabel("Symbol instructions", { exact: true })
         .fill("Drawing page 2; pin table pages 3–4")
-    await files
+    await popup
         .getByRole("button", { name: "Analyse file", exact: true })
         .click()
     await expect(
@@ -211,6 +230,27 @@ test("private PDF upload, no-Web symbol, trash/restore/purge and reconnect witho
     await expect(
         approval.getByText("Source analysed: PDF text and page images"),
     ).toBeVisible()
+    await approval
+        .getByRole("textbox", { name: "Symbol correction", exact: true })
+        .fill("Preserve the RST pin and correct the name")
+    await approval
+        .getByRole("button", {
+            name: "Regenerate with correction",
+            exact: true,
+        })
+        .click()
+    await expect(
+        approval.getByRole("button", { name: "Undo correction", exact: true }),
+    ).toBeVisible()
+    await expect(
+        approval.getByLabel("Pin RST name", { exact: true }),
+    ).toHaveValue("RST")
+    await approval
+        .getByRole("button", { name: "Undo correction", exact: true })
+        .click()
+    await expect(
+        approval.getByRole("button", { name: "Undo correction", exact: true }),
+    ).toHaveCount(0)
     const discard = popup.getByRole("alertdialog", {
         name: "Close without saving the symbol?",
     })

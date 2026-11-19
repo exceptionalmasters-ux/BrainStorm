@@ -99,10 +99,19 @@ describe("the export dialog", () => {
         const exportButton = screen.getByRole("button", {
             name: en.workspace.export,
         })
-        // The field shows ".drawio" after the name; the save adds it
+        // The field shows ".storm" after the name; the save adds it
         fireEvent.change(name, { target: { value: "my-diagram.DrawIO" } })
         fireEvent.click(exportButton)
         expect(onSave).toHaveBeenLastCalledWith("my-diagram", "drawio")
+        fireEvent.change(name, { target: { value: "my-diagram.STORM" } })
+        fireEvent.click(exportButton)
+        expect(onSave).toHaveBeenLastCalledWith("my-diagram", "drawio")
+        fireEvent.click(formatTile(new RegExp(en.save.formats.xmlsvg)))
+        for (const value of ["my-diagram.storm.svg", "my-diagram.drawio.svg"]) {
+            fireEvent.change(name, { target: { value } })
+            fireEvent.click(exportButton)
+            expect(onSave).toHaveBeenLastCalledWith("my-diagram", "xmlsvg")
+        }
         // Another format's extension is part of the name
         fireEvent.click(formatTile(new RegExp(en.save.formats.png)))
         fireEvent.change(name, { target: { value: "my-diagram.drawio" } })

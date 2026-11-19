@@ -41,6 +41,7 @@ import {
     disableDeviceWeb,
     draftDevice,
     emcAction,
+    regenerateDraft,
     researchDevice,
     useDeviceResearch,
 } from "@/stores/device-research-store"
@@ -49,8 +50,17 @@ import { openSourceAttachment, SourceFiles } from "./source-files"
 import { SymbolInstructions } from "./symbol-instructions"
 
 function ApprovalDialog() {
-    const { draft, result, set } = useDeviceResearch()
+    const {
+        draft,
+        result,
+        set,
+        busy: regenerating,
+        error: generationError,
+        previousDraft,
+    } = useDeviceResearch()
     const [discard, setDiscard] = useState(false)
+    const [correction, setCorrection] = useState("")
+    const [allowPinRemoval, setAllowPinRemoval] = useState(false)
     useEffect(() => {
         if (!draft) return
         const protect = (event: BeforeUnloadEvent) => {
@@ -65,7 +75,7 @@ function ApprovalDialog() {
         setAcceptIncomplete(false)
     }, [draft])
     const requestClose = () => {
-        if (!saving) setDiscard(true)
+        if (!saving && !regenerating) setDiscard(true)
     }
     const [saving, setSaving] = useState(false)
     const [nameValid, setNameValid] = useState(false)
@@ -162,7 +172,7 @@ function ApprovalDialog() {
                                 <select
                                     aria-label="Symbol size"
                                     className="ml-2 rounded border bg-background p-1"
-                                    disabled={saving}
+                                    disabled={saving || regenerating}
                                     value={draft.body?.density || "standard"}
                                     onChange={(e) =>
                                         set({
@@ -210,7 +220,7 @@ function ApprovalDialog() {
                                                 e.target.checked,
                                             )
                                         }
-                                        disabled={saving}
+                                        disabled={saving || regenerating}
                                     />
                                     I accept this incomplete pinout and will
                                     verify it before wiring.
@@ -221,7 +231,7 @@ function ApprovalDialog() {
                                 <Input
                                     value={draft.name}
                                     maxLength={120}
-                                    disabled={saving}
+                                    disabled={saving || regenerating}
                                     onChange={(e) =>
                                         set({
                                             draft: {
@@ -253,6 +263,100 @@ function ApprovalDialog() {
                                 )}
                             </p>
                             <SymbolPreview symbol={draft} />
+                            <section
+                                aria-label="Correct symbol proposal"
+                                className="space-y-2 rounded border border-primary/30 p-3"
+                            >
+                                <label className="block text-sm">
+                                    Correction to this symbol
+                                    <textarea
+                                        aria-label="Symbol correction"
+                                        className="mt-1 min-h-20 w-full rounded border bg-background p-2"
+                                        maxLength={1500}
+                                        value={correction}
+                                        disabled={
+                                            saving || regenerating || !editable
+                                        }
+                                        placeholder="For example: keep all pins, restore the missing pins from page 3 and align the top labels."
+                                        onChange={(event) =>
+                                            setCorrection(event.target.value)
+                                        }
+                                    />
+                                </label>
+                                <p className="text-xs text-muted-foreground">
+                                    The current symbol, pin edits and original
+                                    source are used as the starting point.
+                                    Nothing is saved until you approve.
+                                </p>
+                                <label className="flex items-center gap-2 text-xs">
+                                    <input
+                                        type="checkbox"
+                                        checked={allowPinRemoval}
+                                        disabled={
+                                            saving || regenerating || !editable
+                                        }
+                                        onChange={(event) =>
+                                            setAllowPinRemoval(
+                                                event.target.checked,
+                                            )
+                                        }
+                                    />
+                                    Allow this correction to remove pins
+                                </label>
+                                <div className="flex flex-wrap gap-2">
+                                    <Button
+                                        variant="outline"
+                                        disabled={
+                                            saving ||
+                                            regenerating ||
+                                            !editable ||
+                                            !correction.trim()
+                                        }
+                                        onClick={() => {
+                                            setError("")
+                                            void regenerateDraft(
+                                                correction,
+                                                allowPinRemoval,
+                                            ).catch((error) =>
+                                                setError(error.message),
+                                            )
+                                        }}
+                                    >
+                                        {regenerating
+                                            ? "Regenerating…"
+                                            : "Regenerate with correction"}
+                                    </Button>
+                                    {regenerating && (
+                                        <Button
+                                            variant="outline"
+                                            onClick={cancelDeviceResearch}
+                                        >
+                                            Stop regeneration
+                                        </Button>
+                                    )}
+                                    {previousDraft && (
+                                        <Button
+                                            variant="outline"
+                                            disabled={
+                                                saving ||
+                                                regenerating ||
+                                                !editable
+                                            }
+                                            onClick={() => {
+                                                set({
+                                                    draft: previousDraft,
+                                                    previousDraft: null,
+                                                    error: "",
+                                                })
+                                                setError("")
+                                            }}
+                                        >
+                                            Undo correction
+                                        </Button>
+                                    )}
+                                </div>
+                            </section>
+
                             <div className="max-h-64 space-y-2 overflow-auto">
                                 {draft.pins.map((pin, index) => (
                                     <div
@@ -265,7 +369,7 @@ function ApprovalDialog() {
                                         <Input
                                             aria-label={`Pin ${pin.number} name`}
                                             value={pin.name}
-                                            disabled={saving}
+                                            disabled={saving || regenerating}
                                             maxLength={60}
                                             onChange={(e) =>
                                                 updatePin(index, {
@@ -277,7 +381,7 @@ function ApprovalDialog() {
                                             aria-label={`Pin ${pin.number} side`}
                                             className="rounded border bg-background"
                                             value={pin.side}
-                                            disabled={saving}
+                                            disabled={saving || regenerating}
                                             onChange={(e) =>
                                                 updatePin(index, {
                                                     side: e.target
@@ -317,18 +421,18 @@ function ApprovalDialog() {
                                     </div>
                                 ))}
                             </div>
-                            {error && (
+                            {(error || generationError) && (
                                 <p
                                     role="alert"
                                     className="text-sm text-red-500"
                                 >
-                                    {error}
+                                    {error || generationError}
                                 </p>
                             )}
                             <div className="flex flex-wrap justify-end gap-2">
                                 <Button
                                     variant="outline"
-                                    disabled={saving}
+                                    disabled={saving || regenerating}
                                     onClick={() => {
                                         requestClose()
                                     }}
@@ -338,6 +442,7 @@ function ApprovalDialog() {
                                 <Button
                                     disabled={
                                         saving ||
+                                        regenerating ||
                                         canvasBusy ||
                                         !nameValid ||
                                         !editable ||

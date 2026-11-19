@@ -162,7 +162,7 @@
         "filename": "文件名",
         "filenamePlaceholder": "输入文件名",
         "formats": {
-            "drawio": "draw.io 文件",
+            "drawio": "Storm 文件",
             "png": "PNG 图片",
             "svg": "SVG 图片",
             "xmlsvg": "可编辑的 SVG"
@@ -632,7 +632,7 @@
     },
     "workspace": {
         "export": "导出",
-        "openFile": "打开 .drawio 文件",
+        "openFile": "打开 .storm 文件",
         "canvasLoading": "正在加载画布…",
         "askAi": "让 AI 改这里",
         "editStyle": "改样式",

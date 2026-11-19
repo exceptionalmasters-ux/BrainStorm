@@ -19,6 +19,7 @@ import {
     prefersTransparentBackground,
 } from "@/components/save-dialog"
 import { getApiEndpoint } from "@/lib/base-path"
+import { STORM_EXTENSION, STORM_SVG_EXTENSION } from "@/lib/diagram-file-format"
 import { pageModelXml } from "@/lib/diagram-pages"
 import { withPageDefaults } from "@/lib/drawio/drawio-config"
 import {
@@ -625,7 +626,7 @@ export function DiagramProvider({ children }: { children: React.ReactNode }) {
                     pageName: "Page-1",
                 }) ?? exportData
             mimeType = "application/xml"
-            extension = ".drawio"
+            extension = STORM_EXTENSION
         } else if (format === "png") {
             // PNG data comes as base64 data URL
             fileContent = exportData
@@ -635,7 +636,7 @@ export function DiagramProvider({ children }: { children: React.ReactNode }) {
             // Editable SVG: pass data URL directly (like PNG)
             fileContent = exportData
             mimeType = "image/svg+xml"
-            extension = ".drawio.svg"
+            extension = STORM_SVG_EXTENSION
         } else {
             // SVG format (view-only)
             fileContent = exportData

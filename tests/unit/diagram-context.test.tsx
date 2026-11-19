@@ -107,7 +107,7 @@ describe("exports in flight at the same time", () => {
         await reply(requests[1], "data:image/png;base64,iVBORw0KGgo=")
         await reply(requests[0], svgOf("doc"), twoPages)
 
-        expect(saved.map((s) => s.name)).toEqual(["pic.png", "doc.drawio"])
+        expect(saved.map((s) => s.name)).toEqual(["pic.png", "doc.storm"])
         expect(saved[0].href).toMatch(/^data:image\/png/)
         const file = blobs.get(saved[1].href)
         const text = await new Promise<string>((resolve) => {
@@ -349,7 +349,7 @@ describe("exported files", () => {
         // An xmlsvg export's xml has each page compressed: no diff, and
         // no other tool, can read it
         expect(await save("drawio")).toMatchObject({ format: "xml" })
-        expect(toast.success).toHaveBeenCalledWith("Exported pic.drawio", {
+        expect(toast.success).toHaveBeenCalledWith("Exported pic.storm", {
             duration: 4000,
         })
         const text = await new Promise<string>((resolve) => {

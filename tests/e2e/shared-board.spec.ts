@@ -143,6 +143,10 @@ test("shared canvas fences edits, imports only for its current editor and separa
                 ),
         )
         .toBe(true)
+    await native
+        .locator(".geSidebar .geTitle")
+        .filter({ hasText: /^Flowchart$/ })
+        .click()
     await native.locator(".geSidebar .geItem:visible").first().hover()
     await expect
         .poll(() =>

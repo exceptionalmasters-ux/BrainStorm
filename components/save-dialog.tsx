@@ -11,6 +11,11 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import { useDictionary } from "@/hooks/use-dictionary"
+import {
+    STORM_EXTENSION,
+    STORM_SVG_EXTENSION,
+    stripDiagramExtension,
+} from "@/lib/diagram-file-format"
 import { cn } from "@/lib/utils"
 
 export type ExportFormat = "drawio" | "png" | "svg" | "xmlsvg"
@@ -85,14 +90,17 @@ export function SaveDialog({
     }, [open, defaultFilename])
 
     const handleSave = () => {
-        // A name typed with the format's extension ("my-diagram.drawio")
+        // A name typed with the format's extension ("my-diagram.storm")
         // gets it once: the field shows the extension after the name
         const typed = filename.trim()
         const extension = currentFormat?.extension
         const name =
-            extension && typed.toLowerCase().endsWith(extension)
-                ? typed.slice(0, -extension.length)
-                : typed
+            format === "drawio" ||
+            (format === "xmlsvg" && /\.(?:storm|drawio)\.svg$/i.test(typed))
+                ? stripDiagramExtension(typed)
+                : extension && typed.toLowerCase().endsWith(extension)
+                  ? typed.slice(0, -extension.length)
+                  : typed
         const finalFilename = name || defaultFilename
         lastNameRef.current = {
             forDefault: defaultFilename,
@@ -117,7 +125,7 @@ export function SaveDialog({
             value: "drawio" as const,
             label: dict.save.formats.drawio,
             hint: dict.save.hints.drawio,
-            extension: ".drawio",
+            extension: STORM_EXTENSION,
         },
         {
             value: "png" as const,
@@ -135,7 +143,7 @@ export function SaveDialog({
             value: "xmlsvg" as const,
             label: dict.save.formats.xmlsvg,
             hint: dict.save.hints.xmlsvg,
-            extension: ".drawio.svg",
+            extension: STORM_SVG_EXTENSION,
         },
     ]
 

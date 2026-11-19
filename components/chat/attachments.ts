@@ -14,13 +14,13 @@ const SUPPORTED_IMAGE_TYPES = [
     "image/webp",
 ]
 
-/** Accept list for the attachment picker (.drawio files open as the diagram) */
+/** Accept list for the attachment picker (.storm and .drawio files open as the diagram) */
 export const ATTACHMENT_ACCEPT =
-    "image/png,image/jpeg,image/gif,image/webp,.svg,.pdf,application/pdf,text/*,.md,.markdown,.json,.csv,.xml,.yaml,.yml,.toml,.drawio"
+    "image/png,image/jpeg,image/gif,image/webp,.svg,.pdf,application/pdf,text/*,.md,.markdown,.json,.csv,.xml,.yaml,.yml,.toml,.storm,.drawio"
 
-/** A draw.io file (.drawio or .drawio.svg), opened rather than attached */
+/** An editable diagram (.storm, .drawio or their SVG variants), opened rather than attached */
 export function isDiagramFile(file: File): boolean {
-    return /\.drawio(\.svg)?$/i.test(file.name)
+    return /\.(?:storm|drawio)(\.svg)?$/i.test(file.name)
 }
 
 function isValidFileType(file: File): boolean {
