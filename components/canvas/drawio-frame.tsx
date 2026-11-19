@@ -29,6 +29,8 @@ export interface DrawioFrameHandle {
 }
 
 interface DrawioFrameProps {
+    libraryDefaults?: string
+
     src: string
     /**
      * Theme CSS: sent with the configure message (works cross-origin too)
@@ -59,6 +61,7 @@ export const DrawioFrame = forwardRef<DrawioFrameHandle, DrawioFrameProps>(
             src,
             css,
             dark,
+            libraryDefaults,
             unifiedToolbar = false,
             onLoad,
             onAutoSave,
@@ -215,6 +218,9 @@ export const DrawioFrame = forwardRef<DrawioFrameHandle, DrawioFrameProps>(
                         send("configure", {
                             config: {
                                 ...DRAWIO_CONFIG,
+                                defaultLibraries:
+                                    libraryDefaults ??
+                                    DRAWIO_CONFIG.defaultLibraries,
                                 css: cssRef.current,
                             },
                         })

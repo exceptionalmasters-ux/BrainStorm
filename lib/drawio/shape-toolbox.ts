@@ -140,9 +140,9 @@ export function createShapeToolbox(
         }
         sidebar.showPalette?.("emcRecent", true)
     }
-    const open = (group: ShapeGroup, title: string) => {
+    const open = (group: ShapeGroup, title: string, library?: string) => {
         if (disposed) return false
-        const entries = SHAPE_GROUPS[group]
+        const entries = library ?? SHAPE_GROUPS[group]
         // Unsupported API changes leave draw.io's original tools available.
         if (
             entries &&
