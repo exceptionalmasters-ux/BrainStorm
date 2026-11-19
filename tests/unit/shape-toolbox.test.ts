@@ -123,10 +123,10 @@ describe("EMC shape toolbox", () => {
         await Promise.resolve()
         expect(document.querySelector(".emc-shape-header")).toBeNull()
     })
-    it("does not steal focus for search when opening a selected library", () => {
+    it("keeps native search focus when searching the selected libraries", () => {
         const { controller, search } = setup()
         expect(controller.open("search", "General", "general")).toBe(true)
-        expect(document.activeElement).not.toBe(search)
+        expect(document.activeElement).toBe(search)
     })
     it("uses native search and the complete library chooser", () => {
         const { controller, search, shapes } = setup()

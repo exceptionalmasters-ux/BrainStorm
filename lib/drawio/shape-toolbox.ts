@@ -180,8 +180,7 @@ export function createShapeToolbox(
         sidebar.container.scrollTop = 0
         if (ui.sidebarContainer) ui.sidebarContainer.scrollTop = 0
         changed()
-        if (group === "search" && !library)
-            doc.getElementById("geOmniSearch")?.focus()
+        if (group === "search") doc.getElementById("geOmniSearch")?.focus()
         return true
     }
     const pointer = (event: Event) => {

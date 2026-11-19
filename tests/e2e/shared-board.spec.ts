@@ -61,7 +61,7 @@ test("shared canvas fences edits, imports only for its current editor and separa
     }
     await send("state", { state })
     await expect(
-        canvas.getByTestId("library-rail").getByRole("button"),
+        canvas.getByTestId("shape-toolbox").getByRole("button"),
     ).toHaveCount(1)
     await canvas.getByTestId("library-settings").click()
     await expect(
@@ -123,11 +123,11 @@ test("shared canvas fences edits, imports only for its current editor and separa
         },
     })
     await expect(
-        canvas.getByTestId("library-rail").getByRole("button"),
-    ).toHaveCount(2)
+        canvas.getByTestId("shape-toolbox").getByRole("button"),
+    ).toHaveCount(5)
     await canvas
-        .getByTestId("library-rail")
-        .getByRole("button", { name: "Flowchart", exact: true })
+        .getByTestId("shape-toolbox")
+        .getByTestId("toolbox-diagrams")
         .click()
     await expect(
         native.locator('[data-testid="shape-flyout-header"]'),

@@ -3,7 +3,6 @@ import {
     getIframeContent,
     openApp,
     openDrawioFile,
-    selectLibraries,
     test,
 } from "./lib/fixtures"
 
@@ -37,14 +36,13 @@ test("repeated tool flyouts preserve both the drawing and paper position", async
     await expect(page).toHaveURL(/session=/)
     // Let the file-open fit settle before measuring a user-controlled view.
     await page.waitForTimeout(1800)
-    await selectLibraries(page, ["basic", "arrows2"])
     const before = await box.boundingBox()
     const paper = frame.locator(".geBackgroundPage").first(),
         original = await paper.boundingBox()
     if (!before || !original) throw new Error("Drawing is not laid out")
     for (let n = 0; n < 5; n++) {
         await page
-            .getByTestId(n % 2 ? "library-arrows2" : "library-basic")
+            .getByTestId(n % 2 ? "toolbox-arrows" : "toolbox-basic")
             .click()
         const close = frame.getByTestId("close-shape-flyout")
         await close.hover()

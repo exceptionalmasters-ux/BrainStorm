@@ -1,33 +1,20 @@
 "use client"
-import {
-    Check,
-    CircuitBoard,
-    Network,
-    RotateCcw,
-    Search,
-    Settings2,
-    Shapes,
-    X,
-} from "lucide-react"
+import { Check, RotateCcw, Search, Settings2, Shapes, X } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import {
     type ShapeToolboxExtension,
     ShapeToolboxRail,
+    type ShapeToolboxSelection,
+    TOOLBOX_GROUPS,
 } from "@/components/canvas/shape-toolbox-rail"
-import { useDictionary } from "@/hooks/use-dictionary"
 import {
     accountPresetRequest,
     type PresetRequest,
 } from "@/lib/account-library-presets"
-import {
-    attachNativeTool,
-    connectShapeToolbox,
-} from "@/lib/drawio/editor-bridge"
-import type { ShapeToolbox } from "@/lib/drawio/shape-toolbox"
+import { attachNativeTool } from "@/lib/drawio/editor-bridge"
+import { SHAPE_GROUPS, type ShapeGroup } from "@/lib/drawio/shape-toolbox"
 import { insertEmcSymbolNative, validateEmcSymbol } from "@/lib/emc-symbols"
-import { expandLibraryPalette } from "@/lib/library-palettes"
 import {
-    DEFAULT_LIBRARY_IDS,
     type LibraryPreset,
     readLibraryPreferences,
     validLibraryIds,
@@ -61,9 +48,8 @@ export function LibraryRail({
     loadEM,
 }: Props) {
     const ready = useCanvasStore((s) => s.hasEditor),
-        labels = useDictionary().toolbox,
         user = userId || getOperationsContext()?.userId || "local"
-    const [ids, setIds] = useState<string[] | null>([]),
+    const [ids, setIds] = useState<string[] | null>(shared ? [] : null),
         [catalog, setCatalog] = useState<CatalogItem[]>([]),
         [open, setOpen] = useState(false),
         [draft, setDraft] = useState<string[]>([]),
@@ -74,11 +60,9 @@ export function LibraryRail({
         [presetBusy, setPresetBusy] = useState(false),
         [localPresets, setLocalPresets] = useState<LibraryPreset[]>([]),
         [error, setError] = useState(""),
-        [active, setActive] = useState(""),
         [emOpen, setEmOpen] = useState(false),
         [emItems, setEmItems] = useState<any[]>([]),
         [emBusy, setEmBusy] = useState(false)
-    const tool = useRef<ShapeToolbox | null>(null)
     const account = useRef(user)
     account.current = user
     const canInsert = useRef(editable)
@@ -142,20 +126,9 @@ export function LibraryRail({
         })
     }, [ready])
     useEffect(() => {
-        if (!ready || ids === null) return
-        tool.current = connectShapeToolbox(labels, () => {})
-        return () => {
-            tool.current?.dispose()
-            tool.current = null
-        }
-    }, [ready, ids === null, labels])
-    useEffect(() => {
-        if (ids !== null) {
-            tool.current?.close()
-            setActive("")
-            setEmOpen(false)
-            extension?.close()
-        }
+        window.dispatchEvent(new Event("emc-close-toolbox"))
+        setEmOpen(false)
+        extension?.close()
     }, [ids])
     const loadPresets = async () => {
         const requestedUser = user
@@ -172,12 +145,12 @@ export function LibraryRail({
         }
     }
     const settings = () => {
-        setDraft(ids ?? DEFAULT_LIBRARY_IDS)
+        setDraft(ids ?? catalog.map((item) => item.id))
         setSearch("")
         setError("")
         setOpen(true)
         void loadPresets()
-        tool.current?.close()
+        window.dispatchEvent(new Event("emc-close-toolbox"))
         extension?.close()
         setEmOpen(false)
     }
@@ -258,103 +231,112 @@ export function LibraryRail({
             title="Libraries and presets"
             aria-label="Libraries and presets"
             data-testid="library-settings"
-            className="emc-library-gear flex size-10 shrink-0 items-center justify-center rounded-lg border border-amber-500/40 text-amber-300 hover:bg-amber-500/15"
+            className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-transparent hover:border-primary hover:text-primary disabled:opacity-40"
+            disabled={!ready}
         >
             <Settings2 className="size-5" />
         </button>
     )
-    const openLibrary = async (id: string, title: string) => {
+    const openEM = async () => {
         setError("")
-        if (id === "emc" && loadEM) {
-            tool.current?.close()
-            setEmOpen((v) => !v)
-            if (emOpen) return
-            setEmBusy(true)
-            try {
-                const data = await loadEM("library", {})
-                setEmItems(data.symbols || [])
-            } catch (reason) {
-                setError((reason as Error).message)
-            } finally {
-                setEmBusy(false)
-            }
-            return
-        }
-        extension?.close()
-        setEmOpen(false)
-        if (active === id) {
-            tool.current?.close()
-            setActive("")
-        } else {
-            tool.current?.open("search", title, id)
-            attachNativeTool((ui) => {
-                expandLibraryPalette(ui.sidebar, id)
-                return () => {}
-            })
-            setActive(id)
+        setEmOpen((value) => !value)
+        if (emOpen || !loadEM) return
+        setEmBusy(true)
+        try {
+            const data = await loadEM("library", {})
+            setEmItems(data.symbols || [])
+        } catch (reason) {
+            setError((reason as Error).message)
+        } finally {
+            setEmBusy(false)
         }
     }
+    const railExtension =
+        extension ||
+        (loadEM
+            ? {
+                  button: (closeNative: () => void) => (
+                      <button
+                          type="button"
+                          title="EMC library"
+                          aria-label="EMC library"
+                          aria-expanded={emOpen}
+                          aria-controls="shared-emc-library-panel"
+                          data-testid="toolbox-emc-library"
+                          onClick={() => {
+                              closeNative()
+                              void openEM()
+                          }}
+                          className={`flex size-10 shrink-0 items-center justify-center rounded-lg border hover:border-primary hover:text-primary ${emOpen ? "border-primary bg-primary/10 text-primary" : "border-transparent"}`}
+                      >
+                          <span
+                              aria-hidden="true"
+                              className="text-sm font-bold"
+                          >
+                              EM
+                          </span>
+                      </button>
+                  ),
+                  panel: null,
+                  close: () => setEmOpen(false),
+              }
+            : undefined)
+    const entries: Partial<Record<ShapeGroup, string>> = {}
+    const nativeIds = (ids || []).filter((id) => id !== "emc")
+    for (const [group, palettes] of Object.entries(SHAPE_GROUPS)) {
+        if (group === "recent") continue
+        entries[group as ShapeGroup] =
+            palettes === null
+                ? nativeIds.join(";")
+                : palettes
+                      .split(";")
+                      .filter((id) => nativeIds.includes(id))
+                      .join(";")
+    }
+    const selection: ShapeToolboxSelection | undefined =
+        ids === null
+            ? undefined
+            : {
+                  groups: TOOLBOX_GROUPS.filter(([group]) =>
+                      group === "recent" || group === "search"
+                          ? nativeIds.length > 0
+                          : !!entries[group],
+                  ),
+                  entries,
+              }
     return (
         <>
-            {ids === null && !shared ? (
-                <ShapeToolboxRail extension={extension} settings={gear} />
-            ) : (
+            {ids?.length === 0 ? (
                 <aside
                     aria-label="Shape libraries"
-                    data-testid="library-rail"
-                    className="emc-library-rail absolute inset-y-0 left-0 z-30 flex w-[52px] flex-col items-center gap-1 overflow-y-auto border-r border-amber-500/25 bg-[#101310] py-2 text-white"
+                    data-testid="shape-toolbox"
+                    className="absolute inset-y-0 left-0 z-20 flex w-[52px] flex-col items-center gap-1 overflow-y-auto border-r border-primary/25 bg-card py-2 text-foreground"
                 >
                     {gear}
-                    {(ids || []).map((id) => {
-                        const item = catalog.find((c) => c.id === id)
-                        if (id === "emc" && extension)
-                            return (
-                                <span key={id}>
-                                    {extension.button(() => {
-                                        tool.current?.close()
-                                        setActive("")
-                                    })}
-                                </span>
-                            )
-                        const Icon = /electr|pid|fluid|circuit/.test(id)
-                            ? CircuitBoard
-                            : /network|aws|azure|cisco/.test(id)
-                              ? Network
-                              : Shapes
-                        return (
-                            <button
-                                type="button"
-                                key={id}
-                                data-testid={`library-${id}`}
-                                title={item?.title || id}
-                                aria-label={item?.title || id}
-                                aria-pressed={
-                                    active === id || (id === "emc" && emOpen)
-                                }
-                                disabled={!ready}
-                                onClick={() =>
-                                    void openLibrary(id, item?.title || id)
-                                }
-                                className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-transparent text-white hover:border-amber-400 hover:text-amber-300 aria-pressed:border-amber-400 aria-pressed:text-amber-300"
-                            >
-                                {id === "emc" ? (
-                                    <strong>EM</strong>
-                                ) : (
-                                    <Icon className="size-5" />
-                                )}
-                            </button>
-                        )
-                    })}
                 </aside>
+            ) : (
+                <ShapeToolboxRail
+                    key={ready ? "ready" : "waiting"}
+                    extension={
+                        ids === null || ids.includes("emc")
+                            ? railExtension
+                            : undefined
+                    }
+                    settings={gear}
+                    selection={selection}
+                />
             )}
-            {extension?.panel && ids?.includes("emc") && extension.panel}
             {emOpen && loadEM && (
-                <section className="emc-library-panel absolute inset-y-0 left-[52px] z-40 w-[min(320px,calc(100%_-_52px))] overflow-auto border border-amber-500/40 bg-[#101310] p-3 text-white">
+                <section
+                    id="shared-emc-library-panel"
+                    className="absolute inset-y-0 left-[52px] z-40 w-[min(360px,calc(100%_-_52px))] overflow-auto rounded-r-xl border border-primary/30 bg-card p-3 text-foreground shadow-xl"
+                >
                     <header className="flex justify-between">
                         <strong>EM library</strong>
                         <button
                             onClick={() => setEmOpen(false)}
                             aria-label="Close EM library"
+                            className="flex size-8 items-center justify-center rounded-lg hover:bg-accent"
                         >
                             <X />
                         </button>
@@ -367,7 +349,7 @@ export function LibraryRail({
                                 disabled={!editable || emBusy}
                                 title={item.name}
                                 key={item.id}
-                                className="overflow-hidden rounded border border-amber-500/25 p-2 text-xs disabled:opacity-50"
+                                className="overflow-hidden rounded border border-primary/25 p-2 text-xs disabled:opacity-50"
                                 onClick={() => {
                                     setEmBusy(true)
                                     void loadEM("symbol", { id: item.id })
@@ -411,7 +393,7 @@ export function LibraryRail({
                                         .finally(() => setEmBusy(false))
                                 }}
                             >
-                                <Shapes className="mx-auto size-6 text-amber-300" />
+                                <Shapes className="mx-auto size-6 text-primary" />
                                 <span className="block truncate">
                                     {item.name}
                                 </span>
@@ -452,7 +434,7 @@ export function LibraryRail({
                         role="dialog"
                         aria-modal="true"
                         aria-labelledby="library-settings-title"
-                        className="emc-library-panel flex max-h-[90dvh] w-full max-w-xl flex-col rounded-xl border border-amber-500/50 bg-[#101310] text-white shadow-2xl"
+                        className="emc-library-settings flex max-h-[90dvh] w-full max-w-xl flex-col rounded-xl border border-amber-500/50 bg-[#101310] text-white shadow-2xl"
                     >
                         <header className="flex shrink-0 items-center gap-3 border-b border-amber-500/25 p-4">
                             <Settings2 className="text-amber-300" />
@@ -466,7 +448,7 @@ export function LibraryRail({
                                 <p className="text-xs text-white/60">
                                     {shared
                                         ? "The current editor applies this set to everyone on this board."
-                                        : "Choose libraries for this session. Saved presets are available on your EMC account on every device."}
+                                        : "All original tool groups are enabled initially. Choose libraries for this session; saved presets belong to your EMC account."}
                                 </p>
                             </div>
                             <button
@@ -634,6 +616,13 @@ export function LibraryRail({
                             >
                                 <RotateCcw className="size-4" />
                                 Clear selection
+                            </button>
+                            <button
+                                onClick={() =>
+                                    setDraft(catalog.map((item) => item.id))
+                                }
+                            >
+                                Enable all libraries
                             </button>
                             <div className="flex gap-2">
                                 <button

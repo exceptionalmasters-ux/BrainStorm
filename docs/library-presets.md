@@ -1,6 +1,6 @@
 # Account library presets
 
-Each new editor window or new shared board starts with the Libraries and presets gear and an empty selection. Users explicitly select libraries or an account preset for that session. There is no remembered normal-editor default. Reconnecting to an existing shared session retains its current selection from the board snapshot.
+The normal BrainStorm editor starts with the complete original toolbox: its original Basic shapes, arrows, diagrams, technical, network, search, recent and full-catalog controls keep their distinct icons, order, colors, flyouts and pinning. A settings button adds library selection and account presets. New shared boards start with that settings button alone. Selecting libraries uses the same original toolbox component and the same library-to-group icon mapping in both editors; selected native palettes filter the contents of their existing groups. New normal windows start with all original groups available; reconnecting to a shared session retains its session selection.
 
 Named presets are stored in Supabase, owned by the authenticated EMC account, and available on other browsers/devices. The dialog loads the current list whenever opened. Save new preset / Update preset stores only the name and library IDs, never a drawing, session content or credentials. There are at most 30 presets per account, names are unique ignoring case and limited to 80 characters. Legacy browser presets can be imported explicitly; existing account names are preserved. Old remembered defaults are ignored. Network/authentication failures are shown and never represented as successful local saves.
 
@@ -8,4 +8,4 @@ Any participant can save a personal preset from their session selection. Saving 
 
 Normal Operations editors call the user-scoped `brainstorm_library_presets` RPC with the existing short-lived authorization. Shared editors use the parent library broker, which verifies board membership/device authority then invokes that same RPC with the participant's JWT. No preset credentials cross the shared iframe boundary. RLS prevents reading or updating another account's presets, including attempts to overwrite a known ID. The database enforces valid library IDs, unique names, and the account limit under an account advisory lock.
 
-New panels and buttons share the dark EMC palette, gold borders, gold primary gradient, keyboard focus indicators and responsive layout. EM symbols continue loading on demand through the read-only session-authorized broker.
+Only the library settings dialog and its buttons use the EMC dark/gold options styling. The editor rail and library icons retain their original appearance. EM symbols continue loading on demand through the read-only session-authorized broker.

@@ -3,20 +3,18 @@ import {
     getIframe,
     getIframeContent,
     openApp,
-    selectLibraries,
     test,
 } from "./lib/fixtures"
 
-test("Selected EMC libraries keep native shape dragging, pinning and catalog selection", async ({
+test("EMC groups keep native shape dragging, recent shapes, pinning and the full catalogue", async ({
     page,
 }, testInfo) => {
     await openApp(page, { startScreen: true })
     await page.getByTestId("draw-manually").click()
-    await selectLibraries(page, ["basic", "general", "electrical", "arrows2"])
     const frame = getIframeContent(page)
-    await page.getByTestId("library-basic").click()
+    await page.getByTestId("toolbox-basic").click()
     await expect(frame.getByTestId("shape-flyout-header")).toContainText(
-        "Basic",
+        "Basic shapes",
     )
     // Capture the editor when the real drag updates its action states.
     await getIframe(page).evaluate((el) => {
@@ -55,7 +53,7 @@ test("Selected EMC libraries keep native shape dragging, pinning and catalog sel
         )
         .toBeGreaterThan(0)
     await expect(frame.getByTestId("shape-flyout-header")).toHaveCount(0)
-    await page.getByTestId("library-general").click()
+    await page.getByTestId("toolbox-recent").click()
     await expect(
         frame.locator(".geSidebar .geItem:visible").first(),
     ).toBeVisible()
@@ -70,13 +68,14 @@ test("Selected EMC libraries keep native shape dragging, pinning and catalog sel
         body: await page.screenshot(),
         contentType: "image/png",
     })
-    await page.getByTestId("library-electrical").click()
+    await page.getByTestId("toolbox-technical").click()
     await expect(frame.getByTestId("shape-flyout-header")).toContainText(
-        "Electrical",
+        "Technical libraries",
     )
-    await page.getByTestId("library-settings").click()
-    await page.getByRole("textbox", { name: "Find library" }).fill("flowchart")
-    await expect(page.getByTestId("library-choice-flowchart")).toBeVisible()
+    await page.getByTestId("toolbox-search").click()
+    await expect(frame.locator("#geOmniSearch")).toBeFocused()
+    await page.getByTestId("toolbox-all-libraries").click()
+    await expect(frame.locator(".geDialog").last()).toBeVisible()
 })
 
 test("phone toolbox opens and closes an unpinned flyout without reloading draw.io", async ({
@@ -85,15 +84,14 @@ test("phone toolbox opens and closes an unpinned flyout without reloading draw.i
     await page.setViewportSize({ width: 390, height: 844 })
     await page.goto("/en", { waitUntil: "networkidle" })
     await page.getByTestId("draw-manually").click()
-    await selectLibraries(page, ["basic", "general", "electrical", "arrows2"])
     const frame = getIframeContent(page)
-    await expect(page.getByTestId("library-rail")).toBeVisible()
+    await expect(page.getByTestId("shape-toolbox")).toBeVisible()
     await getIframe(page).evaluate((el) => {
         ;((el as HTMLIFrameElement).contentWindow as any).__toolboxMark = "kept"
     })
-    await page.getByTestId("library-arrows2").click()
+    await page.getByTestId("toolbox-arrows").click()
     await expect(frame.getByTestId("shape-flyout-header")).toContainText(
-        "Arrows",
+        "Lines and arrows",
     )
     await testInfo.attach("emc-toolbox-phone", {
         body: await page.screenshot(),
@@ -118,8 +116,7 @@ test("expanded technical libraries scroll inside a short viewport", async ({
     await page.setViewportSize({ width: 1100, height: 540 })
     await openApp(page, { startScreen: true })
     await page.getByTestId("draw-manually").click()
-    await selectLibraries(page, ["electrical"])
-    await page.getByTestId("library-electrical").click()
+    await page.getByTestId("toolbox-technical").click()
     const scroll = getIframeContent(page).locator(".emc-shape-scroll")
     await expect(scroll).toBeVisible()
     await expect
