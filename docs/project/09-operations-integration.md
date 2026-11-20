@@ -1,6 +1,10 @@
 # Operations integration and document tabs
 
-BrainStorm is the drawing module of EMC Operations. Collaborative editing is deferred; this delivery does not broadcast diagrams or introduce shared drawing sessions.
+BrainStorm is the drawing module of EMC Operations.
+
+## Current scope — 20 November 2026
+
+Shared boards and Toolbox Personal cloud storage are implemented. See [OIL](OIL.md) for the current open work: reported fluidity regression, session errors, symbol placeholders/alignment, Desktop folders, Personal quotas and save-target selection. Device-only autosave is planned; downloading .storm already exists. Project/Personal cloud persistence remains in Supabase. The historical integration description below predates shared sessions; later EMC guides and this summary supersede historical deferrals. This documentation update does not change application code, database or configuration.
 
 ## Documents and UI
 
