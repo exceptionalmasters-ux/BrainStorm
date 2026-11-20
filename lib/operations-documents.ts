@@ -21,7 +21,7 @@ export async function operationsDocumentRequest(request: Request, body: any) {
     const id = request.headers.get("x-emc-context-id")
     if (
         !token ||
-        !["request", "project"].includes(type || "") ||
+        !["request", "project", "personal"].includes(type || "") ||
         !/^[0-9a-f-]{36}$/i.test(id || "")
     )
         throw new Error("Open this drawing from Operations.")

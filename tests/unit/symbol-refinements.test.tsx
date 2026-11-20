@@ -433,3 +433,32 @@ it("anchors native top labels to their actual text end rather than an estimated 
         expect(native[4] + native[6] / 2 - native[5] / 2).toBeCloseTo(label.y)
     }
 })
+
+it("reproduces a documented view without inventing electrical pins", () => {
+    const view: EmcSymbol = {
+        name: "Source drawing",
+        device: "Source drawing",
+        package: "Source view",
+        representationKind: "device_view",
+        viewEvidence: "PDF page 2, top mechanical drawing",
+        sourceUrl,
+        body: { width: 240, height: 360, view: "top" },
+        pins: [],
+    }
+    expect(validateEmcSymbol(view)).toBe(true)
+    expect(standardSymbolLayout(view).pins).toHaveLength(0)
+    expect(renderToStaticMarkup(<SymbolPreview symbol={view} />)).toContain(
+        "no electrical connections",
+    )
+    expect(validateEmcSymbol({ ...view, viewEvidence: "" })).toBe(false)
+    expect(
+        validateEmcSymbol({
+            ...view,
+            sourceUrl: "http://example.com/source.pdf",
+        }),
+    ).toBe(false)
+    expect(validateEmcSymbol({ ...view, body: undefined })).toBe(false)
+    expect(validateEmcSymbol({ ...view, representationKind: undefined })).toBe(
+        false,
+    )
+})

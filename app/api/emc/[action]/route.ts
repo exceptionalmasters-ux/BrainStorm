@@ -12,6 +12,7 @@ const actions = new Set([
     "name-available",
     "symbol-delete",
     "source-create",
+    "source-upload",
     "source-complete",
     "source-list",
     "source-download",

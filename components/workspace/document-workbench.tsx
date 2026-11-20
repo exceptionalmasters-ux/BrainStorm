@@ -489,8 +489,13 @@ function Workbench() {
             data-testid="document-workbench"
         >
             {contextLabel && (
-                <div className="shrink-0 border-b border-border px-3 py-1 text-xs text-muted-foreground">
-                    Operations · {contextLabel}
+                <div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-1 text-xs text-muted-foreground">
+                    <span
+                        className="min-w-0 flex-1 truncate"
+                        title={`Operations · ${contextLabel}`}
+                    >
+                        Operations · {contextLabel}
+                    </span>
                     <EmcConnection />
                 </div>
             )}

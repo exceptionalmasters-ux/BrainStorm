@@ -290,110 +290,147 @@ export function EditorHeader({
             className="relative z-30 shrink-0 border-b border-primary/25 bg-card text-foreground"
             data-testid="editor-header"
         >
-            <div className="flex h-10 items-center gap-2 overflow-x-auto px-3">
-                <BrandMark className="size-6 shrink-0 text-primary" />
-                <SessionMenu onOpenFile={onOpen}>
-                    <button
-                        ref={history}
-                        type="button"
-                        className="inline-flex min-w-0 max-w-[50vw] items-center gap-1 text-sm font-semibold"
-                        onClick={() => setActive(null)}
-                        data-testid="session-title"
-                    >
-                        <LayoutGrid className="size-4 shrink-0" />
-                        <span
-                            className="min-w-0 truncate"
-                            data-testid="editor-file-title"
+            <div
+                className={
+                    isMobile
+                        ? "flex flex-col px-3"
+                        : "flex h-10 items-center gap-2 overflow-x-auto px-3"
+                }
+            >
+                <div
+                    className={
+                        isMobile
+                            ? "flex h-9 min-w-0 items-center gap-2"
+                            : "contents"
+                    }
+                >
+                    <BrandMark className="size-6 shrink-0 text-primary" />
+                    <SessionMenu onOpenFile={onOpen}>
+                        <button
+                            ref={history}
+                            type="button"
+                            className={
+                                isMobile
+                                    ? "inline-flex min-w-0 flex-1 items-center gap-1 text-sm font-semibold"
+                                    : "inline-flex min-w-0 max-w-[50vw] items-center gap-1 text-sm font-semibold"
+                            }
+                            onClick={() => setActive(null)}
+                            data-testid="session-title"
                         >
-                            {title}.storm
-                        </span>
-                        <ChevronDown className="size-4 shrink-0" />
-                    </button>
-                </SessionMenu>
-                <label
-                    className="flex shrink-0 items-center gap-1.5 text-[11px]"
-                    title={
-                        isOperationsMode()
-                            ? "AutoSave"
-                            : "Local browser storage — open from Operations for Supabase"
+                            <LayoutGrid className="size-4 shrink-0" />
+                            <span
+                                className="min-w-0 truncate"
+                                data-testid="editor-file-title"
+                                title={`${title}.storm`}
+                            >
+                                {title}.storm
+                            </span>
+                            <ChevronDown className="size-4 shrink-0" />
+                        </button>
+                    </SessionMenu>
+                </div>
+                <div
+                    className={
+                        isMobile
+                            ? "flex h-10 min-w-0 items-center gap-2 overflow-x-auto"
+                            : "contents"
                     }
                 >
-                    <Switch
-                        checked={autoSave}
-                        onCheckedChange={setAutoSave}
-                        disabled={!!getOperationsContext()?.readOnly}
-                        aria-label="AutoSave"
-                        data-testid="document-autosave"
-                    />
-                    <span>AutoSave {autoSave ? "On" : "Off"}</span>
-                </label>
-                <span
-                    className="min-w-0 truncate text-[11px] text-muted-foreground"
-                    data-testid="document-save-status"
-                    role="status"
-                    title={
-                        isOperationsMode()
-                            ? "Drawing save status"
-                            : "Local browser storage"
-                    }
-                >
-                    {saving ? "Saving…" : dirty ? "Unsaved" : "Saved"}
-                    {!isOperationsMode() && " · Local"}
-                </span>
-                <div className="ml-auto flex items-center gap-1">
-                    <IconButton
-                        label={dict.workspace.openFile}
-                        onClick={() => perform({ label: "", run: onOpen })}
-                        data-testid="manual-open-file"
-                    >
-                        <FileUp />
-                    </IconButton>
-                    <IconButton
-                        label={saveLabel || t.saveFile}
-                        onClick={() => perform({ label: "", run: onSave })}
-                        disabled={!ready || busy}
-                        data-testid="editor-save"
-                    >
-                        <Save />
-                    </IconButton>
-                    <IconButton
-                        label="Save As"
-                        onClick={() => perform({ label: "", run: onSaveAs })}
-                        disabled={!ready || busy}
-                        data-testid="editor-save-as-button"
-                    >
-                        <SaveAll />
-                    </IconButton>
-                    <IconButton
-                        label={dict.save.title}
-                        onClick={() => perform({ label: "", run: onExport })}
-                        disabled={!ready || busy}
-                        data-testid="manual-export-button"
-                    >
-                        <FileUp />
-                    </IconButton>
-                    <IconButton
-                        label={t.workspaceSettings}
-                        onClick={() => perform({ label: "", run: onSettings })}
-                        data-testid="manual-settings-button"
-                    >
-                        <Settings />
-                    </IconButton>
-                    <IconButton
-                        label={
-                            assistantOpen ? t.hideAssistant : dict.nav.showPanel
-                        }
-                        onClick={() => perform({ label: "", run: onAssistant })}
-                        data-testid={
-                            assistantOpen ? "hide-assistant" : "show-panel"
+                    <label
+                        className="flex shrink-0 items-center gap-1.5 text-[11px]"
+                        title={
+                            isOperationsMode()
+                                ? "AutoSave"
+                                : "Local browser storage — open from Operations for Supabase"
                         }
                     >
-                        {assistantOpen ? (
-                            <PanelRightClose />
-                        ) : (
-                            <PanelRightOpen />
-                        )}
-                    </IconButton>
+                        <Switch
+                            checked={autoSave}
+                            onCheckedChange={setAutoSave}
+                            disabled={!!getOperationsContext()?.readOnly}
+                            aria-label="AutoSave"
+                            data-testid="document-autosave"
+                        />
+                        <span>AutoSave {autoSave ? "On" : "Off"}</span>
+                    </label>
+                    <span
+                        className="min-w-0 truncate text-[11px] text-muted-foreground"
+                        data-testid="document-save-status"
+                        role="status"
+                        title={
+                            isOperationsMode()
+                                ? "Drawing save status"
+                                : "Local browser storage"
+                        }
+                    >
+                        {saving ? "Saving…" : dirty ? "Unsaved" : "Saved"}
+                        {!isOperationsMode() && " · Local"}
+                    </span>
+                    <div className="ml-auto flex items-center gap-1">
+                        <IconButton
+                            label={dict.workspace.openFile}
+                            onClick={() => perform({ label: "", run: onOpen })}
+                            data-testid="manual-open-file"
+                        >
+                            <FileUp />
+                        </IconButton>
+                        <IconButton
+                            label={saveLabel || t.saveFile}
+                            onClick={() => perform({ label: "", run: onSave })}
+                            disabled={!ready || busy}
+                            data-testid="editor-save"
+                        >
+                            <Save />
+                        </IconButton>
+                        <IconButton
+                            label="Save As"
+                            onClick={() =>
+                                perform({ label: "", run: onSaveAs })
+                            }
+                            disabled={!ready || busy}
+                            data-testid="editor-save-as-button"
+                        >
+                            <SaveAll />
+                        </IconButton>
+                        <IconButton
+                            label={dict.save.title}
+                            onClick={() =>
+                                perform({ label: "", run: onExport })
+                            }
+                            disabled={!ready || busy}
+                            data-testid="manual-export-button"
+                        >
+                            <FileUp />
+                        </IconButton>
+                        <IconButton
+                            label={t.workspaceSettings}
+                            onClick={() =>
+                                perform({ label: "", run: onSettings })
+                            }
+                            data-testid="manual-settings-button"
+                        >
+                            <Settings />
+                        </IconButton>
+                        <IconButton
+                            label={
+                                assistantOpen
+                                    ? t.hideAssistant
+                                    : dict.nav.showPanel
+                            }
+                            onClick={() =>
+                                perform({ label: "", run: onAssistant })
+                            }
+                            data-testid={
+                                assistantOpen ? "hide-assistant" : "show-panel"
+                            }
+                        >
+                            {assistantOpen ? (
+                                <PanelRightClose />
+                            ) : (
+                                <PanelRightOpen />
+                            )}
+                        </IconButton>
+                    </div>
                 </div>
             </div>
             <div className="flex h-8 items-center gap-1 border-t border-border px-2">

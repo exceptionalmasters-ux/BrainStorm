@@ -8,7 +8,7 @@ test("private PDF upload, no-Web symbol, trash/restore/purge and reconnect witho
 }) => {
     const contextId = "00000000-0000-4000-8000-000000000001",
         sourceId = "00000000-0000-4000-8000-000000000002"
-    const path = `project/${contextId}/${sourceId}.pdf`,
+    const path = `personal/${contextId}/${sourceId}.PDF`,
         parentOrigin = "https://exceptionalmasters.co.uk",
         editor = new URL("/en?operations=1", baseURL).href
     let sources: any[] = [],
@@ -44,7 +44,7 @@ test("private PDF upload, no-Web symbol, trash/restore/purge and reconnect witho
     }
     const auth = {
         accessToken: "fixture-token",
-        contextType: "project",
+        contextType: "personal",
         contextId,
         expiresAt: Date.now() + 600000,
     }

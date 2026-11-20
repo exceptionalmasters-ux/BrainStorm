@@ -336,11 +336,30 @@ for (const withBrief of [true, false]) {
             await popup.getByTestId("drawing-tool-zoomIn").click()
             await popup.getByRole("button", { name: /Stop/ }).click()
             releaseResearch()
-            const search = popup.getByRole("textbox", { name: "Device search" })
-            await search.fill("ARM")
-            await popup
-                .getByRole("button", { name: "Search", exact: true })
-                .click()
+            await popup.route(managedUrl, async (route) => {
+                await route.fulfill({
+                    contentType: "text/event-stream",
+                    body: `data: ${JSON.stringify({ type: "response.completed", response: { id: "resp_done", model: "fixture-model", status: "completed", output: [], usage: { input_tokens: 1, output_tokens: 0, total_tokens: 1 } } })}\n\n`,
+                })
+            })
+            const search = async (query: string, index: number) => {
+                await popup.route(
+                    managedUrl,
+                    async (route) => {
+                        await route.fulfill({
+                            contentType: "text/event-stream",
+                            body: emcToolResponse(
+                                "search_device",
+                                { query },
+                                index,
+                            ),
+                        })
+                    },
+                    { times: 1 },
+                )
+                await sendMessage(popup, query)
+            }
+            await search("ARM", 10)
             await expect(
                 popup.getByText("Which exact model and package?", {
                     exact: true,
@@ -349,10 +368,7 @@ for (const withBrief of [true, false]) {
             await expect(
                 popup.getByLabel("Symbol instructions", { exact: true }),
             ).toHaveCount(0)
-            await search.fill("Fixture DIP-2")
-            await popup
-                .getByRole("button", { name: "Search", exact: true })
-                .click()
+            await search("Fixture DIP-2", 11)
             await expect(
                 popup.getByRole("button", {
                     name: "Create symbol",

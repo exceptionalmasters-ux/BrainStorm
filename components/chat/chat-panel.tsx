@@ -240,10 +240,12 @@ export function ChatPanel({
                     <div className="shrink-0 px-4 pt-1 pb-3">
                         <Composer
                             placeholder={
-                                engine.messages.length > 0 &&
-                                engine.chatSelection.length === 0
-                                    ? dict.chat.placeholderFollowUp
-                                    : undefined
+                                webEnabled
+                                    ? "Search for a device or describe the drawing…"
+                                    : engine.messages.length > 0 &&
+                                        engine.chatSelection.length === 0
+                                      ? dict.chat.placeholderFollowUp
+                                      : undefined
                             }
                         />
                     </div>

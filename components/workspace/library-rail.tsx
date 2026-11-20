@@ -355,8 +355,7 @@ export function LibraryRail({
                 <section
                     id="shared-emc-library-panel"
                     aria-label="EMC library"
-                    className="absolute inset-y-0 left-[52px] z-30 flex flex-col rounded-r-xl border border-primary/30 bg-card text-foreground shadow-xl"
-                    style={{ width: "min(360px, calc(100% - 52px))" }}
+                    className="absolute inset-y-0 left-[52px] z-30 flex w-[232px] max-w-[calc(100%_-_84px)] flex-col rounded-r-xl sm:w-[360px] sm:max-w-[calc(100%_-_52px)] border border-primary/30 bg-card text-foreground shadow-xl"
                 >
                     <header className="flex shrink-0 items-center gap-2 border-b p-3">
                         <Library

@@ -42,7 +42,6 @@ import {
     draftDevice,
     emcAction,
     regenerateDraft,
-    researchDevice,
     useDeviceResearch,
 } from "@/stores/device-research-store"
 import { useChatEngine } from "./chat-engine"
@@ -149,9 +148,10 @@ function ApprovalDialog() {
                     <DialogHeader>
                         <DialogTitle>Approve EMC symbol</DialogTitle>
                         <DialogDescription>
-                            Check the exact device, package and every pin
-                            against the linked datasheet. Nothing is saved or
-                            inserted until you approve.
+                            {draft?.representationKind === "device_view"
+                                ? "Check the reproduced view against the source. This drawing has no electrical connection points."
+                                : "Check the drawing and each documented pin against the source."}{" "}
+                            Nothing is saved or inserted until you approve.
                         </DialogDescription>
                     </DialogHeader>
                     {draft && (
@@ -505,7 +505,6 @@ export function DeviceResearchPanel() {
     const fileMode = state.fileMode
     const [warning, setWarning] = useState(false)
     const [expanded, setExpanded] = useState(false)
-    const [query, setQuery] = useState("")
     const [preview, setPreview] = useState<DeviceCandidate | null>(null)
     const [elapsed, setElapsed] = useState(0)
     useEffect(() => {
@@ -650,6 +649,7 @@ export function DeviceResearchPanel() {
                         onClick={() => {
                             cancelDeviceResearch()
                             state.set({ fileMode: false })
+                            setExpanded(true)
                         }}
                     >
                         Cancel
@@ -657,7 +657,11 @@ export function DeviceResearchPanel() {
                 )}
             </div>
             {fileMode && <SourceFiles readonly={!!readonly} />}
-            {(expanded || state.busy || state.result || state.error) && (
+            {(state.webEnabled ||
+                expanded ||
+                state.busy ||
+                state.result ||
+                state.error) && (
                 <div
                     className={
                         fileMode
@@ -665,42 +669,6 @@ export function DeviceResearchPanel() {
                             : "mt-2 max-h-[35vh] space-y-2 overflow-y-auto"
                     }
                 >
-                    {!fileMode && (
-                        <form
-                            className="flex gap-1"
-                            onSubmit={(e) => {
-                                e.preventDefault()
-                                if (query.trim())
-                                    void researchDevice(query.trim()).catch(
-                                        () => {},
-                                    )
-                            }}
-                        >
-                            <Input
-                                aria-label="Device search"
-                                placeholder="Exact model, type, package…"
-                                maxLength={1000}
-                                value={query}
-                                onChange={(e) => setQuery(e.target.value)}
-                                disabled={
-                                    !state.webEnabled || state.busy || readonly
-                                }
-                            />
-                            <Button
-                                type="submit"
-                                variant="outline"
-                                size="sm"
-                                disabled={
-                                    !state.webEnabled ||
-                                    state.busy ||
-                                    !query.trim() ||
-                                    readonly
-                                }
-                            >
-                                Search
-                            </Button>
-                        </form>
-                    )}
                     {state.busy && (
                         <p role="status" className="flex items-center gap-2">
                             <Loader2 className="size-3 animate-spin" />
@@ -904,7 +872,8 @@ export function DeviceResearchPanel() {
                         <Button
                             onClick={() => {
                                 engine.stop()
-                                state.set({ webEnabled: true })
+                                state.set({ webEnabled: true, fileMode: false })
+                                setExpanded(true)
                                 setWarning(false)
                                 setExpanded(true)
                             }}

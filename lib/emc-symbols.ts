@@ -11,6 +11,8 @@ export interface EmcSymbol {
     name: string
     device: string
     package: string
+    representationKind?: "device_view"
+    viewEvidence?: string
     incomplete?: boolean
     warnings?: string[]
     sourceUrl?: string
@@ -44,7 +46,15 @@ export function validateEmcSymbol(value: unknown): value is EmcSymbol {
         text(d.package, 120) &&
         validSymbolBody(d.body) &&
         Array.isArray(d.pins) &&
-        (d.pins.length > 0 || (d.incomplete === true && source(d.sourceUrl))) &&
+        (d.representationKind === undefined ||
+            (d.representationKind === "device_view" &&
+                d.pins.length === 0 &&
+                !!d.body &&
+                source(d.sourceUrl) &&
+                text(d.viewEvidence, 600))) &&
+        (d.pins.length > 0 ||
+            (d.incomplete === true && source(d.sourceUrl)) ||
+            d.representationKind === "device_view") &&
         d.pins.length <= 128 &&
         distinctPinPositions(d.pins) &&
         new Set(d.pins.map((p) => p?.number)).size === d.pins.length &&

@@ -32,7 +32,7 @@ export function SymbolPreview({
                     : "max-h-80 w-full rounded border bg-white text-black"
             }
         >
-            <title>{symbol.name} — connection points</title>
+            <title>{`${symbol.name} — ${symbol.representationKind === "device_view" ? "source view, no electrical connections" : "connection points"}`}</title>
             <polygon
                 points={layout.outline
                     .map(
