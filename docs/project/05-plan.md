@@ -1,6 +1,8 @@
 # Plan prac
 
-Stan: 17 listopada 2026. Bieżącą podstawą wydań jest `main`.
+Stan: 20 listopada 2026.
+
+[OIL — wspólny rejestr EMC i BrainStorm](OIL.md) zawiera aktualne zadania, statusy i kryteria odbioru. Obecnie spisujemy wymagania; diagnoza płynności oraz dalsza realizacja są odłożone. Bieżącą podstawą wydań jest `main`.
 
 ## Obecny etap
 
@@ -28,6 +30,10 @@ Własna domena jest opcjonalna.
   dla `62e8ded91f95478620fce89a8b3aaa9a71e1fb52`.
   GitHub Actions #44125078627 zakończył się sukcesem.
 
+## Aktualizacja 20 listopada 2026
+
+Wdrożono poprawki klienta z PR #35 oraz backendu EMC z PR #76/#77. Personal jest przestrzenią Supabase; eksport lokalnego .storm istnieje. Foldery Desktop, limity 10 MB Expert / 50 MB Leader oraz wybór Personal/urządzenie dla autozapisu są planowane. Wejście z projektu ma zachować docelowy zapis w przestrzeni projektu. Szczegóły, placeholdery undefined i wyrównanie etykiet: OIL-001–016. Wdrożenia nie zastępują odbioru na rzeczywistym telefonie.
+
 ## Następny proponowany etap: akceptacja rzeczywistego przepływu
 
 Poniższe scenariusze wymagają konta Operations i rzeczywistej sesji. Zielone testy
@@ -53,7 +59,7 @@ i wersją. Nie oznaczać tych scenariuszy jako zaliczonych na podstawie samego C
 - Jakość schematów i wierność geometrii/pinów na reprezentatywnych dokumentach.
 - Porządki brandingu i dokumentacji odziedziczonej z projektu bazowego.
 - Zweryfikować politykę sprzątania niezatwierdzonych obiektów Storage.
-- Wspólna edycja i whiteboard podczas rozmów pozostają odłożone.
+- Wspólne tablice podczas rozmów są już dostępne. Zgłoszenie pogorszenia płynności i odbiór ostatnich poprawek pozostają otwarte w OIL.
 - Własna subdomena oraz zakres Electron/MCP są opcjonalnymi decyzjami.
 
 ## Zasady wydawania
