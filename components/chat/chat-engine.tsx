@@ -671,6 +671,8 @@ export function ChatEngineProvider({
         transport,
         onToolCall: async ({ toolCall }) => {
             if (toolCall.toolName === "search_device") {
+                // onToolCall holds the SDK message queue. Enqueue its output
+                // without awaiting that same queue, otherwise streaming never finishes.
                 const searchGeneration = getChatGeneration()
                 const searchStops = stopCountRef.current
                 try {
@@ -682,7 +684,7 @@ export function ChatEngineProvider({
                         stopCountRef.current !== searchStops
                     )
                         return
-                    await addToolOutputSafely({
+                    void addToolOutputSafely({
                         tool: "search_device",
                         toolCallId: toolCall.toolCallId,
                         output: JSON.stringify(result),
@@ -693,7 +695,7 @@ export function ChatEngineProvider({
                         stopCountRef.current !== searchStops
                     )
                         return
-                    await addToolOutputSafely({
+                    void addToolOutputSafely({
                         tool: "search_device",
                         toolCallId: toolCall.toolCallId,
                         output: `Search unavailable: ${error instanceof Error ? error.message : "retry"}`,
