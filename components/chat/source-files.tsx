@@ -48,6 +48,7 @@ export function SourceFiles({ readonly }: { readonly: boolean }) {
         [busy, setBusy] = useState(false)
     const input = useRef<HTMLInputElement>(null),
         [purge, setPurge] = useState<Source | null>(null)
+    const retrySource = useRef<Source | null>(null)
     const research = useDeviceResearch()
     const load = async () => {
         const data = await emcAction<{ sources: Source[] }>("source-list", {})
@@ -114,7 +115,7 @@ export function SourceFiles({ readonly }: { readonly: boolean }) {
             setBusy(false)
         }
     }
-    const upload = async (file: File) => {
+    const upload = async (file: File, retry?: Source) => {
         setBusy(true)
         setError("")
         try {
@@ -124,9 +125,25 @@ export function SourceFiles({ readonly }: { readonly: boolean }) {
                 id: string
                 path: string
                 mime: string
-            }>("source-create", { name: file.name, size: file.size })
+                name?: string
+                size?: number
+            }>(
+                retry ? "source-upload" : "source-create",
+                retry ? { id: retry.id } : { name: file.name, size: file.size },
+            )
             if (
-                !/^(request|project)\/[0-9a-f-]+\/[0-9a-f-]+\.(pdf|png|jpe?g|webp|txt|md|docx)$/i.test(
+                retry &&
+                (prepared.id !== retry.id ||
+                    prepared.size !== file.size ||
+                    prepared.name?.replace(/\.[^.]+$/, (ext) =>
+                        ext.toLowerCase(),
+                    ) !== file.name)
+            )
+                throw Error(
+                    "Select the original file with the same name and size to retry this upload",
+                )
+            if (
+                !/^(request|project|personal)\/[0-9a-f-]+\/[0-9a-f-]+\.(pdf|png|jpe?g|webp|txt|md|docx)$/i.test(
                     prepared.path,
                 )
             )
@@ -144,7 +161,7 @@ export function SourceFiles({ readonly }: { readonly: boolean }) {
                 body: await file.arrayBuffer(),
                 credentials: "omit",
             })
-            if (!response.ok)
+            if (!response.ok && !(retry && response.status === 409))
                 throw Error(
                     "File upload failed. You can remove the pending attachment or retry.",
                 )
@@ -166,10 +183,24 @@ export function SourceFiles({ readonly }: { readonly: boolean }) {
             if (input.current) input.current.value = ""
         }
     }
-    const chooseFile = async (file: File) => {
+    const chooseFile = async (file: File, retry?: Source) => {
+        // Some mobile pickers preserve uppercase camera/file extensions.
+        // Use the same canonical name for availability checks and creation.
+        const name = file.name.replace(/\.[^.]+$/, (extension) =>
+            extension.toLowerCase(),
+        )
+        if (name !== file.name)
+            file = new File([file], name, {
+                type: file.type,
+                lastModified: file.lastModified,
+            })
         setBusy(true)
         setError("")
         try {
+            if (retry) {
+                await upload(file, retry)
+                return
+            }
             const data = await emcAction<{ available: boolean }>(
                 "name-available",
                 { kind: "source", name: file.name },
@@ -212,7 +243,10 @@ export function SourceFiles({ readonly }: { readonly: boolean }) {
                     disabled={readonly || busy || research.busy}
                     aria-label="Add attachment"
                     title="Add attachment"
-                    onClick={() => input.current?.click()}
+                    onClick={() => {
+                        retrySource.current = null
+                        input.current?.click()
+                    }}
                 >
                     <Paperclip aria-hidden="true" className="size-4" />
                 </Button>
@@ -245,12 +279,14 @@ export function SourceFiles({ readonly }: { readonly: boolean }) {
             <input
                 ref={input}
                 type="file"
-                accept=".pdf,.png,.jpg,.jpeg,.webp,.txt,.md,.docx"
+                accept=".pdf,.PDF,.png,.PNG,.jpg,.JPG,.jpeg,.JPEG,.webp,.WEBP,.txt,.md,.docx,application/pdf,image/png,image/jpeg,image/webp"
                 className="hidden"
                 aria-label="Upload source documentation"
                 onChange={(e) => {
                     const file = e.target.files?.[0]
-                    if (file) void chooseFile(file)
+                    const retry = retrySource.current
+                    retrySource.current = null
+                    if (file) void chooseFile(file, retry || undefined)
                 }}
             />
             {error && (
@@ -301,11 +337,12 @@ export function SourceFiles({ readonly }: { readonly: boolean }) {
                                         size="sm"
                                         variant="outline"
                                         disabled={readonly || busy}
-                                        onClick={() =>
-                                            void change("source-complete", row)
-                                        }
+                                        onClick={() => {
+                                            retrySource.current = row
+                                            input.current?.click()
+                                        }}
                                     >
-                                        Finish upload
+                                        Retry upload
                                     </Button>
                                 )}
                                 {["active", "pending"].includes(row.state) && (

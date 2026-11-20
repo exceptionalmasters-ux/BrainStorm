@@ -3,11 +3,11 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { operationsDocumentRequest } from "@/lib/operations-documents"
 
 const contextId = "00000000-0000-4000-8000-000000000001"
-const request = () =>
+const request = (contextType = "request") =>
     new Request("https://editor.example/api/operations-documents", {
         headers: {
             "x-emc-access-token": "fixture-user-token",
-            "x-emc-context-type": "request",
+            "x-emc-context-type": contextType,
             "x-emc-context-id": contextId,
         },
     })
@@ -219,4 +219,24 @@ it("acknowledges an identical logical retry without uploading and rejects a peer
         "another window",
     )
     expect(fetchMock).toHaveBeenCalledTimes(4)
+})
+
+it("lists personal drawings using the server-authorized personal context", async () => {
+    const fetchMock = vi.fn(async (url, init) => {
+        const args = JSON.parse(init.body)
+        expect(args.p_context_type).toBe("personal")
+        expect(args.p_context_id).toBe(contextId)
+        return Response.json(
+            String(url).endsWith("brainstorm_context")
+                ? { contextType: "personal", contextId, readOnly: false }
+                : [],
+        )
+    })
+    vi.stubGlobal("fetch", fetchMock)
+    expect(
+        await operationsDocumentRequest(request("personal"), {
+            method: "list",
+        }),
+    ).toEqual([])
+    expect(fetchMock).toHaveBeenCalledTimes(2)
 })

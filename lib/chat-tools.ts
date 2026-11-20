@@ -21,7 +21,7 @@ import {
 export const chatTools = {
     search_device: tool({
         description:
-            "Find up to five source-backed graphical wiring/pinout references for a device. Only when Web is ON. Search first even when the variant is ambiguous; show source-backed candidates and then ask the user to choose. Pass only the device search terms, never private project data. Results appear in the EMC research panel. Never create or save symbols automatically; the user chooses Create symbol and approves the preview.",
+            "Find up to five source-backed graphical wiring/pinout references for a device. Only when Web is ON. Search first even when the variant is ambiguous; show source-backed candidates and ask the user to choose only if multiple materially different variants affect the requested drawing. Do not require an exact SKU or package for reproducing a supplied drawing or a view without pins. Pass only the device search terms, never private project data. Results appear in the EMC research panel. Never create or save symbols automatically; the user chooses Create symbol and approves the preview.",
         inputSchema: z.object({ query: z.string().min(1).max(1000) }),
         outputSchema: z.string(),
     }),

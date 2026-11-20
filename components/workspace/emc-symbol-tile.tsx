@@ -86,7 +86,7 @@ export function SymbolTile({
         setLoading(false)
     }
     return (
-        <div className="relative inline-flex w-[calc(25%-6px)] align-top">
+        <div className="relative inline-flex w-[calc(50%-6px)] align-top sm:w-[calc(25%-6px)]">
             <button
                 type="button"
                 disabled={disabled || !definition || loading}

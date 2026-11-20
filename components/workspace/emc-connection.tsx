@@ -44,12 +44,12 @@ export function EmcConnection() {
     }
     return (
         <span
-            className="inline-flex min-w-0 flex-wrap items-center gap-2"
+            className="relative inline-flex shrink-0 items-center gap-2"
             data-testid="emc-connection"
         >
             <button
                 type="button"
-                className="rounded border border-primary/40 px-2 py-1 text-xs"
+                className="shrink-0 whitespace-nowrap rounded border border-primary/40 px-2 py-1 text-xs"
                 disabled={state === "connecting"}
                 onClick={reconnect}
                 data-testid="emc-reconnect"
@@ -66,7 +66,10 @@ export function EmcConnection() {
                       : "Reconnect EMC"}
             </button>
             {error && (
-                <span role="alert" className="text-xs text-red-500">
+                <span
+                    role="alert"
+                    className="absolute right-0 top-full z-50 mt-1 w-[min(320px,calc(100vw_-_24px))] rounded border bg-card p-2 text-xs text-red-500 shadow-lg"
+                >
                     {error}{" "}
                     <button
                         type="button"
