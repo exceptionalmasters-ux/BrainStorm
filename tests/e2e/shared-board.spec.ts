@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test"
 
 const protocol = "emc-whiteboard/v1"
 const xml =
-    '<mxfile><diagram id="shared" name="Page-1"><mxGraphModel grid="1" gridSize="10"><root><mxCell id="0"/><mxCell id="1" parent="0"/><mxCell id="v" value="Shared module" vertex="1" parent="1"><mxGeometry x="120" y="120" width="100" height="60" as="geometry"/></mxCell></root></mxGraphModel></diagram></mxfile>'
+    '<mxfile><diagram id="shared" name="Page-1"><mxGraphModel page="1" grid="1" gridSize="10"><root><mxCell id="0"/><mxCell id="1" parent="0"/><mxCell id="v" value="Shared module" vertex="1" parent="1"><mxGeometry x="120" y="120" width="100" height="60" as="geometry"/></mxCell></root></mxGraphModel></diagram></mxfile>'
 test("shared canvas fences edits, imports only for its current editor and separates annotations", async ({
     page,
     context,

@@ -146,7 +146,10 @@ export function ChatPanel({
         >
             <header className="@container flex h-[52px] shrink-0 items-center gap-1 pr-12 pl-3">
                 <BrandMark />
-                <strong className="min-w-0 truncate pl-1 text-[13px] font-semibold">
+                <strong
+                    className="min-w-0 truncate pl-1 text-[13px] font-semibold"
+                    title="Draw diagrams and create symbols from web sources or documentation."
+                >
                     AI Assistant
                 </strong>
                 <div className="ml-auto flex shrink-0 items-center">
@@ -200,7 +203,7 @@ export function ChatPanel({
                     </IconButton>
                 </div>
             </header>
-            <p className="px-3 pb-2 text-xs leading-relaxed text-muted-foreground">
+            <p className="shrink-0 px-3 pb-2 text-xs leading-relaxed text-muted-foreground [@media(max-height:500px)]:hidden">
                 Draw diagrams and create symbols from web sources or
                 documentation.
             </p>

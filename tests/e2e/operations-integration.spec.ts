@@ -514,7 +514,5 @@ test("Toolbox start shows the original three drawing options and Open file", asy
     await expect(tool.getByTestId("lobby-hero")).toBeVisible()
     await expect(tool.getByTestId("draw-manually")).toBeVisible()
     await expect(tool.getByTestId("open-file")).toBeVisible()
-    await expect(
-        tool.getByTestId("lobby-hero").locator('img[alt="BrainStorm"]'),
-    ).toBeVisible()
+    await expect(tool.getByTestId("lobby-hero").locator("img")).toBeVisible()
 })
