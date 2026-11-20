@@ -14,10 +14,11 @@ Dokumentacja jest częścią repozytorium i jest aktualizowana razem z kodem.
 | [docs/project/02-architektura.md](docs/project/02-architektura.md) | Stack, przepływ danych, hosting |
 | [docs/project/03-decyzje.md](docs/project/03-decyzje.md) | Rejestr decyzji technicznych |
 | [docs/project/04-dziennik-zmian.md](docs/project/04-dziennik-zmian.md) | Dziennik zmian, co i kiedy zrobiono |
+| [docs/project/OIL.md](docs/project/OIL.md) | Wspólny rejestr planowanych zmian EMC i BrainStorm, statusy i kryteria odbioru |
 | [docs/project/05-plan.md](docs/project/05-plan.md) | Plan prac i otwarte zadania |
 | [docs/upstream/README.md](docs/upstream/README.md) | Oryginalny README projektu bazowego |
 
-Integracja z Operations, zakładki dokumentów i konfiguracja wdrożenia: [09-operations-integration.md](docs/project/09-operations-integration.md). Starsze sekcje są zapisem wcześniejszych etapów; aktualny transport opisuje sekcja Direct managed transport.
+Integracja z Operations, zakładki dokumentów i konfiguracja wdrożenia: [09-operations-integration.md](docs/project/09-operations-integration.md). Stan wspólnych tablic i Personal oraz planowane limity/cele autozapisu opisuje [OIL](docs/project/OIL.md). Starsze sekcje są zapisem wcześniejszych etapów; aktualny transport opisuje sekcja Direct managed transport.
 
 ## Stack
 
