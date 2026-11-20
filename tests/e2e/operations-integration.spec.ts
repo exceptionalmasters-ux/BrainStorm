@@ -1,4 +1,4 @@
-import { emcToolResponse } from "../fixtures/emc-response"
+import { emcTextResponse, emcToolResponse } from "../fixtures/emc-response"
 import {
     expect,
     getIframeContent,
@@ -339,7 +339,10 @@ for (const withBrief of [true, false]) {
             await popup.route(managedUrl, async (route) => {
                 await route.fulfill({
                     contentType: "text/event-stream",
-                    body: `data: ${JSON.stringify({ type: "response.completed", response: { id: "resp_done", model: "fixture-model", status: "completed", output: [], usage: { input_tokens: 1, output_tokens: 0, total_tokens: 1 } } })}\n\n`,
+                    body: emcTextResponse(
+                        "Choose a source-backed result above.",
+                        99,
+                    ),
                 })
             })
             const search = async (query: string, index: number) => {
@@ -368,6 +371,7 @@ for (const withBrief of [true, false]) {
             await expect(
                 popup.getByLabel("Symbol instructions", { exact: true }),
             ).toHaveCount(0)
+            await expect(popup.getByTestId("chat-input")).toBeEnabled()
             await search("Fixture DIP-2", 11)
             await expect(
                 popup.getByRole("button", {
