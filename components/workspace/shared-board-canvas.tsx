@@ -53,6 +53,7 @@ export function SharedBoardCanvas() {
         [view, setView] = useState<any>(null),
         [pending, setPending] = useState<BoardStroke | null>(null)
     const current = useRef<State | null>(null),
+        centered = useRef(false),
         applied = useRef(false),
         suppress = useRef(false),
         lastXml = useRef(""),
@@ -118,7 +119,9 @@ export function SharedBoardCanvas() {
             pendingView.current = !next.editable
                 ? next.follow
                     ? next.viewport
-                    : tools.current?.readView()
+                    : centered.current
+                      ? tools.current?.readView()
+                      : undefined
                 : undefined
             suppress.current = true
             lastXml.current = xml
@@ -235,6 +238,13 @@ export function SharedBoardCanvas() {
         const state = current.current
         const target = state?.follow ? state.viewport : pendingView.current
         if (state && !state.editable && target) tools.current?.applyView(target)
+        else if (state && !state.follow && !centered.current) {
+            centered.current = true
+            requestAnimationFrame(() => {
+                tools.current?.centerPage()
+                if (tools.current) setView(tools.current.viewport())
+            })
+        }
         pendingView.current = undefined
         send("ready")
     }

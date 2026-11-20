@@ -1527,6 +1527,9 @@ export function ChatEngineProvider({
         if (!isRestored || operationsLaunchRef.current || !isOperationsMode())
             return
         operationsLaunchRef.current = true
+        // Toolbox is an entry to the original start screen; Project launches remain direct.
+        if (new URLSearchParams(window.location.search).get("home") === "1")
+            return
         const context = getOperationsContext()
         const brief = context?.brief?.trim() || ""
         const view = useUiStore.getState()

@@ -14,7 +14,7 @@ export function BrandMark({ className }: { className?: string }) {
         >
             {/* biome-ignore lint/performance/noImgElement: tiny static icon */}
             <img
-                src={getAssetUrl("/favicon-192x192.png")}
+                src={getAssetUrl("/brainstorm-icon.svg")}
                 alt=""
                 className="size-full object-contain"
             />

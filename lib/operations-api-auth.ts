@@ -18,7 +18,7 @@ export async function verifyOperationsRequest(
         !token ||
         !url ||
         !key ||
-        !["request", "project"].includes(type || "") ||
+        !["request", "project", "personal"].includes(type || "") ||
         !/^[0-9a-f-]{36}$/i.test(id || "")
     ) {
         return Response.json(

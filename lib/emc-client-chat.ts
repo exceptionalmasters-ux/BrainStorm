@@ -21,6 +21,7 @@ import { addReplyUsage, type ChatUIMessage } from "./chat-message"
 import { chatTools } from "./chat-tools"
 import { diagramOf } from "./diagram-context"
 import { emcModel } from "./emc-ai"
+import { emcStreamError } from "./emc-errors"
 import { getSystemPrompt } from "./system-prompts"
 
 /** Keep model streaming and JSON/XML processing off the hosting Worker.
@@ -141,6 +142,12 @@ export async function emcClientChat(request: Request): Promise<Response> {
                 }
             },
             tools: chatTools,
+            // Each new Web question needs fresh evidence, including after a previous symbol.
+            // Tool continuations may finish their answer without repeating the lookup.
+            toolChoice:
+                body.webEnabled === true && lastMessage?.role === "user"
+                    ? { type: "tool", toolName: "search_device" }
+                    : "auto",
             activeTools: (
                 Object.keys(chatTools) as (keyof typeof chatTools)[]
             ).filter((name) =>
@@ -169,15 +176,7 @@ export async function emcClientChat(request: Request): Promise<Response> {
                 const status = APICallError.isInstance(error)
                     ? error.statusCode
                     : 0
-                return JSON.stringify({
-                    type: "provider",
-                    code:
-                        status === 429
-                            ? "rate_limited"
-                            : "provider_unavailable",
-                    message:
-                        "EMC OpenAI could not finish the answer. Your drawing is kept. Retry, or reconnect EMC if your session expired.",
-                })
+                return JSON.stringify(emcStreamError(error, status ?? 0))
             },
         })
     } catch (error) {

@@ -191,7 +191,8 @@ function WorkspaceLayout() {
     // Start screen: nothing said and nothing drawn yet. A new chat brings
     // it back, an opened file or saved chat puts it away (the chat engine).
     const showHero =
-        !isOperationsMode() &&
+        (!isOperationsMode() ||
+            new URLSearchParams(window.location.search).get("home") === "1") &&
         engine.isRestored &&
         engine.messages.length === 0 &&
         !isRealDiagram(chartXML) &&

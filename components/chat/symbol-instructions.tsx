@@ -42,6 +42,7 @@ export function FileAnalysisComposer() {
     const state = useDeviceResearch()
     const readonly = getOperationsContext()?.readOnly
     const disabled = !!readonly || state.busy || state.sourceBusy
+    if (!state.fileMode || !state.selectedSource) return null
     return (
         <div className="space-y-1">
             <p

@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test"
 
 const protocol = "emc-whiteboard/v1"
 const xml =
-    '<mxfile><diagram id="shared" name="Page-1"><mxGraphModel grid="1" gridSize="10"><root><mxCell id="0"/><mxCell id="1" parent="0"/><mxCell id="v" value="Shared module" vertex="1" parent="1"><mxGeometry x="120" y="120" width="100" height="60" as="geometry"/></mxCell></root></mxGraphModel></diagram></mxfile>'
+    '<mxfile><diagram id="shared" name="Page-1"><mxGraphModel page="1" grid="1" gridSize="10"><root><mxCell id="0"/><mxCell id="1" parent="0"/><mxCell id="v" value="Shared module" vertex="1" parent="1"><mxGeometry x="120" y="120" width="100" height="60" as="geometry"/></mxCell></root></mxGraphModel></diagram></mxfile>'
 test("shared canvas fences edits, imports only for its current editor and separates annotations", async ({
     page,
     context,
@@ -68,6 +68,24 @@ test("shared canvas fences edits, imports only for its current editor and separa
         "color-scheme",
         "light",
     )
+    // The page is centred even for an initial observer, before any libraries load.
+    await expect
+        .poll(async () => {
+            const page = await native
+                .locator(".geBackgroundPage")
+                .first()
+                .boundingBox()
+            const area = await native
+                .locator(".geDiagramContainer")
+                .first()
+                .boundingBox()
+            if (!page || !area) return Infinity
+            return Math.max(
+                Math.abs(page.x + page.width / 2 - area.x - area.width / 2),
+                Math.abs(page.y + page.height / 2 - area.y - area.height / 2),
+            )
+        })
+        .toBeLessThan(8)
     await canvas.getByTestId("library-settings").click()
     await expect(
         canvas.getByRole("button", { name: "Apply", exact: true }),

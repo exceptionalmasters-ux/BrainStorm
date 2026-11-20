@@ -72,3 +72,30 @@ describe("shared presenter camera", () => {
         expect(tools.readView()).toEqual(target)
     })
 })
+
+it("centres the white page within the available viewport without changing zoom", () => {
+    const container = {
+        clientWidth: 600,
+        clientHeight: 400,
+        scrollLeft: 0,
+        scrollTop: 0,
+    }
+    const view = {
+        scale: 0.75,
+        translate: { x: 0, y: 0 },
+        backgroundPageShape: {
+            bounds: { x: 400, y: 200, width: 800, height: 1000 },
+        },
+    }
+    const tools = createWhiteboardTools(
+        {
+            editor: { graph: { container, view, scrollbars: true } },
+            resetScrollbars: vi.fn(),
+        },
+        {},
+    )
+    expect(tools.centerPage()).toBe(true)
+    expect(container.scrollLeft).toBe(500)
+    expect(container.scrollTop).toBe(500)
+    expect(view.scale).toBe(0.75)
+})

@@ -1,5 +1,6 @@
 import { FileUp, History } from "lucide-react"
 import { useEffect } from "react"
+import { BrandMark } from "@/components/workspace/brand-mark"
 import { useDictionary } from "@/hooks/use-dictionary"
 import { useUiStore } from "@/stores/ui-store"
 import { useChatEngine } from "./chat-engine"
@@ -33,6 +34,9 @@ export function LobbyHero({
             className={`mx-auto w-full max-w-[880px] px-6 ${compact ? "py-8" : "py-14"}`}
             data-testid="lobby-hero"
         >
+            <div className="mb-5 flex justify-center">
+                <BrandMark className="size-16 rounded-2xl border border-primary/40" />
+            </div>
             <p className="mb-3 text-center text-xs tracking-[0.2em] text-primary">
                 EXCEPTIONAL MASTERS COLLECTIVE
             </p>

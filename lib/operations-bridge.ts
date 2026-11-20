@@ -51,7 +51,7 @@ let authorizationPending: Promise<OperationsAuthorization> | null = null
 function rememberAuthorization(value: OperationsAuthorization | undefined) {
     if (
         !value?.accessToken ||
-        !["request", "project"].includes(value.contextType) ||
+        !["request", "project", "personal"].includes(value.contextType) ||
         !value.contextId
     )
         return
@@ -117,7 +117,7 @@ export function reconnectOperations(): Promise<
     const params = new URLSearchParams(location.search)
     const type = authorization?.contextType || params.get("contextType")
     const id = authorization?.contextId || params.get("contextId")
-    if (!["request", "project"].includes(type || "") || !id)
+    if (!["request", "project", "personal"].includes(type || "") || !id)
         return Promise.reject(
             new Error("Open a workspace from Operations first."),
         )
