@@ -2,6 +2,13 @@
 
 Najnowsze na górze. Starsze wpisy zachowują historyczne ograniczenia i wyniki.
 
+## 2026-11-20 — aktualizacja dokumentacji i rejestr OIL
+
+- Dodano wspólny OIL dla EMC i BrainStorm z identyfikatorami, statusami i kryteriami odbioru.
+- Uzgodniono plan z wdrożonymi wspólnymi tablicami, Personal i poprawkami PR #35 (BrainStorm), #76/#77 (EMC).
+- Zapisano regresję płynności, błędy sesji, reguły undefined, wyrównanie tekstu, Desktop/foldery, udostępnienie do czatu, limity i cele autozapisu.
+- Zmieniono wyłącznie dokumentację; realizacja nowych funkcji i diagnoza pozostają odłożone. Nie uruchamiano ponownie testów aplikacji dla zmian opisowych.
+
 ## 2026-11-17 — editor refinements (issue #19)
 
 - Assistant opens on Operations launch, including Skip Brief; no automatic AI request.
